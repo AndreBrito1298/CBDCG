@@ -40,12 +40,12 @@ class ParticipantRepositoryTest {
 
         tableRepo.createTable(
             Name("tableName"),
-            0
+            0u
         )
 
         tableRepo.createTable(
             Name("randomName"),
-            1
+            1u
         )
 
     }
