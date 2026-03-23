@@ -1,5 +1,7 @@
 package isel.pt.cbdcg.domain
 
+import com.android.identity.cbor.Uint
+
 /**
  * Class that represents a Game Table.
  * @param id Unique identifier of a table.
@@ -8,9 +10,9 @@ package isel.pt.cbdcg.domain
  * @param players Number of players waiting.
  */
 data class Table(
-    val id: Int,
+    val id: UInt,
     val name: Name,
-    val owner: Int,
+    val owner: UInt,
     val players: Int
 ) {
 

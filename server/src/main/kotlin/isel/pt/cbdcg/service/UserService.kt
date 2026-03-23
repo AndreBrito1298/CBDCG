@@ -9,7 +9,6 @@ import isel.pt.cbdcg.repository.memory.UserRepositoryMem
 class UserService(
     private val userRepo: UserRepositoryMem,
 ) {
-
     /**
      * Function to create a user.
      * @param name The name of the user.
@@ -27,5 +26,9 @@ class UserService(
      */
     fun login(email: Email, password: Password): Result<User> = runCatching {
         userRepo.login(email, password)
+    }
+
+    fun logout(email: Email) : Result<User> = runCatching {
+        userRepo.logout(email)
     }
 }

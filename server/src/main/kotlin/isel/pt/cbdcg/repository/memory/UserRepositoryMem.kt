@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.repository.memory
 
+import com.android.identity.cbor.Uint
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
@@ -27,7 +28,7 @@ object UserRepositoryMem: Repository<User> {
         if(users.any{ it.email.string == email.string })
             throw UserError.DuplicateEmail(email.string)
 
-        val user = User(users.size,name, email, password)
+        val user = User(users.size.toUInt(),name, email, password)
         users.add(user)
 
         return user
@@ -53,6 +54,11 @@ object UserRepositoryMem: Repository<User> {
         return user
     }
 
+    fun logout(email: Email): User {
+        return users.find { it.email.string == email.string  }?:
+        throw UserError.EmailNotFound(email.string)
+    }
+
     /**
      * Function to find a User given its Email.
      * @param email The Email of the user.
@@ -66,7 +72,7 @@ object UserRepositoryMem: Repository<User> {
 
     // Generic Operations
 
-    override fun findById(id: Int): User? {
+    override fun findById(id: UInt): User? {
         return users.find{ it.id == id}
     }
 
@@ -75,7 +81,7 @@ object UserRepositoryMem: Repository<User> {
         users.add(element)
     }
 
-    override fun deleteById(id: Int) {
+    override fun deleteById(id: UInt) {
         users.removeIf{ it.id == id}
     }
 

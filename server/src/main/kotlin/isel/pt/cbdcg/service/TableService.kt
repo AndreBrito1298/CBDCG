@@ -3,6 +3,7 @@ package isel.pt.cbdcg.service
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Participant
+import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.repository.TableError
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
@@ -58,4 +59,8 @@ class TableService(
 
     }
 
+    fun changeRole(participant: Email, newRole: Role) = runCatching {
+        val participant = participantRepo.findByEmail(participant)
+        participantRepo.changeRole(participant, newRole)
+    }
 }

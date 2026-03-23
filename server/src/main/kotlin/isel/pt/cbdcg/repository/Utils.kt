@@ -1,5 +1,7 @@
 package isel.pt.cbdcg.repository
 
+import com.android.identity.cbor.Uint
+import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 
 /**
@@ -48,5 +50,17 @@ sealed class TableError(
 
     class TableDoesNotExist(table: String) :
             TableError("Table '$table' was not found.")
+
+}
+
+sealed class ParticipantError(
+    msg: String,
+): Error(msg, "Error found during table participant operations."){
+
+    class ParticipantIdNotFound(id: UInt) : ParticipantError("Participant $id not found.")
+
+    class ParticipantEmailNotFound(email: Email) : ParticipantError("Participant $email not found.")
+
+    class UserNotOnTable() : ParticipantError("User is not participating in any table.")
 
 }

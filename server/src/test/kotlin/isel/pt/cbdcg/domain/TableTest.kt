@@ -7,7 +7,7 @@ class TableTest {
     @Test
     fun `table is available`(){
 
-        val table = Table(1, "testTable".toName(), 1, 3)
+        val table = Table(1u, "testTable".toName(), 1u, 3)
 
         assert(table.checkAvailability())
     }
@@ -15,7 +15,7 @@ class TableTest {
     @Test
     fun `table is not available`(){
 
-        val table = Table(1, "testTable".toName(), 1, 7)
+        val table = Table(1u, "testTable".toName(), 1u, 7)
 
         assert(!table.checkAvailability())
     }

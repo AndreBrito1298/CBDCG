@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.repository.memory
 
+import com.android.identity.cbor.Uint
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.repository.Repository
@@ -20,12 +21,12 @@ object TableRepositoryMem: Repository<Table> {
      * @throws TableError.DuplicateName Table names must be unique.
      * @return The Table created.
      */
-    fun createTable(name: Name, owner: Int): Table {
+    fun createTable(name: Name, owner: UInt): Table {
 
         if(tables.any{it.name.string == name.string})
             throw TableError.DuplicateName(name.string)
 
-        val table = Table(tables.size, name, owner,1)
+        val table = Table(tables.size.toUInt(), name, owner,1)
         tables.add(table)
 
         return table
@@ -43,7 +44,7 @@ object TableRepositoryMem: Repository<Table> {
 
     // Generic Operations
 
-    override fun findById(id: Int): Table? {
+    override fun findById(id: UInt): Table? {
         return tables.find{ it.id == id}
     }
 
@@ -51,7 +52,7 @@ object TableRepositoryMem: Repository<Table> {
         tables.add(element)
     }
 
-    override fun deleteById(id: Int) {
+    override fun deleteById(id: UInt) {
         tables.removeIf{ it.id == id}
     }
 

@@ -40,7 +40,7 @@ class TableRepositoryTest {
 
         val name = Name("testTable")
 
-        tableRepo.createTable(name, 0)
+        tableRepo.createTable(name, 0u)
         assert(tableRepo.tables.find{ it.name.string == name.string } != null)
 
     }
@@ -49,9 +49,9 @@ class TableRepositoryTest {
     fun `cannot create table with same name`() {
 
         val name = Name("testTable")
-        tableRepo.createTable(name, 0)
+        tableRepo.createTable(name, 0u)
 
-        assertFailsWith<TableError.DuplicateName> { tableRepo.createTable(name, 0) }
+        assertFailsWith<TableError.DuplicateName> { tableRepo.createTable(name, 0u) }
 
     }
 

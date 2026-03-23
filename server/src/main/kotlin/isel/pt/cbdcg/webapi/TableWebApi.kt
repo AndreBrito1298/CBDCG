@@ -7,8 +7,11 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
+import isel.pt.cbdcg.domain.Participant
+import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.toEmail
 import isel.pt.cbdcg.domain.toName
+import isel.pt.cbdcg.domain.toRole
 import isel.pt.cbdcg.service.TableService
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -24,6 +27,13 @@ data class JoinOrLeaveTableInput(
     val name: String,
     val owner: String,
 )
+
+@Serializable
+data class ChangeRoleInput(
+    val name: String,
+    val role: String,
+)
+
 
 fun Route.tableWebApi(tableService: TableService) {
     route("/tables") {
@@ -62,6 +72,15 @@ fun Route.tableWebApi(tableService: TableService) {
             ).getOrThrow()
 
             call.response.status(HttpStatusCode.OK)
+        }
+
+        post("/changeRole") {
+            val input = call.receive<ChangeRoleInput>()
+
+            tableService.changeRole(
+                participant = input.name.toEmail(),
+                newRole = input.role.toRole()?: Role.SPECTATOR,
+            )
         }
     }
 }

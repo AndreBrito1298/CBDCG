@@ -1,5 +1,7 @@
 package isel.pt.cbdcg.domain
 
+import com.android.identity.cbor.Uint
+
 /**
  * User representation:
  * @property id Unique identifier of the user.
@@ -8,7 +10,7 @@ package isel.pt.cbdcg.domain
  * @property password Password of the user.
  */
 data class User(
-    val id: Int,
+    val id: UInt,
     val name: Name,
     val email: Email,
     val password: Password
