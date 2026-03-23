@@ -9,17 +9,12 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.json.Json
 
 fun main() = application {
 
     val httpClient = HttpClient(CIO) {
         install(ContentNegotiation) {
-            json(
-                Json {
-                    ignoreUnknownKeys = true
-                },
-            )
+            json()
         }
         defaultRequest {
             headers.append(HttpHeaders.Accept, ContentType.Application.Json.toString())

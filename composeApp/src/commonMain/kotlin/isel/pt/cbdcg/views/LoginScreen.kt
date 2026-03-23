@@ -1,4 +1,4 @@
-package isel.pt.cbdcg
+package isel.pt.cbdcg.views
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,7 +9,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -24,19 +23,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import isel.pt.cbdcg.ClientApi
+import isel.pt.cbdcg.domain.isEmailLengthValid
+import isel.pt.cbdcg.domain.isEmailValid
+import isel.pt.cbdcg.domain.isPasswordLengthValid
+import isel.pt.cbdcg.dto.UserOutput
 import kotlinx.coroutines.launch
 
 @Composable
-fun CreateUserScreen(clientApi: ClientApi) {
+fun LoginScreen(clientApi: ClientApi){
 
     val scope = rememberCoroutineScope()
 
-    var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
+    var emailError by remember { mutableStateOf<String?>(null) }
 
-    var statusMessage by remember { mutableStateOf("Fill the fields and press Create user.") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+
     var isSubmitting by remember { mutableStateOf(false) }
+    var loggedUser by remember { mutableStateOf<UserOutput?>(null) }
+    var submitError by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -44,87 +51,72 @@ fun CreateUserScreen(clientApi: ClientApi) {
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
+    ){
+
         Text(
-            text = "Create User",
+            text = "Login",
             style = MaterialTheme.typography.headlineMedium,
-        )
-
-        Text(
-            text = "Temporary screen for testing the createUser flow.",
-            style = MaterialTheme.typography.bodyMedium,
-        )
-
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Name") },
-            singleLine = true,
         )
 
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = {
+                email = it
+                emailError = if(!it.isEmailValid()) "Email format is invalid."
+                else if(!it.isEmailLengthValid()) "Email is too long."
+                else null
+            },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Email") },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            supportingText = {
+                if(emailError != null) { Text(emailError!!) }
+            },
+            enabled = !isSubmitting,
         )
 
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = {
+                password = it
+                passwordError = if(!it.isPasswordLengthValid()) "Password must have at least 5 characters."
+                else null
+            },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Password") },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             visualTransformation = PasswordVisualTransformation(),
+            supportingText = {
+                if(passwordError != null) { Text(passwordError!!) }
+            },
+            enabled = !isSubmitting,
         )
 
         Button(
             enabled = !isSubmitting,
             onClick = {
-                val validationMessage = when {
-                    name.isBlank() -> "Name is required."
-                    email.isBlank() -> "Email is required."
-                    password.isBlank() -> "Password is required."
-                    else -> null
-                }
-
-                if (validationMessage != null) {
-                    statusMessage = validationMessage
-                    return@Button
-                }
 
                 isSubmitting = true
-                statusMessage = "Creating user..."
+                submitError = null
+                loggedUser = null
 
                 scope.launch {
-                    when (val result = clientApi.createUser(name, email, password)) {
-                        is ApiResult.Success -> {
-                            statusMessage = "User ${result.value} created successfully."
-                            name = ""
-                            email = ""
-                            password = ""
-                        }
-                        is ApiResult.Failure -> {
-                            statusMessage = result.message
-                        }
-                    }
+
+                    val result = clientApi.login(email, password)
+                    result.onSuccess{ user -> loggedUser = user }
+                    result.onFailure { error -> submitError = error.message ?: "Could not login."  }
+
                     isSubmitting = false
                 }
             },
         ) {
-            Text(if (isSubmitting) "Creating..." else "Create user")
+            Text(if (isSubmitting) "Logging in..." else "Log In")
         }
 
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = statusMessage,
-                modifier = Modifier.padding(16.dp),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
+        displayUserOutput(submitError, loggedUser)
+
     }
+
 }
