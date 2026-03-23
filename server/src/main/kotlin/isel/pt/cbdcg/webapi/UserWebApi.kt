@@ -1,31 +1,18 @@
 package isel.pt.cbdcg.webapi
 
-import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
-import io.ktor.server.response.respondText
+import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import isel.pt.cbdcg.domain.toEmail
 import isel.pt.cbdcg.domain.toName
 import isel.pt.cbdcg.domain.toPassword
+import isel.pt.cbdcg.dto.CreateUserInput
+import isel.pt.cbdcg.dto.LoginInput
+import isel.pt.cbdcg.dto.toUserOutput
 import isel.pt.cbdcg.service.UserService
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-
-@Serializable
-data class CreateUserInput(
-    val name: String,
-    val email: String,
-    val password: String,
-)
-
-@Serializable
-data class LoginInput(
-    val email: String,
-    val password: String,
-)
 
 fun Route.userWebApi(userService: UserService) {
 
@@ -40,11 +27,7 @@ fun Route.userWebApi(userService: UserService) {
                 password = input.password.toPassword(),
             ).getOrThrow()
 
-            call.respondText(
-                text = Json.encodeToString(result.name.string),
-                contentType = ContentType.Application.Json,
-                status = HttpStatusCode.Created,
-            )
+            call.respond(HttpStatusCode.Created, result.toUserOutput())
         }
 
         post("/login") {
@@ -55,11 +38,7 @@ fun Route.userWebApi(userService: UserService) {
                 password = input.password.toPassword(),
             ).getOrThrow()
 
-            call.respondText(
-                text = Json.encodeToString(result.id),
-                contentType = ContentType.Application.Json,
-                status = HttpStatusCode.OK,
-            )
+            call.respond(HttpStatusCode.Created, result.toUserOutput())
         }
     }
 }

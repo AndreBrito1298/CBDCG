@@ -1,10 +1,9 @@
 package isel.pt.cbdcg.repository.memory
 
-import com.android.identity.cbor.Uint
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.repository.Repository
-import isel.pt.cbdcg.repository.TableError
+import isel.pt.cbdcg.error.TableError
 
 
 object TableRepositoryMem: Repository<Table> {
@@ -26,7 +25,7 @@ object TableRepositoryMem: Repository<Table> {
         if(tables.any{it.name.string == name.string})
             throw TableError.DuplicateName(name.string)
 
-        val table = Table(tables.size.toUInt(), name, owner,1)
+        val table = Table(tables.size.toUInt(), name, owner,1u)
         tables.add(table)
 
         return table

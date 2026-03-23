@@ -1,7 +1,5 @@
 package isel.pt.cbdcg.domain
 
-import com.android.identity.cbor.Uint
-
 /**
  * User representation:
  * @property id Unique identifier of the user.

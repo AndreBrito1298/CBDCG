@@ -1,15 +1,14 @@
 package isel.pt.cbdcg.repository.memory
 
-import com.android.identity.cbor.Uint
+import isel.pt.cbdcg.error.ParticipantError
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
-import isel.pt.cbdcg.repository.ParticipantError
 import isel.pt.cbdcg.repository.Repository
-import isel.pt.cbdcg.repository.TableError
+import isel.pt.cbdcg.error.TableError
 
 object ParticipantRepositoryMem: Repository<Participant> {
 
@@ -18,7 +17,7 @@ object ParticipantRepositoryMem: Repository<Participant> {
     fun joinTable(user: User, table: Table): Participant {
         val availability = userAvailability(user)
         if(availability != null)
-            throw TableError.UserUnavailable(user.name, availability)
+            throw TableError.UserUnavailable(user.name.string, availability.string)
         val role =
             if(table.checkAvailability()) Role.PLAYER
             else Role.SPECTATOR
@@ -44,7 +43,7 @@ object ParticipantRepositoryMem: Repository<Participant> {
     fun leaveTable(user: User, table: Table) {
 
         if(!findUserInTable(user, table))
-            throw TableError.UserNotFound(user.name, table.name)
+            throw TableError.UserNotFound(user.name.string, table.name.string)
 
         participants.removeIf{ it.user == user.email && it.table == table.name }
     }
@@ -58,7 +57,7 @@ object ParticipantRepositoryMem: Repository<Participant> {
     }
 
     fun findByEmail(email: Email): Participant{
-        return participants.find{ it.user == email}?: throw ParticipantError.ParticipantEmailNotFound(email)
+        return participants.find{ it.user == email}?: throw ParticipantError.ParticipantEmailNotFound(email.string)
     }
 
 

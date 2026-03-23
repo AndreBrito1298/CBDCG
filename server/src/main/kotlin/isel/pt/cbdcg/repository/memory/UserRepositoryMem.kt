@@ -1,12 +1,11 @@
 package isel.pt.cbdcg.repository.memory
 
-import com.android.identity.cbor.Uint
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.repository.Repository
-import isel.pt.cbdcg.repository.UserError
+import isel.pt.cbdcg.error.UserError
 
 object UserRepositoryMem: Repository<User> {
 

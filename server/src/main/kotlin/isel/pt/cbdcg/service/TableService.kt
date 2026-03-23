@@ -5,7 +5,7 @@ import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
-import isel.pt.cbdcg.repository.TableError
+import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
 import isel.pt.cbdcg.repository.memory.TableRepositoryMem
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
@@ -59,7 +59,7 @@ class TableService(
 
     }
 
-    fun changeRole(participant: Email, newRole: Role) = runCatching {
+    fun changeRole(participant: Email, newRole: Role): Result<Participant> = runCatching {
         val participant = participantRepo.findByEmail(participant)
         participantRepo.changeRole(participant, newRole)
     }

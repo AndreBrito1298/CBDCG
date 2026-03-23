@@ -1,8 +1,4 @@
-package isel.pt.cbdcg.repository
-
-import com.android.identity.cbor.Uint
-import isel.pt.cbdcg.domain.Email
-import isel.pt.cbdcg.domain.Name
+package isel.pt.cbdcg.error
 
 /**
  * Base Error class used to restrict every specific Error Type created.
@@ -42,11 +38,11 @@ sealed class TableError(
         name: String,
     ) : TableError("Name '$name' is already in use.")
 
-    class UserUnavailable(name: Name, table: Name) :
-        TableError("User '${name.string}' is already on table '${table.string}'.")
+    class UserUnavailable(name: String, table: String) :
+        TableError("User '$name' is already on table '$table'.")
 
-    class UserNotFound(name: Name, table: Name) :
-            TableError("User '${name.string}' is not found in table '${table.string}'.")
+    class UserNotFound(name: String, table: String) :
+            TableError("User '$name' is not found in table '$table'.")
 
     class TableDoesNotExist(table: String) :
             TableError("Table '$table' was not found.")
@@ -59,7 +55,7 @@ sealed class ParticipantError(
 
     class ParticipantIdNotFound(id: UInt) : ParticipantError("Participant $id not found.")
 
-    class ParticipantEmailNotFound(email: Email) : ParticipantError("Participant $email not found.")
+    class ParticipantEmailNotFound(email: String) : ParticipantError("Participant $email not found.")
 
     class UserNotOnTable() : ParticipantError("User is not participating in any table.")
 
