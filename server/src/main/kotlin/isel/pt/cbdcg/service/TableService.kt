@@ -63,4 +63,8 @@ class TableService(
         val participant = participantRepo.findByEmail(participant)
         participantRepo.changeRole(participant, newRole)
     }
+
+    fun getAll(): Result<List<Table>> = runCatching {
+        tableRepo.getAll()
+    }
 }

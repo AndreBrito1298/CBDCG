@@ -5,5 +5,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class JoinOrLeaveTableInput(
     val name: String,
-    val owner: String,
+    val user: String,
 )

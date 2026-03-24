@@ -23,6 +23,13 @@ fun Route.tableWebApi(tableService: TableService) {
 
         post {
 
+            val result = tableService.getAll().getOrThrow()
+            call.respond(HttpStatusCode.OK, result.map{ it.toTableOutput() })
+
+        }
+
+        post("/create") {
+
             val input = call.receive<CreateTableInput>()
 
             val result = tableService.createTable(
@@ -38,7 +45,7 @@ fun Route.tableWebApi(tableService: TableService) {
             val input = call.receive<JoinOrLeaveTableInput>()
 
             val result = tableService.joinTable(
-                user = input.owner.toEmail(),
+                user = input.user.toEmail(),
                 table = input.name.toName(),
             ).getOrThrow()
 
@@ -50,7 +57,7 @@ fun Route.tableWebApi(tableService: TableService) {
             val input = call.receive<JoinOrLeaveTableInput>()
 
             tableService.leaveTable(
-                user = input.owner.toEmail(),
+                user = input.user.toEmail(),
                 name = input.name.toName(),
             ).getOrThrow()
 

@@ -41,6 +41,10 @@ object TableRepositoryMem: Repository<Table> {
             ?: throw TableError.TableDoesNotExist(name.string)
     }
 
+    fun getAll(): List<Table> {
+        return tables.toList()
+    }
+
     // Generic Operations
 
     override fun findById(id: UInt): Table? {

@@ -24,16 +24,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.ClientApi
+import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.isEmailLengthValid
 import isel.pt.cbdcg.domain.isEmailValid
 import isel.pt.cbdcg.domain.isNameFilled
 import isel.pt.cbdcg.domain.isNameLengthValid
 import isel.pt.cbdcg.domain.isPasswordLengthValid
-import isel.pt.cbdcg.dto.UserOutput
 import kotlinx.coroutines.launch
 
 @Composable
-fun CreateUserScreen(clientApi: ClientApi) {
+fun CreateUserScreen(clientApi: ClientApi, back: () -> Unit, login: (User) -> Unit) {
 
     val scope = rememberCoroutineScope()
 
@@ -47,7 +47,6 @@ fun CreateUserScreen(clientApi: ClientApi) {
     var passwordError by remember { mutableStateOf<String?>(null) }
 
     var isSubmitting by remember { mutableStateOf(false) }
-    var createdUser by remember { mutableStateOf<UserOutput?>(null) }
     var submitError by remember { mutableStateOf<String?>(null) }
 
     Column(
@@ -57,6 +56,10 @@ fun CreateUserScreen(clientApi: ClientApi) {
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+
+        Button(onClick = back) {
+            Text("Back")
+        }
 
         Text(
             text = "Create User",
@@ -122,12 +125,11 @@ fun CreateUserScreen(clientApi: ClientApi) {
 
                 isSubmitting = true
                 submitError = null
-                createdUser = null
 
                 scope.launch {
 
                     val result = clientApi.createUser(name, email, password)
-                    result.onSuccess{ user -> createdUser = user }
+                    result.onSuccess{ user -> login(user) ; back() }
                     result.onFailure { error -> submitError = error.message ?: "Could not create user."  }
 
                     isSubmitting = false
@@ -137,7 +139,7 @@ fun CreateUserScreen(clientApi: ClientApi) {
             Text(if (isSubmitting) "Creating..." else "Create User")
         }
 
-        displayUserOutput(submitError, createdUser)
+        displayError(submitError)
 
     }
 }
