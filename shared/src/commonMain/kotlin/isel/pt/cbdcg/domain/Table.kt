@@ -1,7 +1,5 @@
 package isel.pt.cbdcg.domain
 
-import com.android.identity.cbor.Uint
-
 /**
  * Class that represents a Game Table.
  * @param id Unique identifier of a table.
@@ -13,12 +11,12 @@ data class Table(
     val id: UInt,
     val name: Name,
     val owner: UInt,
-    val players: Int
+    val players: UInt
 ) {
 
     /**
      * Function to check if there are any available 'player' seats in a table.
      */
-    fun checkAvailability(): Boolean = players < 4
+    fun checkAvailability(): Boolean = players < 4u
 
 }

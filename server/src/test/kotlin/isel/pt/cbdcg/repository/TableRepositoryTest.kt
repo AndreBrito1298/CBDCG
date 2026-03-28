@@ -1,6 +1,7 @@
 package isel.pt.cbdcg.repository
 
 
+import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password

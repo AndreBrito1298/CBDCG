@@ -1,43 +1,35 @@
 package isel.pt.cbdcg.webapi
 
-import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
-import io.ktor.server.response.respondText
+import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.toEmail
 import isel.pt.cbdcg.domain.toName
 import isel.pt.cbdcg.domain.toRole
+import isel.pt.cbdcg.dto.ChangeRoleInput
+import isel.pt.cbdcg.dto.CreateTableInput
+import isel.pt.cbdcg.dto.JoinOrLeaveTableInput
+import isel.pt.cbdcg.dto.toParticipantOutput
+import isel.pt.cbdcg.dto.toTableOutput
 import isel.pt.cbdcg.service.TableService
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-
-@Serializable
-data class CreateTableInput(
-    val name: String,
-    val owner: String,
-)
-
-@Serializable
-data class JoinOrLeaveTableInput(
-    val name: String,
-    val owner: String,
-)
-
-@Serializable
-data class ChangeRoleInput(
-    val name: String,
-    val role: String,
-)
-
 
 fun Route.tableWebApi(tableService: TableService) {
+
     route("/tables") {
+
         post {
+
+            val result = tableService.getAll().getOrThrow()
+            call.respond(HttpStatusCode.OK, result.map{ it.toTableOutput() })
+
+        }
+
+        post("/create") {
+
             val input = call.receive<CreateTableInput>()
 
             val result = tableService.createTable(
@@ -45,29 +37,27 @@ fun Route.tableWebApi(tableService: TableService) {
                 owner = input.owner.toEmail(),
             ).getOrThrow()
 
-            call.respondText(
-                text = Json.encodeToString(result.name.string),
-                contentType = ContentType.Application.Json,
-                status = HttpStatusCode.Created,
-            )
+            call.respond(HttpStatusCode.Created, result.toTableOutput())
         }
 
         post("/join") {
+
             val input = call.receive<JoinOrLeaveTableInput>()
 
-            tableService.joinTable(
-                user = input.owner.toEmail(),
+            val result = tableService.joinTable(
+                user = input.user.toEmail(),
                 table = input.name.toName(),
             ).getOrThrow()
 
-            call.response.status(HttpStatusCode.OK)
+            call.respond(HttpStatusCode.OK, result.toParticipantOutput())
         }
 
         post("/leave") {
+
             val input = call.receive<JoinOrLeaveTableInput>()
 
             tableService.leaveTable(
-                user = input.owner.toEmail(),
+                user = input.user.toEmail(),
                 name = input.name.toName(),
             ).getOrThrow()
 
@@ -75,12 +65,15 @@ fun Route.tableWebApi(tableService: TableService) {
         }
 
         post("/changeRole") {
+
             val input = call.receive<ChangeRoleInput>()
 
-            tableService.changeRole(
+            val result = tableService.changeRole(
                 participant = input.name.toEmail(),
                 newRole = input.role.toRole()?: Role.SPECTATOR,
-            )
+            ).getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.toParticipantOutput())
         }
     }
 }

@@ -2,67 +2,121 @@ package isel.pt.cbdcg
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
-import kotlinx.serialization.Serializable
+import io.ktor.http.isSuccess
+import isel.pt.cbdcg.domain.Table
+import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.dto.CreateTableInput
+import isel.pt.cbdcg.dto.CreateUserInput
+import isel.pt.cbdcg.dto.JoinOrLeaveTableInput
+import isel.pt.cbdcg.dto.LoginInput
+import isel.pt.cbdcg.dto.TableOutput
+import isel.pt.cbdcg.dto.UserOutput
+import isel.pt.cbdcg.dto.toTable
+import isel.pt.cbdcg.dto.toUser
 
 
-class ClientApi(
-    private val httpClient: HttpClient,
-) {
-    suspend fun createUser(
-        name: String,
-        email: String,
-        password: String,
-    ): ApiResult<String> =
+class ClientApi(private val httpClient: HttpClient) {
 
-        try {
+    suspend fun createUser(name: String, email: String, password: String): Result<User> = runCatching {
 
-            val response = httpClient.post("http://localhost:$SERVER_PORT/users") {
-                contentType(ContentType.Application.Json)
-                setBody(
-                    CreateUserRequest(
-                        name = name,
-                        email = email,
-                        password = password,
-                    ),
+        val response = httpClient.post("http://localhost:$SERVER_PORT/users") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateUserInput(
+                    name = name,
+                    email = email,
+                    password = password,
                 )
-            }
-
-            ApiResult.Success(response.body())
-
-        } catch (e: ClientRequestException) {
-
-            val message = try {
-                e.response.body<HttpErrorResponse>().message
-            } catch (_: Throwable) {
-                "Request failed with status ${e.response.status.value}."
-            }
-
-            ApiResult.Failure(message)
-
-        } catch (_: Throwable) {
-            ApiResult.Failure("Could not reach the server.")
+            )
         }
-}
 
-// Body format defined in the DTO.
-@Serializable
-data class CreateUserRequest(
-    val name: String,
-    val email: String,
-    val password: String,
-)
+        if (response.status.isSuccess()) {
+            val userOutput = response.body<UserOutput>()
+            userOutput.toUser()
+        } else {
+            throw IllegalStateException(response.bodyAsText())
+        }
 
-@Serializable
-data class HttpErrorResponse(
-    val message: String,
-)
+    }
 
-sealed interface ApiResult<out T> {
-    data class Success<T>(val value: T) : ApiResult<T>
-    data class Failure(val message: String) : ApiResult<Nothing>
+    suspend fun login(email: String, password: String): Result<User> = runCatching {
+
+        val response = httpClient.post("http://localhost:$SERVER_PORT/users/login") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                LoginInput(
+                    email = email,
+                    password = password,
+                )
+            )
+        }
+
+        if (response.status.isSuccess()) {
+            val userOutput = response.body<UserOutput>()
+            userOutput.toUser()
+        } else {
+            throw IllegalStateException(response.bodyAsText())
+        }
+
+    }
+
+    suspend fun getTables(): Result<List<Table>> = runCatching {
+
+        val response = httpClient.post("http://localhost:$SERVER_PORT/tables") {
+            contentType(ContentType.Application.Json)
+        }
+
+        if (response.status.isSuccess()) {
+            val tablesOutputList = response.body<List<TableOutput>>()
+            tablesOutputList.map{ it.toTable() }
+        } else {
+            throw IllegalStateException(response.bodyAsText())
+        }
+    }
+
+    suspend fun createTable(name: String, owner: User): Result<Table> = runCatching {
+
+        val response = httpClient.post("http://localhost:$SERVER_PORT/tables/create") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateTableInput(
+                    name = name,
+                    owner = owner.email.string
+                )
+            )
+        }
+
+        if (response.status.isSuccess()) {
+            val tableOutput = response.body<TableOutput>()
+            tableOutput.toTable()
+        } else {
+            throw IllegalStateException(response.bodyAsText())
+        }
+    }
+
+    suspend fun joinTable(name: String, user: User): Result<Table> = runCatching {
+
+        val response = httpClient.post("http://localhost:$SERVER_PORT/tables/join") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                JoinOrLeaveTableInput(
+                    name = name,
+                    user = user.email.string
+                )
+            )
+        }
+
+        if (response.status.isSuccess()) {
+            val tableOutput = response.body<TableOutput>()
+            tableOutput.toTable()
+        } else {
+            throw IllegalStateException(response.bodyAsText())
+        }
+
+    }
 }
