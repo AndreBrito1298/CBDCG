@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ktor)
+
     application
 }
 
@@ -12,10 +13,14 @@ application {
 
     val isDevelopment: Boolean = project.ext.has("development")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
+
 }
 
 dependencies {
     implementation(projects.shared)
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.h2)
     implementation(libs.logback)
     implementation(libs.kotlinx.serializationJson)
     implementation(libs.ktor.serializationKotlinxJson)
