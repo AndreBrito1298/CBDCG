@@ -60,6 +60,14 @@ object ParticipantRepositoryMem: Repository<Participant> {
         return participants.find{ it.user == email}?: throw ParticipantError.ParticipantEmailNotFound(email.string)
     }
 
+    fun findByTable(table: Name): List<Participant> {
+        return participants.filter { it.table == table }
+    }
+
+    fun deleteByTable(table: Name) {
+        participants.removeIf { it.table == table }
+    }
+
 
     // Generic Operations
 

@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views
+package isel.pt.cbdcg.views.lobby
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,13 +18,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.ClientApi
+import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.views.utils.displayError
 
 @Composable
-fun SearchTablesScreen(clientApi: ClientApi, user: User, back: () -> Unit) {
+fun SearchTablesScreen(clientApi: ClientApi, user: User, back: () -> Unit, join: (Participant) -> Unit) {
 
     var tables by remember { mutableStateOf<List<Table>>(emptyList()) }
+
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var refresh by remember { mutableStateOf(false) }
@@ -67,7 +70,7 @@ fun SearchTablesScreen(clientApi: ClientApi, user: User, back: () -> Unit) {
 
             else -> {
                 tables.forEach { table ->
-                    TableCard(clientApi, table, user)
+                    TableCard(clientApi, table, user) { participant -> join(participant) }
                 }
             }
         }
@@ -75,8 +78,8 @@ fun SearchTablesScreen(clientApi: ClientApi, user: User, back: () -> Unit) {
         CreateTableCard(
             clientApi,
             user,
-            { refresh = true },
-            { error = it }
+            { error = it },
+            { table -> join(table) }
         )
 
         displayError(error)

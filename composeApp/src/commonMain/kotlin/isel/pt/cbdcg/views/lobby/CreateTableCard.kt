@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views
+package isel.pt.cbdcg.views.lobby
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,13 +20,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.ClientApi
+import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.isNameFilled
 import isel.pt.cbdcg.domain.isNameLengthValid
 import kotlinx.coroutines.launch
 
 @Composable
-fun CreateTableCard(clientApi: ClientApi, user: User, refresh: () -> Unit, error: (String?) -> Unit) {
+fun CreateTableCard(
+    clientApi: ClientApi,
+    user: User,
+    error: (String?) -> Unit,
+    join: (Participant) -> Unit
+) {
 
     val scope = rememberCoroutineScope()
 
@@ -79,9 +85,12 @@ fun CreateTableCard(clientApi: ClientApi, user: User, refresh: () -> Unit, error
                     isSubmitting = true
 
                     scope.launch{
-                        val result = clientApi.createTable(name, user)
+                        val result = clientApi.createTable(name, user.email.string)
 
-                        result.onSuccess{ clientApi.joinTable(name, user); name = ""; refresh() }
+                        result.onSuccess{ participant ->
+                            join(participant)
+                            name = ""
+                        }
                         result.onFailure{ error(it.message ?: "Could not login.") }
 
                         isSubmitting = false

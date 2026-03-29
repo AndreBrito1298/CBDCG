@@ -45,6 +45,14 @@ object TableRepositoryMem: Repository<Table> {
         return tables.toList()
     }
 
+    fun updatePlayers(name: Name, players: UInt): Table {
+        val current = findByName(name)
+        val updated = current.copy(players = players)
+        tables.removeIf { it.id == current.id }
+        tables.add(updated)
+        return updated
+    }
+
     // Generic Operations
 
     override fun findById(id: UInt): Table? {

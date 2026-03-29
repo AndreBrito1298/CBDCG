@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views
+package isel.pt.cbdcg.views.startMenu
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,13 +27,19 @@ import isel.pt.cbdcg.ClientApi
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.isEmailLengthValid
 import isel.pt.cbdcg.domain.isEmailValid
+import isel.pt.cbdcg.domain.isNameFilled
+import isel.pt.cbdcg.domain.isNameLengthValid
 import isel.pt.cbdcg.domain.isPasswordLengthValid
+import isel.pt.cbdcg.views.utils.displayError
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(clientApi: ClientApi, back: () -> Unit, login: (User) -> Unit) {
+fun CreateUserScreen(clientApi: ClientApi, back: () -> Unit, login: (User) -> Unit) {
 
     val scope = rememberCoroutineScope()
+
+    var name by rememberSaveable { mutableStateOf("") }
+    var nameError by remember { mutableStateOf<String?>(null) }
 
     var email by rememberSaveable { mutableStateOf("") }
     var emailError by remember { mutableStateOf<String?>(null) }
@@ -50,15 +56,32 @@ fun LoginScreen(clientApi: ClientApi, back: () -> Unit, login: (User) -> Unit) {
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-    ){
+    ) {
 
         Button(onClick = back) {
             Text("Back")
         }
 
         Text(
-            text = "Login",
+            text = "Create User",
             style = MaterialTheme.typography.headlineMedium,
+        )
+
+        OutlinedTextField(
+            value = name,
+            onValueChange = {
+                name = it
+                nameError = if(!it.isNameFilled()) "Name is empty."
+                            else if(!it.isNameLengthValid()) "Name cannot have more than 20 characters."
+                            else null
+            },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Name") },
+            singleLine = true,
+            supportingText = {
+                if(nameError != null) { Text(nameError!!) }
+            },
+            enabled = !isSubmitting,
         )
 
         OutlinedTextField(
@@ -66,8 +89,8 @@ fun LoginScreen(clientApi: ClientApi, back: () -> Unit, login: (User) -> Unit) {
             onValueChange = {
                 email = it
                 emailError = if(!it.isEmailValid()) "Email format is invalid."
-                else if(!it.isEmailLengthValid()) "Email is too long."
-                else null
+                             else if(!it.isEmailLengthValid()) "Email is too long."
+                             else null
             },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Email") },
@@ -84,7 +107,7 @@ fun LoginScreen(clientApi: ClientApi, back: () -> Unit, login: (User) -> Unit) {
             onValueChange = {
                 password = it
                 passwordError = if(!it.isPasswordLengthValid()) "Password must have at least 5 characters."
-                else null
+                                else null
             },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Password") },
@@ -106,19 +129,49 @@ fun LoginScreen(clientApi: ClientApi, back: () -> Unit, login: (User) -> Unit) {
 
                 scope.launch {
 
-                    val result = clientApi.login(email, password)
-                    result.onSuccess{ user -> login(user); back() }
-                    result.onFailure { error -> submitError = error.message ?: "Could not login."  }
+                    val result = clientApi.createUser(name, email, password)
+                    result.onSuccess{ user -> login(user) }
+                    result.onFailure { error -> submitError = error.message ?: "Could not create user."  }
 
                     isSubmitting = false
                 }
             },
         ) {
-            Text(if (isSubmitting) "Logging in..." else "Log In")
+            Text(if (isSubmitting) "Creating..." else "Create User")
         }
 
         displayError(submitError)
 
     }
+}
+
+
+/*
+@Composable
+fun ValidatedTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    error: String?,
+    enabled: Boolean,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+){
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text(label) },
+        singleLine = true,
+        supportingText = {
+            if(error != null) { Text(error) }
+        },
+        isError = error != null,
+        enabled = enabled,
+        keyboardOptions = keyboardOptions,
+        visualTransformation = visualTransformation,
+    )
 
 }
+*/

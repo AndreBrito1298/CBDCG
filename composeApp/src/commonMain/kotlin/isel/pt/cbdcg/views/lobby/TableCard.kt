@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views
+package isel.pt.cbdcg.views.lobby
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.ClientApi
+import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
 import kotlinx.coroutines.launch
@@ -24,6 +25,7 @@ fun TableCard(
     clientApi: ClientApi,
     table: Table,
     user: User,
+    join: (Participant) -> Unit
 ) {
 
     val scope = rememberCoroutineScope()
@@ -56,7 +58,12 @@ fun TableCard(
                 horizontalAlignment = Alignment.End,
             ) {
                 Button(
-                    onClick = { scope.launch{ clientApi.joinTable(table.name.string, user) } },
+                    onClick = {
+                        scope.launch{
+                            val participant = clientApi.joinTable(table.name.string, user.email.string)
+                            participant.onSuccess { join(it) }
+                        }
+                    },
                 ) {
                     Text("Join")
                 }
