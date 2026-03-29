@@ -4,6 +4,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import isel.pt.cbdcg.domain.Role
@@ -20,9 +21,12 @@ import isel.pt.cbdcg.service.TableService
 fun Route.tableWebApi(tableService: TableService) {
 
     route("/tables") {
-        post {
+
+        get {
+
             val result = tableService.getAll().getOrThrow()
             call.respond(HttpStatusCode.OK, result.map{ it.toTableOutput() })
+
         }
 
         post("/create") {
@@ -59,6 +63,18 @@ fun Route.tableWebApi(tableService: TableService) {
             ).getOrThrow()
 
             call.response.status(HttpStatusCode.OK)
+        }
+
+        get("/participants") {
+
+            val input = call.request.queryParameters["name"]
+                ?: error("Request query parameter 'name' missing")
+
+            val result = tableService.getParticipants(
+                name = input.toName(),
+            ).getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.map { it.toParticipantOutput() })
         }
 
         post("/changeRole") {

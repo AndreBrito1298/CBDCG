@@ -4,7 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import io.ktor.client.HttpClient
-import isel.pt.cbdcg.views.MainMenuScreen
+import isel.pt.cbdcg.views.ScreenState
 
 @Composable
 fun App(client: HttpClient) {
@@ -12,6 +12,6 @@ fun App(client: HttpClient) {
     val clientApi = remember(client) { ClientApi(client) }
 
     MaterialTheme {
-        MainMenuScreen(clientApi)
+        ScreenState(clientApi)
     }
 }

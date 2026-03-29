@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views
+package isel.pt.cbdcg.views.utils
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding

@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.repository.memory
 
+import isel.pt.cbdcg.error.ParticipantError
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Participant
@@ -7,6 +8,7 @@ import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.repository.Repository
+import isel.pt.cbdcg.error.TableError
 
 object ParticipantRepositoryMem: Repository<Participant> {
 
@@ -41,6 +43,10 @@ object ParticipantRepositoryMem: Repository<Participant> {
      * Removes a user from a table.
      */
     fun leaveTable(user: User, table: Table) {
+
+        if(!findUserInTable(user, table))
+            throw TableError.UserNotFound(user.name.string, table.name.string)
+
         participants.removeIf{ it.user == user.email && it.table == table.name }
     }
 
@@ -65,6 +71,15 @@ object ParticipantRepositoryMem: Repository<Participant> {
     fun findByEmail(email: Email): Participant? {
         return participants.find{ it.user == email}
     }
+
+    fun findByTable(table: Name): List<Participant> {
+        return participants.filter { it.table == table }
+    }
+
+    fun deleteByTable(table: Name) {
+        participants.removeIf { it.table == table }
+    }
+
 
     // Generic Operations
 
