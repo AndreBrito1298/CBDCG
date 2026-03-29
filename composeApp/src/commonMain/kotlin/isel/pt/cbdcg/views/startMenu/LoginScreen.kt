@@ -24,7 +24,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.ClientApi
-import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.isEmailLengthValid
 import isel.pt.cbdcg.domain.isEmailValid
 import isel.pt.cbdcg.domain.isPasswordLengthValid
@@ -32,7 +32,7 @@ import isel.pt.cbdcg.views.utils.displayError
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(clientApi: ClientApi, back: () -> Unit, login: (User) -> Unit) {
+fun LoginScreen(clientApi: ClientApi, back: () -> Unit, login: (AuthUser) -> Unit) {
 
     val scope = rememberCoroutineScope()
 

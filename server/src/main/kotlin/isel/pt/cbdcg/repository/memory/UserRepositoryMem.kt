@@ -33,7 +33,7 @@ object UserRepositoryMem: Repository<User> {
     }
 
     fun logout(email: Email) {
-        authenticatedUsers.removeIf{ it.userEmail == email }
+        authenticatedUsers.removeIf{ it.email == email }
     }
 
     /**

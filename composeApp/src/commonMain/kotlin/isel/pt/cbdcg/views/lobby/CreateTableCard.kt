@@ -20,8 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.ClientApi
+import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Participant
-import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.isNameFilled
 import isel.pt.cbdcg.domain.isNameLengthValid
 import kotlinx.coroutines.launch
@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun CreateTableCard(
     clientApi: ClientApi,
-    user: User,
+    user: AuthUser,
     error: (String?) -> Unit,
     join: (Participant) -> Unit
 ) {

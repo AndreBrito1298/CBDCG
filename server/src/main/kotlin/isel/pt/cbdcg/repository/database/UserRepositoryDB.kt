@@ -19,7 +19,7 @@ object UserRepositoryDB: Repository<User> {
         return transaction {
             AuthUsers.insert {
                 it[token] = authenticatedUser.token
-                it[userEmail] = authenticatedUser.userEmail.toString()
+                it[userEmail] = authenticatedUser.email.toString()
             }
         }
     }
@@ -80,6 +80,7 @@ object UserRepositoryDB: Repository<User> {
 
     private fun ResultRow.toAuthUser() = AuthUser(
         token = this[AuthUsers.token],
-        userEmail = Email(this[AuthUsers.userEmail])
+        email = Email(this[AuthUsers.userEmail]),
+        name = Name(this[Users.name])
     )
 }

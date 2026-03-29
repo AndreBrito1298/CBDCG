@@ -7,7 +7,6 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
-import io.ktor.server.auth.OAuth2RedirectError
 import io.ktor.server.auth.OAuthServerSettings
 import io.ktor.server.auth.oauth
 import io.ktor.server.plugins.BadRequestException
@@ -15,16 +14,20 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
 import io.ktor.util.collections.ConcurrentMap
-import isel.pt.cbdcg.config.OAuthConfig
 import isel.pt.cbdcg.error.Error
 import isel.pt.cbdcg.error.ParticipantError
 import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.error.UserError
+import kotlinx.serialization.json.Json
 
 fun Application.installPlugins(httpclient: HttpClient) {
 
     install(ContentNegotiation) {
-        json()
+        json(
+            Json{
+                ignoreUnknownKeys = true
+            }
+        )
     }
 
     val redirects = ConcurrentMap<String, String>()

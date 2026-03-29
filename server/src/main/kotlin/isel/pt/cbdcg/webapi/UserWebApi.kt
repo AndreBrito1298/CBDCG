@@ -22,7 +22,6 @@ import isel.pt.cbdcg.dto.CreateUserInput
 import isel.pt.cbdcg.dto.GoogleUserInfo
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.toAuthUserOutput
-import isel.pt.cbdcg.dto.toUserOutput
 import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.service.UserService
 
@@ -66,7 +65,7 @@ fun Route.userWebApi(userService: UserService, httpClient: HttpClient) {
                     password = input.password.toPassword(),
                 ).getOrThrow()
 
-                call.respond(HttpStatusCode.Created, result.toUserOutput())
+                call.respond(HttpStatusCode.Created, result.toAuthUserOutput())
             }
 
             post("/login") {

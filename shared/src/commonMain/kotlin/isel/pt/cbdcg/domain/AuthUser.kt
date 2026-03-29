@@ -1,6 +1,7 @@
 package isel.pt.cbdcg.domain
 
 class AuthUser (
-    val userEmail: Email,
+    val email: Email,
+    val name: Name,
     val token: String,
 )

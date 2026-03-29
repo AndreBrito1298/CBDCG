@@ -38,7 +38,7 @@ fun Route.tableWebApi(tableService: TableService) {
                 owner = input.owner.toEmail(),
             ).getOrThrow()
 
-            call.respond(HttpStatusCode.Created, result.toTableOutput())
+            call.respond(HttpStatusCode.Created, result.toParticipantOutput())
         }
 
         post("/join") {

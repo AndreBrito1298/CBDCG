@@ -9,9 +9,10 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Table
-import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.dto.AuthUserOutput
 import isel.pt.cbdcg.dto.CreateTableInput
 import isel.pt.cbdcg.dto.CreateUserInput
 import isel.pt.cbdcg.dto.JoinOrLeaveTableInput
@@ -19,17 +20,16 @@ import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.ChangeRoleInput
 import isel.pt.cbdcg.dto.ParticipantOutput
 import isel.pt.cbdcg.dto.TableOutput
-import isel.pt.cbdcg.dto.UserOutput
+import isel.pt.cbdcg.dto.toAuthUser
 import isel.pt.cbdcg.dto.toParticipant
 import isel.pt.cbdcg.dto.toTable
-import isel.pt.cbdcg.dto.toUser
 
 
 class ClientApi(private val httpClient: HttpClient) {
 
-    suspend fun createUser(name: String, email: String, password: String): Result<User> = runCatching {
+    suspend fun createUser(name: String, email: String, password: String): Result<AuthUser> = runCatching {
 
-        val response = httpClient.post("http://localhost:$SERVER_PORT/users") {
+        val response = httpClient.post("http://localhost:$SERVER_PORT/auth/users") {
             contentType(ContentType.Application.Json)
             setBody(
                 CreateUserInput(
@@ -41,29 +41,29 @@ class ClientApi(private val httpClient: HttpClient) {
         }
 
         if (response.status.isSuccess()) {
-            val userOutput = response.body<UserOutput>()
-            userOutput.toUser()
+            val userOutput = response.body<AuthUserOutput>()
+            userOutput.toAuthUser()
         } else {
             throw IllegalStateException(response.bodyAsText())
         }
 
     }
 
-    suspend fun login(email: String, password: String): Result<User> = runCatching {
+    suspend fun login(email: String, password: String): Result<AuthUser> = runCatching {
 
-        val response = httpClient.post("http://localhost:$SERVER_PORT/users/login") {
+        val response = httpClient.post("http://localhost:$SERVER_PORT/auth/users/login") {
             contentType(ContentType.Application.Json)
             setBody(
                 LoginInput(
                     email = email,
-                    password = password,
+                    password = password
                 )
             )
         }
 
         if (response.status.isSuccess()) {
-            val userOutput = response.body<UserOutput>()
-            userOutput.toUser()
+            val userOutput = response.body<AuthUserOutput>()
+            userOutput.toAuthUser()
         } else {
             throw IllegalStateException(response.bodyAsText())
         }

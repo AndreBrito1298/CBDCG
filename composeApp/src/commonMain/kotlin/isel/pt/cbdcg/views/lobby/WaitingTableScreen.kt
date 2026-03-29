@@ -23,14 +23,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.ClientApi
+import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Role
-import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.views.utils.displayError
 import kotlinx.coroutines.launch
 
 @Composable
-fun WaitingTableScreen(clientApi: ClientApi, user: User, participant: Participant, exit: () -> Unit){
+fun WaitingTableScreen(clientApi: ClientApi, user: AuthUser, participant: Participant, exit: () -> Unit){
 
     val scope = rememberCoroutineScope()
 

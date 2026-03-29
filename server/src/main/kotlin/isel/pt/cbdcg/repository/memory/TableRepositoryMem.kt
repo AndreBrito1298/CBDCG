@@ -46,7 +46,7 @@ object TableRepositoryMem: Repository<Table> {
 
     fun updatePlayers(name: Name, players: UInt): Table {
         val current = findByName(name)
-        val updated = current.copy(players = players)
+        val updated = current!!.copy(players = players)
         tables.removeIf { it.id == current.id }
         tables.add(updated)
         return updated

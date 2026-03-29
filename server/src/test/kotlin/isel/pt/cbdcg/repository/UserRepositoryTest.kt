@@ -1,6 +1,5 @@
 package isel.pt.cbdcg.repository
 
-import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
@@ -9,7 +8,6 @@ import isel.pt.cbdcg.service.UserService
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 class UserRepositoryMemTest {
@@ -60,7 +58,7 @@ class UserRepositoryMemTest {
 
         val loggedInUser = userService.login(email, password).getOrNull()
         assert(loggedInUser != null)
-        assertEquals(loggedInUser!!.userEmail, user.getOrNull()!!.email)
+        assertEquals(loggedInUser!!.email, user.getOrNull()!!.email)
     }
 
 

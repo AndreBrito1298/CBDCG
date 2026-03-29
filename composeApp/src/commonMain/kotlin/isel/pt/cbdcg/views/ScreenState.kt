@@ -3,8 +3,8 @@ package isel.pt.cbdcg.views
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import isel.pt.cbdcg.ClientApi
+import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Participant
-import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.views.lobby.SearchTablesScreen
 import isel.pt.cbdcg.views.lobby.WaitingTableScreen
 import isel.pt.cbdcg.views.startMenu.CreateUserScreen
@@ -15,8 +15,8 @@ sealed interface PossibleStates {
     data object Idle: PossibleStates
     data object Login: PossibleStates
     data object Create: PossibleStates
-    data class SearchTables(val auth: User): PossibleStates
-    data class WaitingTable(val auth: User, val participant: Participant): PossibleStates
+    data class SearchTables(val auth: AuthUser): PossibleStates
+    data class WaitingTable(val auth: AuthUser, val participant: Participant): PossibleStates
 }
 
 @Composable

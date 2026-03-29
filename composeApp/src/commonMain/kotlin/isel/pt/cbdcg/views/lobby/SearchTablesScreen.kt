@@ -18,13 +18,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.ClientApi
+import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Table
-import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.views.utils.displayError
 
 @Composable
-fun SearchTablesScreen(clientApi: ClientApi, user: User, back: () -> Unit, join: (Participant) -> Unit) {
+fun SearchTablesScreen(clientApi: ClientApi, user: AuthUser, back: () -> Unit, join: (Participant) -> Unit) {
 
     var tables by remember { mutableStateOf<List<Table>>(emptyList()) }
 

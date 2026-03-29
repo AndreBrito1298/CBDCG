@@ -7,7 +7,6 @@ import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
-import org.h2.command.Token
 import java.util.UUID
 
 class UserService(
@@ -20,11 +19,16 @@ class UserService(
      * @param password The password of the user.
      * @throws UserError.DuplicateEmail The users email must be unique.
      */
-    fun createUser(name: Name, email: Email, password: Password): Result<User> = runCatching {
+    fun createUser(name: Name, email: Email, password: Password): Result<AuthUser> = runCatching {
         if(userRepo.findByEmail(email) != null)
             throw UserError.DuplicateEmail(email.string)
 
         userRepo.createUser(name, email, password)
+
+        val token = UUID.randomUUID().toString()
+        val authUser = AuthUser(email, name, token)
+        userRepo.login(authUser)
+        authUser
     }
 
     /**
@@ -40,7 +44,7 @@ class UserService(
         if(user.password.string != password.string)
             throw UserError.PasswordMismatch()
         val token = UUID.randomUUID().toString()
-        val authUser = AuthUser(user.email, token)
+        val authUser = AuthUser(user.email, user.name, token)
         userRepo.login(authUser)
         authUser
     }
@@ -72,7 +76,7 @@ class UserService(
             val oauthPassword = Password(UUID.randomUUID().toString())
             userRepo.createUser(name, email, oauthPassword)
         }
-        val authUser = AuthUser(user.email, token)
+        val authUser = AuthUser(user.email, user.name, token)
         userRepo.login(authUser)
         authUser
     }

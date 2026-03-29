@@ -15,16 +15,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.ClientApi
+import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Table
-import isel.pt.cbdcg.domain.User
 import kotlinx.coroutines.launch
 
 @Composable
 fun TableCard(
     clientApi: ClientApi,
     table: Table,
-    user: User,
+    user: AuthUser,
     join: (Participant) -> Unit
 ) {
 
