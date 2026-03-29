@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.repository.database
 
+import isel.pt.cbdcg.configs.Tables
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.repository.Repository
@@ -31,12 +32,26 @@ object TableRepositoryDB: Repository<Table> {
         }
     }
 
+    fun addPlayerToTable(table: Table) {
+        transaction {
+            Tables.update({ Tables.id eq table.id }) {
+                it[Tables.players] = table.players+1.toUInt()
+            }
+        }
+    }
+
+    fun getAllTables(): List<Table> {
+        return transaction {
+            Tables.selectAll().map { it.toTable() }
+        }
+    }
+
     override fun save(element: Table) {
         transaction {
             Tables.insert {
                 it[name] = element.name.string
                 it[owner] = element.owner
-                it[capacity] = element.players.toUInt()
+                it[players] = element.players
             }
         }
     }
@@ -60,6 +75,6 @@ object TableRepositoryDB: Repository<Table> {
         id = this[Tables.id],
         name = Name(this[Tables.name]),
         owner = this[Tables.owner],
-        players = this[Tables.capacity].toInt()
+        players = this[Tables.players]
     )
 }

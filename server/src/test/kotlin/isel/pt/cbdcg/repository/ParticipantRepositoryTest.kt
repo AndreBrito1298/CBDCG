@@ -4,6 +4,7 @@ import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
+import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
 import isel.pt.cbdcg.repository.memory.TableRepositoryMem
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
@@ -63,7 +64,7 @@ class ParticipantRepositoryTest {
 
         val user = userRepo.users.first()
         val table = tableRepo.tables.first()
-        participantRepo.joinTable(user, table)
+        participantRepo.joinTable(user, table, Role.PLAYER)
 
         assertNotNull(participantRepo.userAvailability(user))
     }
@@ -74,22 +75,8 @@ class ParticipantRepositoryTest {
         val user = userRepo.users.first()
         val table = tableRepo.tables.first()
 
-        participantRepo.joinTable(user, table)
+        participantRepo.joinTable(user, table, Role.PLAYER)
         assert(participantRepo.participants.size == 1)
-    }
-
-    @Test
-    fun `user cannot join another table`(){
-
-        val user = userRepo.users.first()
-        val table = tableRepo.tables.first()
-        participantRepo.joinTable(user, table)
-
-        val otherTable = tableRepo.tables.last()
-
-        assertFailsWith<TableError.UserUnavailable> {
-            participantRepo.joinTable(user, otherTable)
-        }
     }
 
     @Test
@@ -97,7 +84,7 @@ class ParticipantRepositoryTest {
 
         val user = userRepo.users.first()
         val table = tableRepo.tables.first()
-        participantRepo.joinTable(user, table)
+        participantRepo.joinTable(user, table, Role.PLAYER)
 
         assert(participantRepo.findUserInTable(user, table))
 
@@ -118,21 +105,12 @@ class ParticipantRepositoryTest {
 
         val user = userRepo.users.first()
         val table = tableRepo.tables.first()
-        participantRepo.joinTable(user, table)
+        participantRepo.joinTable(user, table, Role.PLAYER)
 
         participantRepo.leaveTable(user, table)
         assert(participantRepo.participants.isEmpty())
     }
 
-    @Test
-    fun `user can't leave a table when he is not in it`(){
 
-        val user = userRepo.users.first()
-        val table = tableRepo.tables.first()
-
-        assertFailsWith<TableError.UserNotFound>{
-            participantRepo.leaveTable(user, table)
-        }
-    }
 
 }

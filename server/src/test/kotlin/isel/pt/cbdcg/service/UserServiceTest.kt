@@ -3,10 +3,12 @@ package isel.pt.cbdcg.service
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
+import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class UserServiceTest {
 
@@ -100,6 +102,42 @@ class UserServiceTest {
         val login = userService.login(email, newPassword)
         assert(login.isFailure)
         assertEquals(login.exceptionOrNull()?.message, "Passwords do not match.")
+
+    }
+
+    @Test
+    fun `user cannot login, wrong password`() {
+        val name = Name("testName")
+        val email = Email("testEmail@gmail.com")
+        val password = Password("testPassword")
+        userRepo.createUser(name, email, password)
+
+        assertFailsWith<UserError.PasswordMismatch> {
+            userService.login(email, Password("randomPassword")).getOrThrow()
+        }
+    }
+
+
+    @Test
+    fun `user cannot login, because email was not found`() {
+        assertFailsWith<UserError.EmailNotFound> {
+            userService.login(Email("randomEmail@gmail.com"), Password("randomPassword")).getOrThrow()
+        }
+    }
+
+    @Test
+    fun `create user with duplicate email`() {
+        val name = Name("testName")
+        val email = Email("testEmail@gmail.com")
+        val password = Password("testPassword")
+        userService.createUser(name, email, password)
+
+        assertFailsWith<UserError.DuplicateEmail> {
+            userService.createUser(
+                Name("randomName"),
+                email,
+                Password("randomPassword")).getOrThrow()
+        }
 
     }
 

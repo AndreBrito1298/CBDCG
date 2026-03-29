@@ -19,9 +19,16 @@ object TableRepositoryMem: Repository<Table> {
      * @return The Table created.
      */
     fun createTable(name: Name, owner: UInt): Table {
-        val table = Table(tables.size.toUInt(), name, owner, 1)
+        val table = Table(tables.size.toUInt(), name, owner, 1.toUInt())
         tables.add(table)
         return table
+    }
+
+    fun addPlayerToTable(table: Table): UInt {
+        tables.remove(table)
+        val newTable = table.copy(players = table.players+1.toUInt())
+        tables.add(newTable)
+        return newTable.players
     }
 
     /**
@@ -31,6 +38,10 @@ object TableRepositoryMem: Repository<Table> {
      */
     fun findByName(name: Name): Table? {
         return tables.find{ it.name.string == name.string }
+    }
+
+    fun getAllTables(): List<Table> {
+        return tables
     }
 
     // Generic Operations

@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.repository.memory
 
+import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
@@ -12,6 +13,7 @@ object UserRepositoryMem: Repository<User> {
      * List of Users registered.
      */
     val users = mutableListOf<User>()
+    val authenticatedUsers = mutableListOf<AuthUser>()
 
     /**
      * Function to create a user in the 'users' list.
@@ -24,6 +26,14 @@ object UserRepositoryMem: Repository<User> {
         val user = User(users.size.toUInt(), name, email, password)
         users.add(user)
         return user
+    }
+
+    fun login(authUser: AuthUser) {
+        authenticatedUsers.add(authUser)
+    }
+
+    fun logout(email: Email) {
+        authenticatedUsers.removeIf{ it.userEmail == email }
     }
 
     /**

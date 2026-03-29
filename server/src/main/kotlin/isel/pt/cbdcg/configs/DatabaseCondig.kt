@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.repository.database
+package isel.pt.cbdcg.configs
 
 import org.jetbrains.exposed.sql.Table
 
@@ -28,6 +28,13 @@ object Users : Table("users") {
     override val primaryKey = PrimaryKey(id)
 }
 
+object AuthUsers : Table("authUsers") {
+    val token = varchar("token", 255)
+    val userEmail = varchar("user_email", MAX_EMAIL_LENGTH).references(Users.email).uniqueIndex()
+
+    override val primaryKey = PrimaryKey(userEmail)
+}
+
 /**
  * Exposed table configuration for Game Tables.
  */
@@ -35,7 +42,7 @@ object Tables : Table("tables") {
     val id = uinteger("id").autoIncrement()
     val name = varchar("name", MAX_NAME_LENGTH).uniqueIndex()
     val owner = uinteger("owner").references(Users.id)
-    val capacity = uinteger("capacity")
+    val players = uinteger("capacity")
 
     override val primaryKey = PrimaryKey(id)
 }
@@ -47,6 +54,5 @@ object Participants : Table("participants") {
     val userEmail = varchar("user_email", MAX_EMAIL_LENGTH).references(Users.email)
     val lobbyName = varchar("table_name", MAX_NAME_LENGTH).references(Tables.name)
     val role = varchar("role", 10)
-
     override val primaryKey = PrimaryKey(userEmail, lobbyName)
 }

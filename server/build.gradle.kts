@@ -17,6 +17,11 @@ application {
 }
 
 dependencies {
+    implementation("io.ktor:ktor-server-auth:${version}")
+    implementation("io.ktor:ktor-server-auth-jwt:${version}")
+    implementation("io.ktor:ktor-client-core:${version}")
+    implementation("io.ktor:ktor-client-cio:${version}")
+    implementation("io.ktor:ktor-client-content-negotiation:${version}")
     implementation(projects.shared)
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)

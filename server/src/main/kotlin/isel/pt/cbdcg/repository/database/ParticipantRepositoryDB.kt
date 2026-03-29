@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.repository.database
 
+import isel.pt.cbdcg.configs.Participants
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Participant
@@ -8,7 +9,6 @@ import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.toRole
 import isel.pt.cbdcg.repository.Repository
-import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem.participants
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.selectAll

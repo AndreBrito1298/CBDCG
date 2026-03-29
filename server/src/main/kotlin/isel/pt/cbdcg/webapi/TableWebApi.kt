@@ -20,12 +20,9 @@ import isel.pt.cbdcg.service.TableService
 fun Route.tableWebApi(tableService: TableService) {
 
     route("/tables") {
-
         post {
-
             val result = tableService.getAll().getOrThrow()
             call.respond(HttpStatusCode.OK, result.map{ it.toTableOutput() })
-
         }
 
         post("/create") {

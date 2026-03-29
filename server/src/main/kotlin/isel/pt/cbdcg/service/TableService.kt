@@ -5,17 +5,24 @@ import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
-import isel.pt.cbdcg.repository.TableError
-import isel.pt.cbdcg.repository.UserError
+import isel.pt.cbdcg.error.ParticipantError
+import isel.pt.cbdcg.error.TableError
+import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
 import isel.pt.cbdcg.repository.memory.TableRepositoryMem
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
+import kotlin.runCatching
 
 class TableService(
     private val userRepo: UserRepositoryMem,
     private val tableRepo: TableRepositoryMem,
     private val participantRepo: ParticipantRepositoryMem
 ) {
+
+
+    fun getAll(): Result<List<Table>> = runCatching {
+        tableRepo.getAllTables()
+    }
 
     /**
      * Function to create a Table.
@@ -32,7 +39,7 @@ class TableService(
             ?: throw UserError.EmailNotFound(owner.string)
 
         val res = tableRepo.createTable(name, owner.id)
-        participantRepo.joinTable(owner, res)
+        participantRepo.joinTable(owner, res, Role.PLAYER)
 
         res
     }
@@ -54,9 +61,11 @@ class TableService(
 
         val availability = participantRepo.userAvailability(user)
         if(availability != null)
-            throw TableError.UserUnavailable(user.name, availability)
-
-        participantRepo.joinTable(user, table)
+            throw TableError.UserUnavailable(user.name.toString(), availability.toString())
+        val role =
+            if(tableRepo.addPlayerToTable(table) <= 4.toUInt()) Role.PLAYER
+            else Role.SPECTATOR
+        participantRepo.joinTable(user, table, role)
     }
 
     /**
@@ -75,7 +84,7 @@ class TableService(
             ?: throw TableError.TableDoesNotExist(name.string)
 
         if(!participantRepo.findUserInTable(user, table))
-            throw TableError.UserNotFound(user.name, table.name)
+            throw TableError.UserNotFound(user.name.toString(), table.name.toString())
 
         participantRepo.leaveTable(user, table)
     }
@@ -84,11 +93,11 @@ class TableService(
      * Function to change a participant's role.
      * @param participant Email of the participant.
      * @param newRole The new role to assign.
-     * @throws isel.pt.cbdcg.repository.ParticipantError.ParticipantEmailNotFound If participant is not found.
+     * @throws ParticipantError.ParticipantEmailNotFound If participant is not found.
      */
     fun changeRole(participant: Email, newRole: Role) = runCatching {
         val participant = participantRepo.findByEmail(participant)
-            ?: throw isel.pt.cbdcg.repository.ParticipantError.ParticipantEmailNotFound(participant)
+            ?: throw ParticipantError.ParticipantEmailNotFound(participant.toString())
 
         participantRepo.changeRole(participant, newRole)
     }

@@ -6,7 +6,6 @@ import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
-import isel.pt.cbdcg.repository.ParticipantError
 import isel.pt.cbdcg.repository.Repository
 
 object ParticipantRepositoryMem: Repository<Participant> {
@@ -17,12 +16,12 @@ object ParticipantRepositoryMem: Repository<Participant> {
      * Adds a user to a table as a participant.
      * No validation is performed here - validation should be done in the service layer.
      */
-    fun joinTable(user: User, table: Table): Participant {
+    fun joinTable(user: User, table: Table, role: Role): Participant {
         val participant =
             Participant(
                 user.email,
                 table.name,
-                Role.PLAYER
+                role
             )
         participants.add(participant)
         return participant

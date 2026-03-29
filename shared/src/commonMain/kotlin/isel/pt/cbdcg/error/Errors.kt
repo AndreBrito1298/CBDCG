@@ -28,6 +28,9 @@ sealed class UserError(
 
     class PasswordMismatch: UserError("Passwords do not match.")
 
+    class OAuthError(
+        reason: String
+    ) : UserError("OAuth authentication failed: $reason")
 }
 
 sealed class TableError(

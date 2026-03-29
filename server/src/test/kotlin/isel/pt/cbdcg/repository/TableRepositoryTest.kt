@@ -13,9 +13,7 @@ import kotlin.test.assertFailsWith
 
 
 class TableRepositoryTest {
-
     private val userRepo = UserRepositoryMem
-
     private val tableRepo = TableRepositoryMem
 
     @BeforeTest
@@ -43,17 +41,6 @@ class TableRepositoryTest {
 
         tableRepo.createTable(name, 0u)
         assert(tableRepo.tables.find{ it.name.string == name.string } != null)
-
-    }
-
-    @Test
-    fun `cannot create table with same name`() {
-
-        val name = Name("testTable")
-        tableRepo.createTable(name, 0u)
-
-        assertFailsWith<TableError.DuplicateName> { tableRepo.createTable(name, 0u) }
-
     }
 
 }

@@ -1,7 +1,6 @@
 package isel.pt.cbdcg.domain
 
-import com.android.identity.cbor.Uint
-import org.h2.command.Token
+import kotlin.time.Clock
 
 /**
  * User representation:
@@ -15,6 +14,5 @@ data class User(
     val name: Name,
     val email: Email,
     val password: Password,
-    val creationDate: Long = System.currentTimeMillis(),
-    val token: Token? = null,
+   // val creationDate: Long = Clock.System
 )

@@ -1,5 +1,8 @@
 package isel.pt.cbdcg.repository.database
 
+import isel.pt.cbdcg.configs.AuthUsers
+import isel.pt.cbdcg.configs.Users
+import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
@@ -11,6 +14,21 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object UserRepositoryDB: Repository<User> {
+
+    fun loginUser(authenticatedUser: AuthUser) {
+        return transaction {
+            AuthUsers.insert {
+                it[token] = authenticatedUser.token
+                it[userEmail] = authenticatedUser.userEmail.toString()
+            }
+        }
+    }
+
+    fun logoutUser(email: Email) {
+        return transaction {
+            AuthUsers.deleteWhere { AuthUsers.userEmail eq email.string }
+        }
+    }
 
     override fun findById(id: UInt): User? {
         return transaction {
@@ -34,8 +52,6 @@ object UserRepositoryDB: Repository<User> {
                 it[name] = element.name.string
                 it[email] = element.email.string
                 it[password] = element.password.string
-                it[creationDate] = element.creationDate
-                it[creationTime] = element.creationDate
             }
         }
     }
@@ -60,6 +76,10 @@ object UserRepositoryDB: Repository<User> {
         name = Name(this[Users.name]),
         email = Email(this[Users.email]),
         password = Password(this[Users.password]),
-        creationDate = this[Users.creationDate]
+    )
+
+    private fun ResultRow.toAuthUser() = AuthUser(
+        token = this[AuthUsers.token],
+        userEmail = Email(this[AuthUsers.userEmail])
     )
 }

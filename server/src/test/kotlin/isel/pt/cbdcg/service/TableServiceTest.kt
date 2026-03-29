@@ -4,12 +4,14 @@ import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.Role
+import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
 import isel.pt.cbdcg.repository.memory.TableRepositoryMem
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 
@@ -31,6 +33,7 @@ class TableServiceTest {
     fun clearRepo() {
         userRepo.clear()
         tableRepo.clear()
+        participantRepo.clear()
         userRepo.createUser(Name("Alice"), Email("alice@email.com"), Password("alicepassword123!"))
         userRepo.createUser(Name("Bea"), Email("bea@email.com"), Password("beapassword123!"))
     }
@@ -63,7 +66,7 @@ class TableServiceTest {
     fun `joined table successfully`(){
         val tableName = Name("this test not")
 
-        val table = tableRepo.createTable(tableName, userRepo.findByEmail(aliceEmail).id)
+        val table = tableRepo.createTable(tableName, userRepo.findByEmail(aliceEmail)!!.id)
         assert(tableService.joinTable(beaEmail, table.name).isSuccess)
     }
 
@@ -73,7 +76,7 @@ class TableServiceTest {
         val rock = userRepo.createUser(Name("Rock"), Email("rock@email.com"), Password("rockpassword123!"))
         val paper = userRepo.createUser(Name("Paper"), Email("Paper@email.com"), Password("paperpassword123!"))
         val scissors = userRepo.createUser(Name("Scissors"), Email("Scissors@email.com"), Password("scissorspassword123!"))
-        val table = tableRepo.createTable(tableName, userRepo.findByEmail(aliceEmail).id)
+        val table = tableRepo.createTable(tableName, userRepo.findByEmail(aliceEmail)!!.id)
 
         tableService.joinTable(rock.email, table.name)
         tableService.joinTable(paper.email, table.name)
@@ -83,11 +86,37 @@ class TableServiceTest {
         assertEquals(Role.SPECTATOR, participantRepo.participants.last().role)
     }
 
+    @Test
+    fun `user cannot join another table`(){
+
+        val user = userRepo.users.first()
+        val table = tableRepo.createTable(Name("this test is not"), userRepo.findByEmail(aliceEmail)!!.id)
+        participantRepo.joinTable(user, table, Role.PLAYER)
+
+        val otherTable = tableRepo.tables.last()
+
+        assertFailsWith<TableError.UserUnavailable> {
+            tableService.joinTable(user.email, otherTable.name).getOrThrow()
+        }
+    }
+
+    @Test
+    fun `user can't leave a table when he is not in it`(){
+        val user = userRepo.users.first()
+        val table = tableRepo.createTable(Name("this test is not"), userRepo.findByEmail(aliceEmail)!!.id)
+
+        assertFailsWith<TableError.UserNotFound>{
+            tableService.leaveTable(user.email, table.name).getOrThrow()
+        }
+    }
+
+
+
 
     @Test
     fun `join table unavailable user`(){
         val tableName = Name("this test is not")
-        val table = tableRepo.createTable(tableName, userRepo.findByEmail(aliceEmail).id)
+        val table = tableRepo.createTable(tableName, userRepo.findByEmail(aliceEmail)!!.id)
         tableService.joinTable(beaEmail, table.name)
 
         assert(tableService.joinTable(beaEmail, table.name).isFailure)
@@ -96,5 +125,12 @@ class TableServiceTest {
     @Test
     fun `table does not exist`(){
         assert(tableService.joinTable(beaEmail, Name("who knows")).isFailure)
+    }
+
+    @Test
+    fun `cannot create table with same name`() {
+        val name = Name("testTable")
+        tableService.createTable(name, aliceEmail)
+        assertFailsWith<TableError.DuplicateName> { tableService.createTable(name, aliceEmail).getOrThrow() }
     }
 }
