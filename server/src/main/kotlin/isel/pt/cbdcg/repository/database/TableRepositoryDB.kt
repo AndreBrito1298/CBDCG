@@ -35,7 +35,7 @@ object TableRepositoryDB: Repository<Table> {
     fun addPlayerToTable(table: Table) {
         transaction {
             Tables.update({ Tables.id eq table.id }) {
-                it[Tables.players] = table.players+1.toUInt()
+                it[Tables.players] = table.participants+1.toUInt()
             }
         }
     }
@@ -51,7 +51,7 @@ object TableRepositoryDB: Repository<Table> {
             Tables.insert {
                 it[name] = element.name.string
                 it[owner] = element.owner
-                it[players] = element.players
+                it[players] = element.participants
             }
         }
     }
@@ -75,6 +75,6 @@ object TableRepositoryDB: Repository<Table> {
         id = this[Tables.id],
         name = Name(this[Tables.name]),
         owner = this[Tables.owner],
-        players = this[Tables.players]
+        participants = this[Tables.players]
     )
 }

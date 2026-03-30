@@ -7,15 +7,12 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.toEmail
 import isel.pt.cbdcg.domain.toName
-import isel.pt.cbdcg.domain.toRole
-import isel.pt.cbdcg.dto.ChangeRoleInput
 import isel.pt.cbdcg.dto.CreateTableInput
-import isel.pt.cbdcg.dto.JoinOrLeaveTableInput
-import isel.pt.cbdcg.dto.toParticipantOutput
+import isel.pt.cbdcg.dto.TableOperationInput
 import isel.pt.cbdcg.dto.toTableOutput
+import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.service.TableService
 
 fun Route.tableWebApi(tableService: TableService) {
@@ -32,61 +29,61 @@ fun Route.tableWebApi(tableService: TableService) {
         post("/create") {
 
             val input = call.receive<CreateTableInput>()
+            val token = call.request.queryParameters["token"]
+                ?: throw UserError.TokenNotFound()
 
             val result = tableService.createTable(
                 name = input.name.toName(),
-                owner = input.owner.toEmail(),
+                email = input.owner.toEmail(),
+                token = token,
             ).getOrThrow()
 
-            call.respond(HttpStatusCode.Created, result.toParticipantOutput())
+            call.respond(HttpStatusCode.Created, result.toTableOutput())
         }
 
         post("/join") {
 
-            val input = call.receive<JoinOrLeaveTableInput>()
+            val input = call.receive<TableOperationInput>()
+            val token = call.request.queryParameters["token"]
+                ?: throw UserError.TokenNotFound()
 
             val result = tableService.joinTable(
-                user = input.user.toEmail(),
-                table = input.name.toName(),
+                userEmail = input.user.toEmail(),
+                tableName = input.table.toName(),
+                token = token,
             ).getOrThrow()
 
-            call.respond(HttpStatusCode.OK, result.toParticipantOutput())
+            call.respond(HttpStatusCode.OK, result.toTableOutput())
         }
 
         post("/leave") {
 
-            val input = call.receive<JoinOrLeaveTableInput>()
+            val input = call.receive<TableOperationInput>()
+            val token = call.request.queryParameters["token"]
+                ?: throw UserError.TokenNotFound()
 
             tableService.leaveTable(
-                user = input.user.toEmail(),
-                name = input.name.toName(),
+                userEmail = input.user.toEmail(),
+                tableName = input.table.toName(),
+                token = token,
             ).getOrThrow()
 
             call.response.status(HttpStatusCode.OK)
         }
 
-        get("/participants") {
-
-            val input = call.request.queryParameters["name"]
-                ?: error("Request query parameter 'name' missing")
-
-            val result = tableService.getParticipants(
-                name = input.toName(),
-            ).getOrThrow()
-
-            call.respond(HttpStatusCode.OK, result.map { it.toParticipantOutput() })
-        }
-
         post("/changeRole") {
 
-            val input = call.receive<ChangeRoleInput>()
+            val input = call.receive<TableOperationInput>()
+            val token = call.request.queryParameters["token"]
+                ?: throw UserError.TokenNotFound()
 
             val result = tableService.changeRole(
-                participant = input.name.toEmail(),
-                newRole = input.role.toRole()?: Role.SPECTATOR,
+                userEmail = input.user.toEmail(),
+                tableName = input.table.toName(),
+                token = token,
             ).getOrThrow()
 
-            call.respond(HttpStatusCode.OK, result.toParticipantOutput())
+            call.respond(HttpStatusCode.OK, result.toTableOutput())
         }
     }
 }

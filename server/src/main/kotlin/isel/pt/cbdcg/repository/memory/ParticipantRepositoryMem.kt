@@ -1,104 +1,30 @@
 package isel.pt.cbdcg.repository.memory
 
-import isel.pt.cbdcg.error.ParticipantError
-import isel.pt.cbdcg.domain.Email
-import isel.pt.cbdcg.domain.Name
+
 import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Role
-import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
-import isel.pt.cbdcg.repository.Repository
-import isel.pt.cbdcg.error.TableError
+import isel.pt.cbdcg.repository.ParticipantRepository
 
-object ParticipantRepositoryMem: Repository<Participant> {
+object ParticipantRepositoryMem: ParticipantRepository {
 
     val participants = mutableListOf<Participant>()
 
-    /**
-     * Adds a user to a table as a participant.
-     * No validation is performed here - validation should be done in the service layer.
-     */
-    fun joinTable(user: User, table: Table, role: Role): Participant {
-        val participant =
-            Participant(
-                user.email,
-                table.name,
-                role
-            )
+
+    override fun createParticipant(user: User, role: Role): Participant {
+
+        val participant = Participant(user, role)
         participants.add(participant)
+
         return participant
     }
 
-    /**
-     * Changes the role of a participant.
-     */
-    fun changeRole(participant: Participant, newRole: Role): Participant {
-        val updatedP = participant.copy(role = newRole)
-        participants.remove(participant)
-        participants.add(updatedP)
-        return updatedP
+    override fun userAvailability(user: User): Boolean {
+        return participants.find{ it.user == user } == null
     }
 
-    /**
-     * Removes a user from a table.
-     */
-    fun leaveTable(user: User, table: Table) {
-
-        if(!findUserInTable(user, table))
-            throw TableError.UserNotFound(user.name.string, table.name.string)
-
-        participants.removeIf{ it.user == user.email && it.table == table.name }
+    override fun deleteParticipant(user: User) {
+        participants.removeIf{ it.user == user }
     }
 
-    /**
-     * Returns the table name where the user is currently participating, or null if not in any table.
-     */
-    fun userAvailability(user: User): Name? {
-        return participants.find{ it.user == user.email }?.table
-    }
-
-    /**
-     * Checks if a user is in a specific table.
-     */
-    fun findUserInTable(user: User, table: Table): Boolean {
-        return participants.any{ it.user == user.email && it.table == table.name }
-    }
-
-    /**
-     * Finds a participant by email.
-     * @return The participant, or null if not found.
-     */
-    fun findByEmail(email: Email): Participant? {
-        return participants.find{ it.user == email}
-    }
-
-    fun findByTable(table: Name): List<Participant> {
-        return participants.filter { it.table == table }
-    }
-
-    fun deleteByTable(table: Name) {
-        participants.removeIf { it.table == table }
-    }
-
-
-    // Generic Operations
-
-    override fun findById(id: UInt): Participant? {
-        val email = UserRepositoryMem.findById(id)?.email ?: return null
-        return participants.find{ it.user == email}
-    }
-
-    override fun save(element: Participant) {
-        participants.removeIf{ it.user == element.user}
-        participants.add(element)
-    }
-
-    override fun deleteById(id: UInt) {
-        val email = UserRepositoryMem.findById(id)?.email ?: return
-        participants.removeIf{ it.user == email}
-    }
-
-    override fun clear() {
-        participants.clear()
-    }
 }

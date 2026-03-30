@@ -17,6 +17,7 @@ private const val MAX_EMAIL_LENGTH = 7
 /**
  * Exposed table configuration for Users.
  */
+// Deriva de IdTable
 object Users : Table("users") {
     val id = uinteger("id").autoIncrement()
     val name = varchar("name", MAX_NAME_LENGTH)

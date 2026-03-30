@@ -1,55 +1,43 @@
 package isel.pt.cbdcg.repository.memory
 
 import isel.pt.cbdcg.domain.Name
+import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Table
-import isel.pt.cbdcg.repository.Repository
+import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.repository.TableRepository
 
 
-object TableRepositoryMem: Repository<Table> {
+object TableRepositoryMem: TableRepository {
 
     /**
      * List of Game Tables registered.
      */
     val tables = mutableListOf<Table>()
 
-    /**
-     * Function to create a new Table.
-     * @param name The name of the table.
-     * @param owner Unique identifier of the user creating the table.
-     * @return The Table created.
-     */
-    fun createTable(name: Name, owner: UInt): Table {
-        val table = Table(tables.size.toUInt(), name, owner, 1.toUInt())
-        tables.add(table)
-        return table
-    }
 
-    fun addPlayerToTable(table: Table): UInt {
-        tables.remove(table)
-        val newTable = table.copy(players = table.players+1.toUInt())
-        tables.add(newTable)
-        return newTable.players
-    }
-
-    /**
-     * Function to find a Table given its name.
-     * @param name The name of the table.
-     * @return The table, or null if not found.
-     */
-    fun findByName(name: Name): Table? {
-        return tables.find{ it.name.string == name.string }
-    }
-
-    fun getAllTables(): List<Table> {
+    override fun getAllTables(): List<Table> {
         return tables
     }
 
-    fun updatePlayers(name: Name, players: UInt): Table {
-        val current = findByName(name)
-        val updated = current!!.copy(players = players)
-        tables.removeIf { it.id == current.id }
-        tables.add(updated)
-        return updated
+    override fun createTable(name: Name, owner: User, participant: Participant): Table {
+
+        val table = Table(tables.size.toUInt(), name, owner, listOf(participant))
+        tables.add(table)
+
+        return table
+    }
+
+    override fun findByName(name: Name): Table? {
+        return tables.find{ it.name.string == name.string }
+    }
+
+    override fun removeParticipant(table: Table, user: User): Table {
+        return table.copy(participants = table.participants.filter{ it.user == user })
+    }
+
+    override fun updateParticipants(table: Table, participant: Participant): Table {
+        val list = table.participants.filter{ it.user == participant.user }
+        return table.copy(participants = list.plus(participant))
     }
 
     // Generic Operations

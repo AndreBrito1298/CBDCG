@@ -71,6 +71,8 @@ object UserRepositoryDB: Repository<User> {
     /**
      * Helper function to convert a ResultRow to a User domain object.
      */
+
+    // Usar DAO's
     private fun ResultRow.toUser() = User(
         id = this[Users.id],
         name = Name(this[Users.name]),

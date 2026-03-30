@@ -2,10 +2,9 @@ package isel.pt.cbdcg.service
 
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
-import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
-import isel.pt.cbdcg.error.ParticipantError
+import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
@@ -19,106 +18,103 @@ class TableService(
     private val participantRepo: ParticipantRepositoryMem
 ) {
 
-
     fun getAll(): Result<List<Table>> = runCatching {
         tableRepo.getAllTables()
     }
 
-    /**
-     * Function to create a Table.
-     * @param name The name of the table.
-     * @param owner Email of the user that is creating the table.
-     */
-    fun createTable(name: Name, owner: Email): Result<Participant> = runCatching {
+    fun createTable(name: Name, email: Email, token: String): Result<Table> = runCatching {
 
-        val owner = userRepo.findByEmail(owner)
-            ?: throw UserError.EmailNotFound(owner.string)
+        val owner = userRepo.findByEmail(email)
+            ?: throw UserError.EmailNotFound(email.string)
 
-        val res = tableRepo.createTable(name, owner.id)
-        participantRepo.joinTable(owner, res, Role.PLAYER)
+        token.verifyToken(owner)
+
+        val participant = participantRepo.createParticipant(owner, Role.PLAYER)
+        tableRepo.createTable(name, owner, participant)
     }
 
-    /**
-     * Function to join a table.
-     * @param user Email of the user joining the table.
-     * @param table The name of the table to join.
-     * @throws TableError.UserUnavailable If user is already present in any table.
-     * @throws TableError.TableDoesNotExist If the table doesn't exist.
-     * @throws UserError.EmailNotFound No user with the provided email exists.
-     */
-    fun joinTable(user: Email, table : Name): Result<Participant> = runCatching {
-        val user = userRepo.findByEmail(user)
-            ?: throw UserError.EmailNotFound(user.string)
+    fun joinTable(userEmail: Email, tableName: Name, token: String): Result<Table> = runCatching {
 
-        val table = tableRepo.findByName(table)
-            ?: throw TableError.TableDoesNotExist(table.string)
+        val user = userRepo.findByEmail(userEmail)
+            ?: throw UserError.EmailNotFound(userEmail.string)
 
-        val availability = participantRepo.userAvailability(user)
-        if(availability != null)
-            throw TableError.UserUnavailable(user.name.toString(), availability.toString())
+        token.verifyToken(user)
+
+        val table = tableRepo.findByName(tableName)
+            ?: throw TableError.TableDoesNotExist(tableName.string)
+
+        if(!participantRepo.userAvailability(user))
+            throw TableError.UserUnavailable(user.name.toString())
+
         val role =
-            if(tableRepo.addPlayerToTable(table) <= 4.toUInt()) Role.PLAYER
+            if(table.participants.size < 4) Role.PLAYER
             else Role.SPECTATOR
-        participantRepo.joinTable(user, table, role)
+
+        val participant = participantRepo.createParticipant(user, role)
+        val newTable = table.copy(participants = table.participants.plus(participant))
+        tableRepo.save(newTable)
+
+        newTable
     }
 
-    /**
-     * Function to leave a table.
-     * @param user Email of the user leaving the table.
-     * @param name Name of the table to leave.
-     * @throws TableError.UserNotFound If user is not in the specified table.
-     * @throws TableError.TableDoesNotExist If the table doesn't exist.
-     * @throws UserError.EmailNotFound No user with the provided email exists.
-     */
-    fun leaveTable(user: Email, name: Name): Result<Unit> = runCatching {
-        val user = userRepo.findByEmail(user)
-            ?: throw UserError.EmailNotFound(user.string)
+    fun leaveTable(userEmail: Email, tableName: Name, token: String): Result<Unit> = runCatching {
 
-        val table = tableRepo.findByName(name)
-            ?: throw TableError.TableDoesNotExist(name.string)
+        val user = userRepo.findByEmail(userEmail)
+            ?: throw UserError.EmailNotFound(userEmail.string)
 
-        if(!participantRepo.findUserInTable(user, table))
+        token.verifyToken(user)
+
+        val table = tableRepo.findByName(tableName)
+            ?: throw TableError.TableDoesNotExist(tableName.string)
+
+        if(table.participants.find{ it.user == user } == null)
             throw TableError.UserNotFound(user.name.toString(), table.name.toString())
 
-        participantRepo.leaveTable(user, table)
+        tableRepo.removeParticipant(table, user)
+        participantRepo.deleteParticipant(user)
 
-        if(table.owner == user.id)
-            deleteTable(table.name, user.email)
-
-        syncPlayerCount(table.name)
+        if(table.owner == user) {
+            table.participants.forEach { participantRepo.deleteParticipant(it.user) }
+            tableRepo.deleteById(table.id)
+        }
 
     }
 
-    /**
-     * Function to change a participant's role.
-     * @param participant Email of the participant.
-     * @param newRole The new role to assign.
-     * @throws ParticipantError.ParticipantEmailNotFound If participant is not found.
-     */
-    fun changeRole(participant: Email, newRole: Role) = runCatching {
-        val participant = participantRepo.findByEmail(participant)
-            ?: throw ParticipantError.ParticipantEmailNotFound(participant.toString())
+    fun changeRole(userEmail: Email, tableName: Name, token: String) = runCatching {
 
-        participantRepo.changeRole(participant, newRole)
-            .also { syncPlayerCount(it.table) }
+        val user = userRepo.findByEmail(userEmail)
+            ?: throw UserError.EmailNotFound(userEmail.string)
+
+        token.verifyToken(user)
+
+        val table = tableRepo.findByName(tableName)
+            ?: throw TableError.TableDoesNotExist(tableName.string)
+
+        val participant = table.participants.find{ it.user == user }
+            ?: throw TableError.UserNotFound(user.name.toString(), table.name.toString())
+
+        val newRole =
+            if(participant.role == Role.PLAYER) Role.SPECTATOR
+            else Role.PLAYER
+
+        tableRepo.updateParticipants(table, participant.copy(role = newRole))
     }
 
-
-    fun getParticipants(name: Name): Result<List<Participant>> = runCatching {
-        tableRepo.findByName(name)
-        participantRepo.findByTable(name)
-    }
-
-    fun deleteTable(name: Name, owner: Email): Result<Unit> = runCatching {
-        val table = tableRepo.findByName(name)
-        val user = userRepo.findByEmail(owner)
-        require(table!!.owner == user!!.id) { "Only the table owner can delete the table." }
-        participantRepo.deleteByTable(name)
-        tableRepo.deleteById(table.id)
-    }
-
+    /*
     private fun syncPlayerCount(name: Name) {
         val players = participantRepo.findByTable(name).count { it.role == Role.PLAYER }.toUInt()
         tableRepo.updatePlayers(name, players)
     }
+    */
+
+    private fun String.verifyToken(user: User) {
+
+        if(user.auth == null)
+            throw UserError.TokenNotFound()
+
+        if(user.auth!!.token != this)
+            throw UserError.TokenMismatch()
+
+    }
+
 }

@@ -28,6 +28,12 @@ sealed class UserError(
 
     class PasswordMismatch: UserError("Passwords do not match.")
 
+    class TokenNotFound: UserError("Authentication token was not found.")
+
+    class TokenMismatch: UserError("Token does not match.")
+
+    class AlreadyLoggedIn: UserError("User is logged in on a different client.")
+
     class OAuthError(
         reason: String
     ) : UserError("OAuth authentication failed: $reason")
@@ -41,8 +47,8 @@ sealed class TableError(
         name: String,
     ) : TableError("Name '$name' is already in use.")
 
-    class UserUnavailable(name: String, table: String) :
-        TableError("User '$name' is already on table '$table'.")
+    class UserUnavailable(name: String) :
+        TableError("User '$name' is already on a different table.")
 
     class UserNotFound(name: String, table: String) :
             TableError("User '$name' is not found in table '$table'.")
