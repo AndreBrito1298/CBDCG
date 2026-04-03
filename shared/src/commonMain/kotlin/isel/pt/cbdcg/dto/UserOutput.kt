@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.dto
 
+import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
@@ -12,6 +13,7 @@ data class UserOutput(
     val name: String,
     val email: String,
     val password: String,
+    val auth: String
 )
 
 fun User.toUserOutput(): UserOutput = UserOutput(
@@ -19,11 +21,13 @@ fun User.toUserOutput(): UserOutput = UserOutput(
     name = name.string,
     email = email.string,
     password = password.string,
+    auth = auth?.token ?: ""
 )
 
 fun UserOutput.toUser(): User = User(
     id = id,
     name = Name(name),
     email = Email(email),
-    password = Password(password)
+    password = Password(password),
+    auth = AuthUser(auth)
 )

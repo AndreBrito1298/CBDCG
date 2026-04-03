@@ -14,58 +14,35 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import isel.pt.cbdcg.ClientApi
-import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Role
-import isel.pt.cbdcg.views.utils.displayError
-import kotlinx.coroutines.launch
+import isel.pt.cbdcg.domain.Table
+import isel.pt.cbdcg.domain.User
 
 @Composable
-fun WaitingTableScreen(clientApi: ClientApi, user: AuthUser, participant: Participant, exit: () -> Unit){
+fun WaitingTableScreen(
+    user: User,
+    table: Table,
+    changeRole: () -> Unit,
+    leaveTable: () -> Unit
+){
 
-    val scope = rememberCoroutineScope()
+    var participants by remember { mutableStateOf<List<Participant>>(table.participants) }
 
-    var participants by remember { mutableStateOf<List<Participant>>(emptyList()) }
     val players = participants
         .filter { it.role == Role.PLAYER }
-        .map { it.user.string }
+        .map { it.user }
     val spectators = participants
         .filter { it.role == Role.SPECTATOR }
-        .map { it.user.string }
+        .map { it.user }
 
-    val currentParticipant = participants.find { it.user == user.email }
-    val currentRole = currentParticipant?.role ?: participant.role
-
-    var isLoading by remember { mutableStateOf(true) }
-    var isSubmitting by remember { mutableStateOf(false) }
-
-    var error by remember { mutableStateOf<String?>(null) }
-    var refreshKey by remember { mutableStateOf(0) }
-
-    LaunchedEffect(refreshKey) {
-        isLoading = true
-
-        val result = clientApi.getParticipants(participant.table.string)
-
-        result.onSuccess {
-            participants = it
-            error = null
-        }
-        result.onFailure {
-            error = it.message ?: "Could not load participants."
-        }
-
-        isLoading = false
-    }
+    val currentRole = if(players.find{ it.id == user.id } != null) Role.PLAYER else Role.SPECTATOR
 
     Column(
         modifier = Modifier
@@ -75,7 +52,7 @@ fun WaitingTableScreen(clientApi: ClientApi, user: AuthUser, participant: Partic
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
-            text = participant.table.string,
+            text = table.name.string,
             style = MaterialTheme.typography.headlineMedium,
         )
 
@@ -89,23 +66,7 @@ fun WaitingTableScreen(clientApi: ClientApi, user: AuthUser, participant: Partic
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Button(
-                onClick = {
-                    scope.launch {
-                        isSubmitting = true
-
-                        val result = clientApi.changeRole(user.email.string, Role.PLAYER.name)
-
-                        result.onSuccess {
-                            error = null
-                            refreshKey += 1
-                        }
-                        result.onFailure {
-                            error = it.message ?: "Could not join players."
-                        }
-
-                        isSubmitting = false
-                    }
-                },
+                onClick = changeRole,
                 enabled = currentRole != Role.PLAYER,
                 modifier = Modifier.weight(1f),
             ) {
@@ -113,23 +74,7 @@ fun WaitingTableScreen(clientApi: ClientApi, user: AuthUser, participant: Partic
             }
 
             Button(
-                onClick = {
-                    scope.launch {
-                        isSubmitting = true
-
-                        val result = clientApi.changeRole(user.email.string, Role.SPECTATOR.name)
-
-                        result.onSuccess {
-                            error = null
-                            refreshKey += 1
-                        }
-                        result.onFailure {
-                            error = it.message ?: "Could not join players."
-                        }
-
-                        isSubmitting = false
-                    }
-                },
+                onClick = changeRole,
                 enabled = currentRole != Role.SPECTATOR,
                 modifier = Modifier.weight(1f),
             ) {
@@ -138,56 +83,33 @@ fun WaitingTableScreen(clientApi: ClientApi, user: AuthUser, participant: Partic
         }
 
         Button(
-            onClick = {
-                scope.launch {
-
-                    isSubmitting = true
-
-                    val result = clientApi.leaveTable(user.email.string, participant.table.string)
-
-                    result.onSuccess {
-                        exit()
-                    }
-                    result.onFailure {
-                        error = it.message ?: "Could not leave table."
-                    }
-
-                    isSubmitting = false
-                }
-            },
+            onClick = leaveTable,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Leave Table")
         }
 
-        if (isLoading) {
-            Text("Loading participants...")
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                WaitingColumn(
-                    title = "Players",
-                    users = players,
-                    modifier = Modifier.weight(1f),
-                )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            WaitingColumn(
+                title = "Players",
+                users = players,
+                modifier = Modifier.weight(1f),
+            )
 
-                WaitingColumn(
-                    title = "Spectators",
-                    users = spectators,
-                    modifier = Modifier.weight(1f),
-                )
-            }
+            WaitingColumn(
+                title = "Spectators",
+                users = spectators,
+                modifier = Modifier.weight(1f),
+            )
         }
-
-        displayError(error)
-
     }
 }
 
 @Composable
-private fun WaitingColumn(title: String, users: List<String>, modifier: Modifier = Modifier) {
+private fun WaitingColumn(title: String, users: List<User>, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.widthIn(min = 180.dp),
     ) {
@@ -208,9 +130,9 @@ private fun WaitingColumn(title: String, users: List<String>, modifier: Modifier
                     style = MaterialTheme.typography.bodyMedium,
                 )
             } else {
-                users.forEach { name ->
+                users.forEach { user ->
                     Text(
-                        text = name,
+                        text = "${user.name.string} [#${user.id}]", // temporary?
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }

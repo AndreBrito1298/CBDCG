@@ -5,5 +5,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class CreateTableInput(
     val name: String,
-    val owner: String,
+    val email: String,
+    val token: String,
 )

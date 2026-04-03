@@ -16,39 +16,32 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import isel.pt.cbdcg.ClientApi
-import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.isEmailLengthValid
 import isel.pt.cbdcg.domain.isEmailValid
 import isel.pt.cbdcg.domain.isNameFilled
 import isel.pt.cbdcg.domain.isNameLengthValid
 import isel.pt.cbdcg.domain.isPasswordLengthValid
-import isel.pt.cbdcg.views.utils.displayError
-import kotlinx.coroutines.launch
 
 @Composable
-fun CreateUserScreen(clientApi: ClientApi, back: () -> Unit, login: (AuthUser) -> Unit) {
-
-    val scope = rememberCoroutineScope()
+fun CreateUserScreen(
+    mainMenuNav: () -> Unit,
+    create: (String, String, String) -> Unit
+) {
 
     var name by rememberSaveable { mutableStateOf("") }
-    var nameError by remember { mutableStateOf<String?>(null) }
+    var nameError by remember { mutableStateOf<String?>("") } // Disable the create button
 
     var email by rememberSaveable { mutableStateOf("") }
-    var emailError by remember { mutableStateOf<String?>(null) }
+    var emailError by remember { mutableStateOf<String?>("") } // Disable the create button
 
     var password by rememberSaveable { mutableStateOf("") }
-    var passwordError by remember { mutableStateOf<String?>(null) }
-
-    var isSubmitting by remember { mutableStateOf(false) }
-    var submitError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>("") } // Disable the create button
 
     Column(
         modifier = Modifier
@@ -58,7 +51,7 @@ fun CreateUserScreen(clientApi: ClientApi, back: () -> Unit, login: (AuthUser) -
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
 
-        Button(onClick = back) {
+        Button(onClick = mainMenuNav) {
             Text("Back")
         }
 
@@ -81,7 +74,6 @@ fun CreateUserScreen(clientApi: ClientApi, back: () -> Unit, login: (AuthUser) -
             supportingText = {
                 if(nameError != null) { Text(nameError!!) }
             },
-            enabled = !isSubmitting,
         )
 
         OutlinedTextField(
@@ -99,7 +91,6 @@ fun CreateUserScreen(clientApi: ClientApi, back: () -> Unit, login: (AuthUser) -
             supportingText = {
                 if(emailError != null) { Text(emailError!!) }
             },
-            enabled = !isSubmitting,
         )
 
         OutlinedTextField(
@@ -117,61 +108,13 @@ fun CreateUserScreen(clientApi: ClientApi, back: () -> Unit, login: (AuthUser) -
             supportingText = {
                 if(passwordError != null) { Text(passwordError!!) }
             },
-            enabled = !isSubmitting,
         )
 
         Button(
-            enabled = !isSubmitting,
-            onClick = {
-
-                isSubmitting = true
-                submitError = null
-
-                scope.launch {
-
-                    val result = clientApi.createUser(name, email, password)
-                    result.onSuccess{ user -> login(user) }
-                    result.onFailure { error -> submitError = error.message ?: "Could not create user."  }
-
-                    isSubmitting = false
-                }
-            },
+            enabled = nameError == null && emailError == null && passwordError == null,
+            onClick = { create(name, email, password) }
         ) {
-            Text(if (isSubmitting) "Creating..." else "Create User")
+            Text("Create User")
         }
-
-        displayError(submitError)
-
     }
 }
-
-
-/*
-@Composable
-fun ValidatedTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    error: String?,
-    enabled: Boolean,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    visualTransformation: VisualTransformation = VisualTransformation.None,
-){
-
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(label) },
-        singleLine = true,
-        supportingText = {
-            if(error != null) { Text(error) }
-        },
-        isError = error != null,
-        enabled = enabled,
-        keyboardOptions = keyboardOptions,
-        visualTransformation = visualTransformation,
-    )
-
-}
-*/

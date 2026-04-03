@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ChangeRoleInput(
-    val name: String,
-    val role: String,
+    val user: String,
+    val table: String,
+    val token: String,
 )

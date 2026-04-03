@@ -102,4 +102,7 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String> =
         is ParticipantError.ParticipantIdNotFound -> HttpStatusCode.NotFound to (message ?: desc)
         is ParticipantError.UserNotOnTable -> HttpStatusCode.NotFound to (message ?: desc)
         is UserError.OAuthError -> TODO()
+        is UserError.AlreadyLoggedIn -> HttpStatusCode.Conflict to (message ?: desc)
+        is UserError.TokenMismatch -> HttpStatusCode.Unauthorized to (message ?: desc)
+        is UserError.TokenNotFound -> HttpStatusCode.NotFound to (message ?: desc)
     }

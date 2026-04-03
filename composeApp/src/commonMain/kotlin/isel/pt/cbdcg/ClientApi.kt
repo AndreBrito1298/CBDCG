@@ -2,179 +2,116 @@ package isel.pt.cbdcg
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.request.get
-import io.ktor.client.request.post
+import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
-import isel.pt.cbdcg.domain.AuthUser
-import isel.pt.cbdcg.domain.Participant
+import isel.pt.cbdcg.domain.Email
+import isel.pt.cbdcg.domain.Name
+import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.Table
-import isel.pt.cbdcg.dto.AuthUserOutput
+import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.dto.CreateTableInput
 import isel.pt.cbdcg.dto.CreateUserInput
-import isel.pt.cbdcg.dto.JoinOrLeaveTableInput
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.ChangeRoleInput
-import isel.pt.cbdcg.dto.ParticipantOutput
+import isel.pt.cbdcg.dto.LogoutInput
+import isel.pt.cbdcg.dto.TableOperationInput
 import isel.pt.cbdcg.dto.TableOutput
-import isel.pt.cbdcg.dto.toAuthUser
-import isel.pt.cbdcg.dto.toParticipant
+import isel.pt.cbdcg.dto.UserOutput
 import isel.pt.cbdcg.dto.toTable
+import isel.pt.cbdcg.dto.toUser
 
 
 class ClientApi(private val httpClient: HttpClient) {
 
-    suspend fun createUser(name: String, email: String, password: String): Result<AuthUser> = runCatching {
+    suspend fun createUser(name: Name, email: Email, password: Password): Result<User> =
+        fetch<UserOutput>(
+            path = "auth/users/create",
+            method = HttpMethod.Post,
+            body = CreateUserInput(name.string, email.string,password.string)
+        ).map { it.toUser() }
 
-        val response = httpClient.post("http://localhost:$SERVER_PORT/auth/users") {
+    suspend fun login(email: Email, password: Password): Result<User> =
+        fetch<UserOutput>(
+            path = "auth/users/login",
+            method = HttpMethod.Post,
+            body = LoginInput(email.string, password.string)
+        ).map { it.toUser() }
+
+    suspend fun logout(token: String): Result<Unit> =
+        fetch<Unit>(
+            path = "auth/users/logout",
+            method = HttpMethod.Post,
+            body = LogoutInput(token)
+        )
+
+    suspend fun getTables(): Result<List<Table>> =
+        fetch<Array<TableOutput>>(
+            path = "tables",
+            method = HttpMethod.Get
+        ).map { it.map{ tableOutput -> tableOutput.toTable() } }
+
+    suspend fun createTable(tableName: Name, userEmail: Email, token: String): Result<Table> =
+        fetch<TableOutput>(
+            path = "tables/create",
+            method = HttpMethod.Post,
+            body = CreateTableInput(tableName.string, userEmail.string, token)
+        ).map{ it.toTable() }
+
+    suspend fun joinTable(tableName: Name, userEmail: Email, token: String): Result<Table> =
+        fetch<TableOutput>(
+            path = "tables/join",
+            method = HttpMethod.Post,
+            body = TableOperationInput(tableName.string, userEmail.string, token)
+        ).map{ it.toTable() }
+
+    suspend fun leaveTable(userEmail: Email, tableName: Name, token: String): Result<Unit> =
+        fetch<Unit>(
+            path = "tables/leave",
+            method = HttpMethod.Post,
+            body = TableOperationInput(tableName.string, userEmail.string, token)
+        )
+
+    suspend fun changeRole(userEmail: Email, tableName: Name, token: String): Result<Unit> =
+        fetch<Unit>(
+            path = "tables/change-role",
+            method = HttpMethod.Post,
+            body = ChangeRoleInput(userEmail.string, tableName.string, token)
+        )
+
+    private suspend inline fun <reified T> fetch(
+        path: String,
+        method: HttpMethod,
+        body: Any? = null,
+        // query: Map<String, String> = emptyMap(),
+    ): Result<T> = runCatching {
+
+        val response = httpClient.request("http://localhost:$SERVER_PORT/$path") {
+            this.method = method
             contentType(ContentType.Application.Json)
-            setBody(
-                CreateUserInput(
-                    name = name,
-                    email = email,
-                    password = password,
-                )
-            )
-        }
 
-        if (response.status.isSuccess()) {
-            val userOutput = response.body<AuthUserOutput>()
-            userOutput.toAuthUser()
-        } else {
-            throw IllegalStateException(response.bodyAsText())
-        }
-
-    }
-
-    suspend fun login(email: String, password: String): Result<AuthUser> = runCatching {
-
-        val response = httpClient.post("http://localhost:$SERVER_PORT/auth/users/login") {
-            contentType(ContentType.Application.Json)
-            setBody(
-                LoginInput(
-                    email = email,
-                    password = password
-                )
-            )
-        }
-
-        if (response.status.isSuccess()) {
-            val userOutput = response.body<AuthUserOutput>()
-            userOutput.toAuthUser()
-        } else {
-            throw IllegalStateException(response.bodyAsText())
-        }
-
-    }
-
-    suspend fun getTables(): Result<List<Table>> = runCatching {
-
-        val response = httpClient.get("http://localhost:$SERVER_PORT/tables") {
-            contentType(ContentType.Application.Json)
-        }
-
-        if (response.status.isSuccess()) {
-            val tablesOutputList = response.body<List<TableOutput>>()
-            tablesOutputList.map{ it.toTable() }
-        } else {
-            throw IllegalStateException(response.bodyAsText())
-        }
-    }
-
-    suspend fun createTable(name: String, owner: String): Result<Participant> = runCatching {
-
-        val response = httpClient.post("http://localhost:$SERVER_PORT/tables/create") {
-            contentType(ContentType.Application.Json)
-            setBody(
-                CreateTableInput(
-                    name = name,
-                    owner = owner
-                )
-            )
-        }
-
-        if (response.status.isSuccess()) {
-            val tableOutput = response.body<ParticipantOutput>()
-            tableOutput.toParticipant()
-        } else {
-            throw IllegalStateException(response.bodyAsText())
-        }
-    }
-
-    suspend fun joinTable(name: String, user: String): Result<Participant> = runCatching {
-
-        val response = httpClient.post("http://localhost:$SERVER_PORT/tables/join") {
-            contentType(ContentType.Application.Json)
-            setBody(
-                JoinOrLeaveTableInput(
-                    name = name,
-                    user = user
-                )
-            )
-        }
-
-        if (response.status.isSuccess()) {
-            val participantOutput = response.body<ParticipantOutput>()
-            participantOutput.toParticipant()
-        } else {
-            throw IllegalStateException(response.bodyAsText())
-        }
-
-    }
-
-    suspend fun getParticipants(table: String): Result<List<Participant>> = runCatching {
-
-        val response = httpClient.get("http://localhost:$SERVER_PORT/tables/participants") {
-            url {
-                parameters.append("name", table)
+            /*
+            if(query.isNotEmpty()) {
+                url{
+                    query.forEach{ (key, value) -> parameters.append(key, value) }
+                }
             }
+            */
+
+            if(body != null) setBody(body)
+
         }
 
-        if (response.status.isSuccess()) {
-            val participantsOutput = response.body<List<ParticipantOutput>>()
-            participantsOutput.map { it.toParticipant() }
-        } else {
+        if (!response.status.isSuccess()) {
             throw IllegalStateException(response.bodyAsText())
         }
 
-    }
-
-    suspend fun changeRole(user: String, role: String): Result<Participant> = runCatching {
-
-        val response = httpClient.post("http://localhost:$SERVER_PORT/tables/changeRole") {
-            contentType(ContentType.Application.Json)
-            setBody(
-                ChangeRoleInput(
-                    name = user,
-                    role = role
-                )
-            )
-        }
-
-        if (response.status.isSuccess()) {
-            val participantOutput = response.body<ParticipantOutput>()
-            participantOutput.toParticipant()
-        } else {
-            throw IllegalStateException(response.bodyAsText())
-        }
-
-    }
-
-    suspend fun leaveTable(user: String, table: String) = runCatching {
-
-        httpClient.post("http://localhost:$SERVER_PORT/tables/leave") {
-            contentType(ContentType.Application.Json)
-            setBody(
-                JoinOrLeaveTableInput(
-                    name = table,
-                    user = user
-                )
-            )
-        }
-
+        if (T::class == Unit::class) Unit as T
+        else response.body<T>()
     }
 
 }

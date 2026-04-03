@@ -16,34 +16,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import isel.pt.cbdcg.ClientApi
-import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.isEmailLengthValid
 import isel.pt.cbdcg.domain.isEmailValid
 import isel.pt.cbdcg.domain.isPasswordLengthValid
-import isel.pt.cbdcg.views.utils.displayError
-import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(clientApi: ClientApi, back: () -> Unit, login: (AuthUser) -> Unit) {
-
-    val scope = rememberCoroutineScope()
+fun LoginScreen(
+    mainMenuNav: () -> Unit,
+    login: (String, String) -> Unit
+) {
 
     var email by rememberSaveable { mutableStateOf("") }
-    var emailError by remember { mutableStateOf<String?>(null) }
+    var emailError by remember { mutableStateOf<String?>("") } // Disable the login button
 
     var password by rememberSaveable { mutableStateOf("") }
-    var passwordError by remember { mutableStateOf<String?>(null) }
-
-    var isSubmitting by remember { mutableStateOf(false) }
-    var submitError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>("") } // Disable the login button
 
     Column(
         modifier = Modifier
@@ -53,7 +46,7 @@ fun LoginScreen(clientApi: ClientApi, back: () -> Unit, login: (AuthUser) -> Uni
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ){
 
-        Button(onClick = back) {
+        Button(onClick = mainMenuNav) {
             Text("Back")
         }
 
@@ -77,7 +70,6 @@ fun LoginScreen(clientApi: ClientApi, back: () -> Unit, login: (AuthUser) -> Uni
             supportingText = {
                 if(emailError != null) { Text(emailError!!) }
             },
-            enabled = !isSubmitting,
         )
 
         OutlinedTextField(
@@ -95,31 +87,13 @@ fun LoginScreen(clientApi: ClientApi, back: () -> Unit, login: (AuthUser) -> Uni
             supportingText = {
                 if(passwordError != null) { Text(passwordError!!) }
             },
-            enabled = !isSubmitting,
         )
 
         Button(
-            enabled = !isSubmitting,
-            onClick = {
-
-                isSubmitting = true
-                submitError = null
-
-                scope.launch {
-
-                    val result = clientApi.login(email, password)
-                    result.onSuccess{ user -> login(user) }
-                    result.onFailure { error -> submitError = error.message ?: "Could not login."  }
-
-                    isSubmitting = false
-                }
-            },
+            enabled = emailError == null && passwordError == null,
+            onClick = { login(email, password) },
         ) {
-            Text(if (isSubmitting) "Logging in..." else "Log In")
+            Text("Log In")
         }
-
-        displayError(submitError)
-
     }
-
 }

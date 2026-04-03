@@ -18,19 +18,19 @@ class TableService(
     private val participantRepo: ParticipantRepositoryMem
 ) {
 
-    fun getAll(): Result<List<Table>> = runCatching {
+    fun getTables(): Result<List<Table>> = runCatching {
         tableRepo.getAllTables()
     }
 
-    fun createTable(name: Name, email: Email, token: String): Result<Table> = runCatching {
+    fun createTable(tableName: Name, userEmail: Email, token: String): Result<Table> = runCatching {
 
-        val owner = userRepo.findByEmail(email)
-            ?: throw UserError.EmailNotFound(email.string)
+        val owner = userRepo.findByEmail(userEmail)
+            ?: throw UserError.EmailNotFound(userEmail.string)
 
         token.verifyToken(owner)
 
         val participant = participantRepo.createParticipant(owner, Role.PLAYER)
-        tableRepo.createTable(name, owner, participant)
+        tableRepo.createTable(tableName, owner, participant)
     }
 
     fun joinTable(userEmail: Email, tableName: Name, token: String): Result<Table> = runCatching {
@@ -80,7 +80,7 @@ class TableService(
 
     }
 
-    fun changeRole(userEmail: Email, tableName: Name, token: String) = runCatching {
+    fun changeRole(userEmail: Email, tableName: Name, token: String): Result<Unit> = runCatching {
 
         val user = userRepo.findByEmail(userEmail)
             ?: throw UserError.EmailNotFound(userEmail.string)

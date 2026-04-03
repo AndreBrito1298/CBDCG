@@ -13,10 +13,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import isel.pt.cbdcg.views.PossibleStates
+import isel.pt.cbdcg.domain.User
 
 @Composable
-fun IdleMenuScreen(go: (PossibleStates) -> Unit){
+fun IdleMenuScreen(
+    user: User?,
+    loginNav: () -> Unit,
+    createUserNav: () -> Unit,
+    searchTablesNav: () -> Unit,
+    logout: () -> Unit
+){
 
     Column(
         modifier = Modifier
@@ -31,20 +37,38 @@ fun IdleMenuScreen(go: (PossibleStates) -> Unit){
             style = MaterialTheme.typography.headlineMedium,
         )
 
-        Button(
-            onClick = { go(PossibleStates.Login) },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Log In")
-        }
+        if(user == null){
 
-        Button(
-            onClick = { go(PossibleStates.Create) },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Create User")
-        }
+            Button(
+                onClick = loginNav,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Log In")
+            }
 
+            Button(
+                onClick = createUserNav,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Create User")
+            }
+
+        } else {
+
+            Button(
+                onClick = searchTablesNav,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Search Tables to Play")
+            }
+
+            Button(
+                onClick = logout,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Log Out")
+            }
+
+        }
     }
-
 }

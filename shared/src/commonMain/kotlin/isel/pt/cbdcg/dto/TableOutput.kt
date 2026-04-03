@@ -9,7 +9,7 @@ data class TableOutput(
     val id: UInt,
     val name: String,
     val owner: UserOutput,
-    val players: Array<ParticipantOutput>,
+    val participants: Array<ParticipantOutput>,
 ) {
     // Funções geradas pelo InteliJ por causa de uma das propriedades da data class ser um 'Array'
     override fun equals(other: Any?): Boolean {
@@ -21,7 +21,7 @@ data class TableOutput(
         if (id != other.id) return false
         if (name != other.name) return false
         if (owner != other.owner) return false
-        if (!players.contentEquals(other.players)) return false
+        if (!participants.contentEquals(other.participants)) return false
 
         return true
     }
@@ -30,7 +30,7 @@ data class TableOutput(
         var result = id.hashCode()
         result = 31 * result + name.hashCode()
         result = 31 * result + owner.hashCode()
-        result = 31 * result + players.contentHashCode()
+        result = 31 * result + participants.contentHashCode()
         return result
     }
 }
@@ -39,12 +39,12 @@ fun Table.toTableOutput(): TableOutput = TableOutput(
     id = id,
     name = name.string,
     owner = owner.toUserOutput(),
-    players = participants.map{ it.toParticipantOutput() }.toTypedArray()
+    participants = participants.map{ it.toParticipantOutput() }.toTypedArray()
 )
 
 fun TableOutput.toTable(): Table = Table(
     id = id,
     name = Name(name),
     owner = owner.toUser(),
-    participants = players.map{ it.toParticipant() }
+    participants = participants.map{ it.toParticipant() }
 )

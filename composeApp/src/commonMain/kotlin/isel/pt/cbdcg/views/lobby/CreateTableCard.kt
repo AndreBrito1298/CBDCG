@@ -14,32 +14,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import isel.pt.cbdcg.ClientApi
-import isel.pt.cbdcg.domain.AuthUser
-import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.isNameFilled
 import isel.pt.cbdcg.domain.isNameLengthValid
-import kotlinx.coroutines.launch
 
 @Composable
 fun CreateTableCard(
-    clientApi: ClientApi,
-    user: AuthUser,
-    error: (String?) -> Unit,
-    join: (Participant) -> Unit
+    createTable: (String) -> Unit,
 ) {
 
-    val scope = rememberCoroutineScope()
-
     var name by remember { mutableStateOf("") }
-    var nameError by remember { mutableStateOf<String?>(null) }
-
-    var isSubmitting by remember { mutableStateOf(false) }
+    var nameError by remember { mutableStateOf<String?>("") } // Disable the create button
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -75,28 +63,12 @@ fun CreateTableCard(
                     supportingText = {
                         if(nameError != null) { Text(nameError!!) }
                     },
-                    enabled = !isSubmitting,
                 )
             }
 
             Button(
-                onClick = {
-
-                    isSubmitting = true
-
-                    scope.launch{
-                        val result = clientApi.createTable(name, user.email.string)
-
-                        result.onSuccess{ participant ->
-                            join(participant)
-                            name = ""
-                        }
-                        result.onFailure{ error(it.message ?: "Could not login.") }
-
-                        isSubmitting = false
-                    }
-                },
-                enabled = !isSubmitting,
+                onClick = { createTable(name) },
+                enabled = nameError == null,
                 modifier = Modifier.padding(start = 16.dp),
             ) {
                 Text("Create Table")

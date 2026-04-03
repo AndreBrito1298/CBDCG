@@ -12,7 +12,6 @@ import isel.pt.cbdcg.domain.toName
 import isel.pt.cbdcg.dto.CreateTableInput
 import isel.pt.cbdcg.dto.TableOperationInput
 import isel.pt.cbdcg.dto.toTableOutput
-import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.service.TableService
 
 fun Route.tableWebApi(tableService: TableService) {
@@ -21,7 +20,7 @@ fun Route.tableWebApi(tableService: TableService) {
 
         get {
 
-            val result = tableService.getAll().getOrThrow()
+            val result = tableService.getTables().getOrThrow()
             call.respond(HttpStatusCode.OK, result.map{ it.toTableOutput() })
 
         }
@@ -29,13 +28,11 @@ fun Route.tableWebApi(tableService: TableService) {
         post("/create") {
 
             val input = call.receive<CreateTableInput>()
-            val token = call.request.queryParameters["token"]
-                ?: throw UserError.TokenNotFound()
 
             val result = tableService.createTable(
-                name = input.name.toName(),
-                email = input.owner.toEmail(),
-                token = token,
+                tableName = input.name.toName(),
+                userEmail = input.email.toEmail(),
+                token = input.token,
             ).getOrThrow()
 
             call.respond(HttpStatusCode.Created, result.toTableOutput())
@@ -44,13 +41,11 @@ fun Route.tableWebApi(tableService: TableService) {
         post("/join") {
 
             val input = call.receive<TableOperationInput>()
-            val token = call.request.queryParameters["token"]
-                ?: throw UserError.TokenNotFound()
 
             val result = tableService.joinTable(
                 userEmail = input.user.toEmail(),
                 tableName = input.table.toName(),
-                token = token,
+                token = input.token,
             ).getOrThrow()
 
             call.respond(HttpStatusCode.OK, result.toTableOutput())
@@ -59,31 +54,27 @@ fun Route.tableWebApi(tableService: TableService) {
         post("/leave") {
 
             val input = call.receive<TableOperationInput>()
-            val token = call.request.queryParameters["token"]
-                ?: throw UserError.TokenNotFound()
 
             tableService.leaveTable(
                 userEmail = input.user.toEmail(),
                 tableName = input.table.toName(),
-                token = token,
+                token = input.token,
             ).getOrThrow()
 
             call.response.status(HttpStatusCode.OK)
         }
 
-        post("/changeRole") {
+        post("/change-role") {
 
             val input = call.receive<TableOperationInput>()
-            val token = call.request.queryParameters["token"]
-                ?: throw UserError.TokenNotFound()
 
-            val result = tableService.changeRole(
+            tableService.changeRole(
                 userEmail = input.user.toEmail(),
                 tableName = input.table.toName(),
-                token = token,
+                token = input.token,
             ).getOrThrow()
 
-            call.respond(HttpStatusCode.OK, result.toTableOutput())
+            call.response.status(HttpStatusCode.OK)
         }
     }
 }

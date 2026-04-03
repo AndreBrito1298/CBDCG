@@ -53,7 +53,7 @@ fun Route.userWebApi(userService: UserService, httpClient: HttpClient) {
 
         route("/users") {
 
-            post {
+            post("/create") {
                 val input = call.receive<CreateUserInput>()
 
                 val result = userService.createUser(
