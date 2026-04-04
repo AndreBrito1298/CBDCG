@@ -29,9 +29,44 @@ class AppViewModel(
     private val _ui = MutableStateFlow<AppUIState>(AppUIState())
     val ui = _ui.asStateFlow()
 
+    init {
+
+        // Viewmodel must be ready to react to updates in the clientApi
+
+        viewModelScope.launch {
+            clientApi.tables.collect { tables ->
+                _ui.update { it.copy(tables = tables) }
+            }
+        }
+
+        viewModelScope.launch {
+            clientApi.currentTable.collect { table ->
+                _ui.update { it.copy(currentTable = table) }
+            }
+        }
+    }
+
     fun dismissError() {
         _ui.update { it.copy(errorMessage = null) }
     }
+
+    // Websocket-related operations
+
+    fun observeLobby(): Job = viewModelScope.launch {
+        clientApi.subscribeLobby()
+    }
+
+    fun observeTable(tableName: String): Job = viewModelScope.launch {
+        clientApi.subscribeTable(tableName)
+    }
+
+    fun stopObserving(onSuccess: () -> Unit): Job =
+        viewModelScope.launch {
+            clientApi.disconnectAll()
+            onSuccess()
+        }
+
+    // User-related operations
 
     fun login(email: String, password: String, onSuccess: () -> Unit): Job =
         viewModelScope.launch {
@@ -66,6 +101,7 @@ class AppViewModel(
             val response = clientApi.logout(token)
 
             response.onSuccess {
+                clientApi.disconnectAll()
                 _ui.value = AppUIState()
                 onSuccess()
             }
@@ -95,8 +131,9 @@ class AppViewModel(
             }
         }
 
+    // Table-related operations
 
-    fun getTables(): Job? {
+    /* fun getTables(): Job? {
 
         val user = _ui.value.user ?: return null
 
@@ -112,7 +149,7 @@ class AppViewModel(
                 _ui.update { it.copy(isLoading = false, errorMessage = error.message ?: "Could not load tables.") }
             }
         }
-    }
+    } */
 
     fun joinTable(table: Table, onSuccess: (Table) -> Unit): Job? {
 

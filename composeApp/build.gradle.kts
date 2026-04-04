@@ -36,6 +36,7 @@ kotlin {
             implementation(libs.androidx.navigation.compose)
             implementation(libs.ktor.clientCore)
             implementation(libs.ktor.clientContentNegotiation)
+            implementation(libs.ktor.clientWebsockets)
             implementation(libs.kotlinx.serializationJson)
             implementation(libs.ktor.serializationKotlinxJson)
             implementation(projects.shared)
@@ -47,6 +48,7 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.ktor.clientCio)
+            implementation(libs.logback)
         }
     }
 }
@@ -55,6 +57,7 @@ kotlin {
 compose.desktop {
     application {
         mainClass = "isel.pt.cbdcg.MainKt"
+        jvmArgs += "--enable-native-access=ALL-UNNAMED"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)

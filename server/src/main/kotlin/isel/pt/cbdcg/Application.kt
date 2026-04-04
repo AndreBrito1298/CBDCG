@@ -13,6 +13,8 @@ import isel.pt.cbdcg.service.TableService
 import isel.pt.cbdcg.service.UserService
 import isel.pt.cbdcg.webapi.tableWebApi
 import isel.pt.cbdcg.webapi.userWebApi
+import isel.pt.cbdcg.webapi.websocket.WebSocketHub
+import isel.pt.cbdcg.webapi.websocket.tableWebSocketApi
 
 fun main() {
     embeddedServer(Netty, port = SERVER_PORT, host = "0.0.0.0", module = Application::module)
@@ -26,11 +28,14 @@ fun Application.module() {
 
     installPlugins(httpClient)
 
+    val webSocketHub = WebSocketHub()
+
     val userService = UserService(UserRepositoryMem)
-    val tableService = TableService(UserRepositoryMem, TableRepositoryMem, ParticipantRepositoryMem)
+    val tableService = TableService(UserRepositoryMem, TableRepositoryMem, ParticipantRepositoryMem, webSocketHub)
 
     routing {
         userWebApi(userService, httpClient)
         tableWebApi(tableService)
+        tableWebSocketApi(webSocketHub, tableService)
     }
 }

@@ -10,19 +10,21 @@ import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
 import isel.pt.cbdcg.repository.memory.TableRepositoryMem
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
+import isel.pt.cbdcg.service.events.TableEventsPublisher
 import kotlin.runCatching
 
 class TableService(
     private val userRepo: UserRepositoryMem,
     private val tableRepo: TableRepositoryMem,
-    private val participantRepo: ParticipantRepositoryMem
+    private val participantRepo: ParticipantRepositoryMem,
+    private val events: TableEventsPublisher,
 ) {
 
     fun getTables(): Result<List<Table>> = runCatching {
         tableRepo.getAllTables()
     }
 
-    fun createTable(tableName: Name, userEmail: Email, token: String): Result<Table> = runCatching {
+    suspend fun createTable(tableName: Name, userEmail: Email, token: String): Result<Table> = runCatching {
 
         val owner = userRepo.findByEmail(userEmail)
             ?: throw UserError.EmailNotFound(userEmail.string)
@@ -30,10 +32,17 @@ class TableService(
         token.verifyToken(owner)
 
         val participant = participantRepo.createParticipant(owner, Role.PLAYER)
-        tableRepo.createTable(tableName, owner, participant)
+        val table = tableRepo.createTable(tableName, owner, participant)
+
+        val tables = tableRepo.getAllTables()
+
+        events.publishLobbyTables(tables)
+        events.publishTableUpdated(table)
+
+        table
     }
 
-    fun joinTable(userEmail: Email, tableName: Name, token: String): Result<Table> = runCatching {
+    suspend fun joinTable(userEmail: Email, tableName: Name, token: String): Result<Table> = runCatching {
 
         val user = userRepo.findByEmail(userEmail)
             ?: throw UserError.EmailNotFound(userEmail.string)
@@ -54,10 +63,15 @@ class TableService(
         val newTable = table.copy(participants = table.participants.plus(participant))
         tableRepo.save(newTable)
 
+        val tables = tableRepo.getAllTables()
+
+        events.publishLobbyTables(tables)
+        events.publishTableUpdated(newTable)
+
         newTable
     }
 
-    fun leaveTable(userEmail: Email, tableName: Name, token: String): Result<Unit> = runCatching {
+    suspend fun leaveTable(userEmail: Email, tableName: Name, token: String): Result<Unit> = runCatching {
 
         val user = userRepo.findByEmail(userEmail)
             ?: throw UserError.EmailNotFound(userEmail.string)
@@ -70,17 +84,22 @@ class TableService(
         if(table.participants.find{ it.user == user } == null)
             throw TableError.UserNotFound(user.name.toString(), table.name.toString())
 
-        tableRepo.removeParticipant(table, user)
+        val newTable = tableRepo.removeParticipant(table, user)
         participantRepo.deleteParticipant(user)
 
         if(table.owner == user) {
             table.participants.forEach { participantRepo.deleteParticipant(it.user) }
             tableRepo.deleteById(table.id)
+        } else {
+            events.publishTableUpdated(newTable)
         }
+
+        val tables = tableRepo.getAllTables()
+        events.publishLobbyTables(tables)
 
     }
 
-    fun changeRole(userEmail: Email, tableName: Name, token: String): Result<Unit> = runCatching {
+    suspend fun changeRole(userEmail: Email, tableName: Name, token: String): Result<Unit> = runCatching {
 
         val user = userRepo.findByEmail(userEmail)
             ?: throw UserError.EmailNotFound(userEmail.string)
@@ -97,7 +116,12 @@ class TableService(
             if(participant.role == Role.PLAYER) Role.SPECTATOR
             else Role.PLAYER
 
-        tableRepo.updateParticipants(table, participant.copy(role = newRole))
+        val newTable = tableRepo.updateParticipants(table, participant.copy(role = newRole))
+
+        val tables = tableRepo.getAllTables()
+
+        events.publishLobbyTables(tables)
+        events.publishTableUpdated(newTable)
     }
 
     /*

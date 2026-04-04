@@ -13,14 +13,25 @@ import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.pingPeriod
+import io.ktor.server.websocket.timeout
 import io.ktor.util.collections.ConcurrentMap
 import isel.pt.cbdcg.error.Error
 import isel.pt.cbdcg.error.ParticipantError
 import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.error.UserError
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.seconds
 
 fun Application.installPlugins(httpclient: HttpClient) {
+
+    install(WebSockets) {
+        pingPeriod = 15.seconds
+        timeout = 15.seconds
+        maxFrameSize = Long.MAX_VALUE
+        masking = false
+    }
 
     install(ContentNegotiation) {
         json(

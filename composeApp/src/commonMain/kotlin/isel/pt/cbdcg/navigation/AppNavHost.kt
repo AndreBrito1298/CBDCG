@@ -39,7 +39,7 @@ fun AppNavHost(vm: AppViewModel) {
 
         composable<LoginRoute> {
             LoginScreen(
-                mainMenuNav = { nav.navigateUp() },
+                mainMenuNav = { vm.stopObserving({ nav.navigateUp() }) },
                 login = { email, password ->
                     vm.login(
                         email = email,
@@ -52,7 +52,7 @@ fun AppNavHost(vm: AppViewModel) {
 
         composable<CreateUserRoute> {
             CreateUserScreen(
-                mainMenuNav = { nav.navigateUp() },
+                mainMenuNav = { vm.stopObserving({ nav.navigateUp() }) },
                 create = { name, email, password ->
                     vm.createUser(
                         name = name,
@@ -68,10 +68,14 @@ fun AppNavHost(vm: AppViewModel) {
 
             val user = ui.user ?: return@composable
 
+            LaunchedEffect(Unit) {
+                vm.observeLobby()
+            }
+
             SearchTablesScreen(
                 user = user,
                 tables = ui.tables,
-                mainMenuNav = { nav.navigateUp() },
+                mainMenuNav = { vm.stopObserving({ nav.navigateUp() }) },
                 joinTable = { table ->
                     vm.joinTable(
                         table = table,
@@ -91,6 +95,10 @@ fun AppNavHost(vm: AppViewModel) {
 
             val user = ui.user ?: return@composable
             val table = ui.currentTable ?: return@composable
+
+            LaunchedEffect(table.name.string) {
+                vm.observeTable(table.name.string)
+            }
 
             WaitingTableScreen(
                 user = user,

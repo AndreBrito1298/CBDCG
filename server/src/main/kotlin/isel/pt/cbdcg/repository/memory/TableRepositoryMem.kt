@@ -32,12 +32,18 @@ object TableRepositoryMem: TableRepository {
     }
 
     override fun removeParticipant(table: Table, user: User): Table {
-        return table.copy(participants = table.participants.filter{ it.user == user })
+        tables.removeIf{ it.id == table.id }
+        val newTable = table.copy(participants = table.participants.filter{ it.user != user })
+        tables.add(newTable)
+        return newTable
     }
 
     override fun updateParticipants(table: Table, participant: Participant): Table {
-        val list = table.participants.filter{ it.user == participant.user }
-        return table.copy(participants = list.plus(participant))
+        tables.removeIf{ it.id == table.id }
+        val list = table.participants.filter{ it.user != participant.user }
+        val newTable = table.copy(participants = list.plus(participant))
+        tables.add(newTable)
+        return newTable
     }
 
     // Generic Operations
@@ -47,6 +53,7 @@ object TableRepositoryMem: TableRepository {
     }
 
     override fun save(element: Table) {
+        tables.removeIf{ it.id == element.id }
         tables.add(element)
     }
 

@@ -17,11 +17,12 @@ application {
 }
 
 dependencies {
-    implementation("io.ktor:ktor-server-auth:${version}")
-    implementation("io.ktor:ktor-server-auth-jwt:${version}")
-    implementation("io.ktor:ktor-client-core:${version}")
-    implementation("io.ktor:ktor-client-cio:${version}")
-    implementation("io.ktor:ktor-client-content-negotiation:${version}")
+    implementation("io.ktor:ktor-server-auth:${libs.versions.ktor.get()}")
+    implementation("io.ktor:ktor-server-auth-jwt:${libs.versions.ktor.get()}")
+    implementation(libs.ktor.clientCore)
+    implementation(libs.ktor.clientCio)
+    implementation(libs.ktor.clientContentNegotiation)
+    implementation(libs.ktor.serverWebsockets)
     implementation(projects.shared)
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
@@ -34,6 +35,9 @@ dependencies {
     implementation(libs.ktor.serverNetty)
     implementation(libs.ktor.serverStatusPages)
     implementation(libs.identity.jvm)
+    implementation("io.ktor:ktor-server-core:3.3.3")
+    implementation("io.ktor:ktor-server-websockets:3.3.3")
+    implementation("io.ktor:ktor-server-core:3.3.3")
     testImplementation(libs.ktor.serverTestHost)
     testImplementation(libs.kotlin.testJunit)
 }
