@@ -133,7 +133,7 @@ class AppViewModel(
 
     // Table-related operations
 
-    /* fun getTables(): Job? {
+    fun getTables(): Job? {
 
         val user = _ui.value.user ?: return null
 
@@ -149,7 +149,7 @@ class AppViewModel(
                 _ui.update { it.copy(isLoading = false, errorMessage = error.message ?: "Could not load tables.") }
             }
         }
-    } */
+    }
 
     fun joinTable(table: Table, onSuccess: (Table) -> Unit): Job? {
 

@@ -1,0 +1,165 @@
+<mxfile host="app.diagrams.net" agent="Codex">
+  <diagram id="ui-screens" name="UI Screens">
+    <mxGraphModel dx="3300" dy="965" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="_zWxcVjnwApiNhE5ssGR-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="920" width="840" x="-280" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="start" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" value="Start" vertex="1">
+          <mxGeometry height="60" width="100" x="50" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="idle" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;align=left;spacingLeft=8;spacingTop=6;" value="&lt;b&gt;IdleMenuScreen&lt;/b&gt;&lt;hr/&gt;Main menu&lt;br/&gt;- Login&lt;br/&gt;- Create user&lt;br/&gt;- Search tables&lt;br/&gt;- Logout" vertex="1">
+          <mxGeometry height="150" width="220" x="-10" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="login" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;align=left;spacingLeft=8;spacingTop=6;" value="&lt;b&gt;LoginScreen&lt;/b&gt;&lt;hr/&gt;Authenticate user" vertex="1">
+          <mxGeometry height="90" width="190" x="-270" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="searchTables" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;align=left;spacingLeft=8;spacingTop=6;" value="&lt;b&gt;SearchTablesScreen&lt;/b&gt;&lt;hr/&gt;Lobby list&lt;br/&gt;- load tables&lt;br/&gt;- observe lobby&lt;br/&gt;- join table&lt;br/&gt;- create table" vertex="1">
+          <mxGeometry height="150" width="240" x="-20" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="waitingTable" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;align=left;spacingLeft=8;spacingTop=6;" value="&lt;b&gt;WaitingTableScreen&lt;/b&gt;&lt;hr/&gt;Waiting room / table&lt;br/&gt;- observe table&lt;br/&gt;- change role&lt;br/&gt;- leave table" vertex="1">
+          <mxGeometry height="140" width="240" x="-20" y="880" as="geometry" />
+        </mxCell>
+        <mxCell id="error" parent="1" style="rounded=1;dashed=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;align=left;spacingLeft=8;spacingTop=6;" value="&lt;b&gt;DisplayError&lt;/b&gt;&lt;hr/&gt;Global error dialog overlay" vertex="1">
+          <mxGeometry height="90" width="240" x="-20" y="1060" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="start" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#d6b656;" target="idle" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="idle" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#82b366;fontSize=12;" target="login" value="loginNav">
+          <mxGeometry relative="1" x="-0.333" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="-200" y="370" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="idle" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#82b366;fontSize=12;" target="createUser" value="createUserNav">
+          <mxGeometry relative="1" x="-0.3529" as="geometry">
+            <mxPoint x="-1" as="offset" />
+            <Array as="points">
+              <mxPoint x="400" y="370" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="idle" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;fontSize=12;" target="searchTables" value="searchTablesNav">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="30" y="520" />
+              <mxPoint x="30" y="520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="login" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#82b366;fontSize=12;" target="idle" value="mainMenuNav">
+          <mxGeometry relative="1" x="0.1105" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="-160" y="390" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="createUser" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#82b366;fontSize=12;" target="idle" value="mainMenuNav">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="360" y="405" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="createUser" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;fontSize=12;" target="searchTables" value="create success">
+          <mxGeometry relative="1" x="0.2903" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="400" y="640" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="searchTables" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;fontSize=12;" target="idle" value="mainMenuNav">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="170" y="520" />
+              <mxPoint x="170" y="520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="searchTables" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#9673a6;fontSize=12;" target="waitingTable" value="joinTable success">
+          <mxGeometry relative="1" x="-0.1765" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="40" y="790" />
+              <mxPoint x="40" y="790" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="searchTables" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#9673a6;fontSize=12;" target="waitingTable" value="createTable success">
+          <mxGeometry relative="1" x="0.0022" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="-70" y="670" />
+              <mxPoint x="-70" y="950" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="waitingTable" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#9673a6;fontSize=12;" target="searchTables" value="leaveTable success">
+          <mxGeometry relative="1" x="-0.4118" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="170" y="800" />
+              <mxPoint x="170" y="800" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="idle" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#666666;fontSize=12;" target="error" value="errorMessage != null">
+          <mxGeometry relative="1" x="-0.8472" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="160" y="320" />
+              <mxPoint x="540" y="320" />
+              <mxPoint x="540" y="1130" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="createUser" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#666666;fontSize=12;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="error" value="errorMessage != null">
+          <mxGeometry relative="1" x="-0.8352" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="480" y="465" />
+              <mxPoint x="480" y="1090" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e16" edge="1" parent="1" source="searchTables" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#666666;fontSize=12;" target="error" value="errorMessage != null">
+          <mxGeometry relative="1" x="-0.817" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="-160" y="635" />
+              <mxPoint x="-160" y="1105" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e17" edge="1" parent="1" source="waitingTable" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#666666;fontSize=12;" target="error" value="errorMessage != null">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_zWxcVjnwApiNhE5ssGR-1" edge="1" parent="1" source="login" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;fontSize=12;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-175" y="600" />
+              <mxPoint x="-20" y="600" />
+            </Array>
+            <mxPoint x="-70" y="565" as="sourcePoint" />
+            <mxPoint x="-20" y="600" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_zWxcVjnwApiNhE5ssGR-4" connectable="0" parent="_zWxcVjnwApiNhE5ssGR-1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=12;" value="login success" vertex="1">
+          <mxGeometry relative="1" x="-0.1837" y="1" as="geometry">
+            <mxPoint x="74" y="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="createUser" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;align=left;spacingLeft=8;spacingTop=6;" value="&lt;b&gt;CreateUserScreen&lt;/b&gt;&lt;hr/&gt;Register new user" vertex="1">
+          <mxGeometry height="90" width="190" x="280" y="420" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

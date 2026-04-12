@@ -9,11 +9,13 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class UserServiceTest {
 
     private val userRepo = UserRepositoryMem
-
     private val userService = UserService(userRepo)
 
     @BeforeTest
@@ -22,123 +24,91 @@ class UserServiceTest {
     }
 
     @Test
-    fun `create user successfully`(){
+    fun `create user successfully authenticates and persists token`() {
+        val user = userService.createUser(
+            Name("testName"),
+            Email("testEmail@gmail.com"),
+            Password("testPassword"),
+        ).getOrThrow()
 
-        val name = Name("testName")
-        val email = Email("testEmail@gmail.com")
-        val password = Password("testPassword")
-
-        val user1 = userService.createUser(name, email, password)
-        assert(user1.isSuccess)
-
-        val newEmail = Email("testEmail@gmail.eu")
-
-        val user2 = userService.createUser(name, newEmail, password)
-        assert(user2.isSuccess)
-
+        assertEquals("testEmail@gmail.com", user.email.string)
+        assertNotNull(user.auth)
+        assertTrue(user.auth!!.token.isNotBlank())
+        assertEquals(user, userRepo.findByToken(user.auth!!.token))
     }
 
     @Test
-    fun `duplicate email`(){
+    fun `duplicate email fails`() {
+        userService.createUser(Name("testName"), Email("testEmail@gmail.com"), Password("testPassword"))
 
-        val name = Name("testName")
-        val email = Email("testEmail@gmail.com")
-        val password = Password("testPassword")
-
-        userService.createUser(name, email, password)
-
-        val newName = Name("testName2")
-        val newPassword = Password("testPassword2")
-
-        val user = userService.createUser(newName, email, newPassword)
-        assert(user.isFailure)
-        assertEquals(user.exceptionOrNull()?.message, "Email '${email.string}' is already in use.")
-
-    }
-
-    @Test
-    fun `user logins successfully`(){
-
-        val name = Name("testName")
-        val email = Email("testEmail@gmail.com")
-        val password = Password("testPassword")
-        userService.createUser(name, email, password)
-
-        val login = userService.login(email, password)
-        assert(login.isSuccess)
-    }
-
-    @Test
-    fun `email not found`(){
-
-        val name = Name("testName")
-        val email = Email("testEmail@gmail.com")
-        val password = Password("testPassword")
-
-        val login1 = userService.login(email, password)
-        assert(login1.isFailure)
-        assertEquals(login1.exceptionOrNull()?.message, "Email '${email.string}' is not bound to any account.")
-
-        userService.createUser(name, email, password)
-
-        val newEmail = Email("testEmail@gmail.eu")
-
-        val login2 = userService.login(newEmail, password)
-        assert(login2.isFailure)
-        assertEquals(login2.exceptionOrNull()?.message, "Email '${newEmail.string}' is not bound to any account.")
-
-    }
-
-    @Test
-    fun `incorrect password`(){
-
-        val name = Name("testName")
-        val email = Email("testEmail@gmail.com")
-        val password = Password("testPassword")
-        userService.createUser(name, email, password)
-
-        val newPassword = Password("testPassword2")
-
-        val login = userService.login(email, newPassword)
-        assert(login.isFailure)
-        assertEquals(login.exceptionOrNull()?.message, "Passwords do not match.")
-
-    }
-
-    @Test
-    fun `user cannot login, wrong password`() {
-        val name = Name("testName")
-        val email = Email("testEmail@gmail.com")
-        val password = Password("testPassword")
-        userRepo.createUser(name, email, password)
-
-        assertFailsWith<UserError.PasswordMismatch> {
-            userService.login(email, Password("randomPassword")).getOrThrow()
+        assertFailsWith<UserError.DuplicateEmail> {
+            userService.createUser(
+                Name("otherName"),
+                Email("testEmail@gmail.com"),
+                Password("otherPassword"),
+            ).getOrThrow()
         }
     }
 
+    @Test
+    fun `login succeeds for existing unauthenticated user`() {
+        userRepo.createUser(Name("testName"), Email("testEmail@gmail.com"), Password("testPassword"))
+
+        val logged = userService.login(Email("testEmail@gmail.com"), Password("testPassword")).getOrThrow()
+
+        assertNotNull(logged.auth)
+        assertEquals(logged, userRepo.findByToken(logged.auth!!.token))
+    }
 
     @Test
-    fun `user cannot login, because email was not found`() {
+    fun `login fails when email is not found`() {
         assertFailsWith<UserError.EmailNotFound> {
             userService.login(Email("randomEmail@gmail.com"), Password("randomPassword")).getOrThrow()
         }
     }
 
     @Test
-    fun `create user with duplicate email`() {
-        val name = Name("testName")
-        val email = Email("testEmail@gmail.com")
-        val password = Password("testPassword")
-        userService.createUser(name, email, password)
+    fun `login fails when password is incorrect`() {
+        userRepo.createUser(Name("testName"), Email("testEmail@gmail.com"), Password("testPassword"))
 
-        assertFailsWith<UserError.DuplicateEmail> {
-            userService.createUser(
-                Name("randomName"),
-                email,
-                Password("randomPassword")).getOrThrow()
+        assertFailsWith<UserError.PasswordMismatch> {
+            userService.login(Email("testEmail@gmail.com"), Password("wrongPassword")).getOrThrow()
         }
-
     }
 
+    @Test
+    fun `login fails when user is already logged in`() {
+        val authenticated = userService.createUser(
+            Name("testName"),
+            Email("testEmail@gmail.com"),
+            Password("testPassword"),
+        ).getOrThrow()
+
+        assertNotNull(authenticated.auth)
+        assertFailsWith<UserError.AlreadyLoggedIn> {
+            userService.login(authenticated.email, authenticated.password).getOrThrow()
+        }
+    }
+
+    @Test
+    fun `logout clears authentication token`() {
+        val authenticated = userService.createUser(
+            Name("testName"),
+            Email("testEmail@gmail.com"),
+            Password("testPassword"),
+        ).getOrThrow()
+
+        userService.logout(authenticated.auth!!.token).getOrThrow()
+
+        val stored = userRepo.findByEmail(authenticated.email)
+        assertNotNull(stored)
+        assertNull(stored.auth)
+    }
+
+    @Test
+    fun `logout fails when token does not exist`() {
+        assertFailsWith<UserError.TokenNotFound> {
+            userService.logout("missing-token").getOrThrow()
+        }
+    }
 }

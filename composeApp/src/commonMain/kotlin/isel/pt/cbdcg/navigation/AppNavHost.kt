@@ -29,10 +29,7 @@ fun AppNavHost(vm: AppViewModel) {
                 user = ui.user,
                 loginNav = { nav.navigate(LoginRoute) },
                 createUserNav = { nav.navigate(CreateUserRoute) },
-                searchTablesNav = {
-                    /* vm.loadTables() */
-                    nav.navigate(SearchTablesRoute)
-                },
+                searchTablesNav = { nav.navigate(SearchTablesRoute) },
                 logout = { vm.logout(onSuccess = { nav.popBackStack(IdleRoute, inclusive = false) }) },
             )
         }
@@ -69,6 +66,7 @@ fun AppNavHost(vm: AppViewModel) {
             val user = ui.user ?: return@composable
 
             LaunchedEffect(Unit) {
+                vm.getTables()
                 vm.observeLobby()
             }
 
@@ -96,7 +94,7 @@ fun AppNavHost(vm: AppViewModel) {
             val user = ui.user ?: return@composable
             val table = ui.currentTable ?: return@composable
 
-            LaunchedEffect(table.name.string) {
+            LaunchedEffect(Unit) {
                 vm.observeTable(table.name.string)
             }
 
