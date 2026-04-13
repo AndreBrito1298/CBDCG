@@ -20,7 +20,7 @@ class UserService(
 
         val user = userRepo.createUser(name, email, password)
         val token = UUID.randomUUID().toString()
-        val auth = user.copy(auth = AuthUser(token))
+        val auth = user.copy(auth = AuthUser(token, user.email, user.name))
 
         userRepo.save(auth) // userRepo.login(user)
 
@@ -39,7 +39,7 @@ class UserService(
             throw UserError.PasswordMismatch()
 
         val token = UUID.randomUUID().toString()
-        val auth = user.copy(auth = AuthUser(token))
+        val auth = user.copy(auth = AuthUser(token, user.email, user.name))
 
         userRepo.save(auth)
 

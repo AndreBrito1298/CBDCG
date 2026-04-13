@@ -1,10 +1,7 @@
 package isel.pt.cbdcg.repository
 
 
-import isel.pt.cbdcg.error.TableError
-import isel.pt.cbdcg.domain.Email
-import isel.pt.cbdcg.domain.Name
-import isel.pt.cbdcg.domain.Password
+import isel.pt.cbdcg.domain.*
 import isel.pt.cbdcg.repository.memory.TableRepositoryMem
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
 import kotlin.test.BeforeTest
@@ -20,15 +17,21 @@ class TableRepositoryTest {
     fun clearRepo() {
         userRepo.clear()
 
-        userRepo.createUser(
-            Name("testName"),
-            Email("testEmail@gmail.com"),
-            Password("testPassword")
+        userRepo.save(
+            User(
+                1u,
+                Name("testName"),
+                Email("testEmail@gmail.com"),
+                Password("testPassword")
+            )
         )
-        userRepo.createUser(
-            Name("randomName"),
-            Email("randomEmail@gmail.com"),
-            Password("randomPassword")
+        userRepo.save(
+            User(
+                2u,
+                Name("randomName"),
+                Email("randomEmail@gmail.com"),
+                Password("randomPassword")
+            )
         )
 
         tableRepo.clear()
@@ -38,8 +41,10 @@ class TableRepositoryTest {
     fun `create table successfully`() {
 
         val name = Name("testTable")
+        val owner = userRepo.findById(1u)!!
+        val participant = Participant(owner, Role.PLAYER)
 
-        tableRepo.createTable(name, 0u)
+        tableRepo.createTable(name, owner, participant)
         assert(tableRepo.tables.find{ it.name.string == name.string } != null)
     }
 

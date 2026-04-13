@@ -29,9 +29,9 @@ fun Route.tableWebApi(tableService: TableService) {
 
             val input = call.receive<CreateTableInput>()
 
-            val result = tableService.createTable(
+            val result = tableService.createTableWithID(
                 tableName = input.name.toName(),
-                userEmail = input.email.toEmail(),
+                userID = input.email.toUInt(),
                 token = input.token,
             ).getOrThrow()
 
@@ -42,7 +42,7 @@ fun Route.tableWebApi(tableService: TableService) {
 
             val input = call.receive<TableOperationInput>()
 
-            val result = tableService.joinTable(
+            val result = tableService.joinTableWithEmailAndName(
                 userEmail = input.user.toEmail(),
                 tableName = input.table.toName(),
                 token = input.token,
@@ -55,9 +55,9 @@ fun Route.tableWebApi(tableService: TableService) {
 
             val input = call.receive<TableOperationInput>()
 
-            tableService.leaveTable(
-                userEmail = input.user.toEmail(),
-                tableName = input.table.toName(),
+            tableService.leaveTableWithID(
+                userID = input.user.toUInt(),
+                tableID = input.table.toUInt(),
                 token = input.token,
             ).getOrThrow()
 
@@ -68,9 +68,9 @@ fun Route.tableWebApi(tableService: TableService) {
 
             val input = call.receive<TableOperationInput>()
 
-            tableService.changeRole(
-                userEmail = input.user.toEmail(),
-                tableName = input.table.toName(),
+            tableService.changeRoleWithID(
+                userID = input.user.toUInt(),
+                tableID = input.table.toUInt(),
                 token = input.token,
             ).getOrThrow()
 

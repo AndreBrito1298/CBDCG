@@ -1,10 +1,7 @@
 package isel.pt.cbdcg.repository
 
 import isel.pt.cbdcg.error.TableError
-import isel.pt.cbdcg.domain.Email
-import isel.pt.cbdcg.domain.Name
-import isel.pt.cbdcg.domain.Password
-import isel.pt.cbdcg.domain.Role
+import isel.pt.cbdcg.domain.*
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
 import isel.pt.cbdcg.repository.memory.TableRepositoryMem
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
@@ -25,29 +22,33 @@ class ParticipantRepositoryTest {
     @BeforeTest
     fun clearRepo(){
 
-        participantRepo.clear()
+        participantRepo.participants.clear()
         userRepo.clear()
         tableRepo.clear()
 
-        userRepo.createUser(
+        val user1 = userRepo.createUser(
             Name("testName"),
             Email("testEmail@gmail.com"),
             Password("testPassword")
         )
-        userRepo.createUser(
+        val user2 = userRepo.createUser(
             Name("randomName"),
             Email("randomEmail@gmail.com"),
             Password("randomPassword")
         )
 
+        val participant1 = Participant(user1, Role.PLAYER)
         tableRepo.createTable(
             Name("tableName"),
-            0u
+            user1,
+            participant1
         )
 
+        val participant2 = Participant(user2, Role.PLAYER)
         tableRepo.createTable(
             Name("randomName"),
-            1u
+            user2,
+            participant2
         )
 
     }
@@ -56,47 +57,43 @@ class ParticipantRepositoryTest {
     fun `user is available to join a table`(){
 
         val user = userRepo.users.first()
-        assertNull(participantRepo.userAvailability(user))
+        assert(participantRepo.userAvailability(user))
     }
 
     @Test
     fun `user is not available to join a table`(){
 
         val user = userRepo.users.first()
-        val table = tableRepo.tables.first()
-        participantRepo.joinTable(user, table, Role.PLAYER)
+        participantRepo.createParticipant(user, Role.PLAYER)
 
-        assertNotNull(participantRepo.userAvailability(user))
+        assert(!participantRepo.userAvailability(user))
     }
 
     @Test
     fun `join a table successfully`(){
 
         val user = userRepo.users.first()
-        val table = tableRepo.tables.first()
 
-        participantRepo.joinTable(user, table, Role.PLAYER)
+        participantRepo.createParticipant(user, Role.PLAYER)
         assert(participantRepo.participants.size == 1)
     }
 
     @Test
-    fun `user is found in a table`(){
+    fun `user is found as a participant`(){
 
         val user = userRepo.users.first()
-        val table = tableRepo.tables.first()
-        participantRepo.joinTable(user, table, Role.PLAYER)
+        participantRepo.createParticipant(user, Role.PLAYER)
 
-        assert(participantRepo.findUserInTable(user, table))
+        assert(!participantRepo.userAvailability(user))
 
     }
 
     @Test
-    fun `user is not found in a table, when he isn't in the table`(){
+    fun `user is not found as a participant, when he isn't participating`(){
 
         val user = userRepo.users.first()
-        val table = tableRepo.tables.first()
 
-        assert(!participantRepo.findUserInTable(user, table))
+        assert(participantRepo.userAvailability(user))
 
     }
 
@@ -104,10 +101,9 @@ class ParticipantRepositoryTest {
     fun `leave a table successfully`(){
 
         val user = userRepo.users.first()
-        val table = tableRepo.tables.first()
-        participantRepo.joinTable(user, table, Role.PLAYER)
+        participantRepo.createParticipant(user, Role.PLAYER)
 
-        participantRepo.leaveTable(user, table)
+        participantRepo.deleteParticipant(user)
         assert(participantRepo.participants.isEmpty())
     }
 

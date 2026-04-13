@@ -29,5 +29,5 @@ fun UserOutput.toUser(): User = User(
     name = Name(name),
     email = Email(email),
     password = Password(password),
-    auth = AuthUser(auth)
+    auth = AuthUser(auth, Email(email), Name(name))
 )

@@ -27,4 +27,8 @@ object ParticipantRepositoryMem: ParticipantRepository {
         participants.removeIf{ it.user == user }
     }
 
+    fun clear() {
+        participants.clear()
+    }
+
 }

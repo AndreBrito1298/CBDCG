@@ -1,21 +1,33 @@
 package isel.pt.cbdcg.repository.database
 
-import isel.pt.cbdcg.configs.Tables
-import isel.pt.cbdcg.domain.Name
+import isel.pt.cbdcg.domain.*
 import isel.pt.cbdcg.domain.Table
-import isel.pt.cbdcg.repository.Repository
+import isel.pt.cbdcg.repository.TableRepository
+import isel.pt.cbdcg.repository.database.Tables.Participants
+import isel.pt.cbdcg.repository.database.Tables.Tables
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 
-object TableRepositoryDB: Repository<Table> {
+object TableRepositoryDB : TableRepository {
 
-    fun createTable(table: Table) = transaction {
-        save(table)
-        //ParticipantRepositoryDB.joinTable()
+    override fun createTable(name: Name, owner: User, participant: Participant): Table {
+        transaction {
+            Tables.insert {
+                it[Tables.name] = name.string
+                it[Tables.owner] = owner.id
+                it[capacity] = 1u
+            }
+            Participants.insert {
+                it[id] = participant.user.id
+                it[userEmail] = participant.user.email.string
+                it[lobbyName] = name.string
+                it[role] = participant.role.name
+            }
+        }
+        return findByName(name)!!
     }
-    
+
     override fun findById(id: UInt): Table? {
         return transaction {
             Tables.selectAll().where { Tables.id eq id }
@@ -24,7 +36,7 @@ object TableRepositoryDB: Repository<Table> {
         }
     }
 
-    fun findByName(name: Name): Table? {
+    override fun findByName(name: Name): Table? {
         return transaction {
             Tables.selectAll().where { Tables.name eq name.string }
                 .singleOrNull()
@@ -32,26 +44,33 @@ object TableRepositoryDB: Repository<Table> {
         }
     }
 
-    fun addPlayerToTable(table: Table) {
-        transaction {
-            Tables.update({ Tables.id eq table.id }) {
-                it[Tables.players] = table.participants+1.toUInt()
-            }
-        }
-    }
-
-    fun getAllTables(): List<Table> {
+    override fun getAllTables(): List<Table> {
         return transaction {
             Tables.selectAll().map { it.toTable() }
         }
     }
 
+    override fun getAllParticipants(tableName: Name): List<Participant> {
+        return transaction {
+            Participants.selectAll().where { Participants.lobbyName eq tableName.string }
+                .map { it.toParticipant() }
+        }
+    }
+
     override fun save(element: Table) {
         transaction {
-            Tables.insert {
-                it[name] = element.name.string
-                it[owner] = element.owner
-                it[players] = element.participants
+            if (element.id == 0u) {
+                Tables.insert {
+                    it[name] = element.name.string
+                    it[owner] = element.owner.id
+                    it[capacity] = element.participants.size.toUInt()
+                }
+            } else {
+                Tables.update({ Tables.id eq element.id }) {
+                    it[name] = element.name.string
+                    it[owner] = element.owner.id
+                    it[capacity] = element.participants.size.toUInt()
+                }
             }
         }
     }
@@ -68,13 +87,48 @@ object TableRepositoryDB: Repository<Table> {
         }
     }
 
-    /**
-     * Helper function to convert a ResultRow to a Table domain object.
-     */
+    override fun removeParticipant(table: Table, user: User): Table {
+        transaction {
+            Participants.deleteWhere { (lobbyName eq table.name.string) and (id eq user.id) }
+            Tables.update({ Tables.id eq table.id }) {
+                it[capacity] = (table.participants.size - 1).toUInt()
+            }
+        }
+        return findById(table.id)!!
+    }
+
+    override fun updateParticipants(table: Table, participant: Participant): Table {
+        transaction {
+            val count = Participants.selectAll().where { (Participants.lobbyName eq table.name.string) and (Participants.id eq participant.user.id) }.count()
+            if (count == 0L) {
+                Participants.insert {
+                    it[id] = participant.user.id
+                    it[userEmail] = participant.user.email.string
+                    it[lobbyName] = table.name.string
+                    it[role] = participant.role.name
+                }
+            } else {
+                Participants.update({ (Participants.lobbyName eq table.name.string) and (Participants.id eq participant.user.id) }) {
+                    it[role] = participant.role.name
+                }
+            }
+            Tables.update({ Tables.id eq table.id }) {
+                it[capacity] = getAllParticipants(table.name).size.toUInt()
+            }
+        }
+        return findById(table.id)!!
+    }
+
     private fun ResultRow.toTable() = Table(
         id = this[Tables.id],
         name = Name(this[Tables.name]),
-        owner = this[Tables.owner],
-        participants = this[Tables.players]
+        owner = UserRepositoryDB.findById(this[Tables.owner])!!,
+        participants = getAllParticipants(Name(this[Tables.name]))
     )
+
+    private fun ResultRow.toParticipant() = Participant(
+        user = UserRepositoryDB.findById(this[Participants.id])!!,
+        role = this[Participants.role].toRole() ?: Role.SPECTATOR
+    )
+
 }

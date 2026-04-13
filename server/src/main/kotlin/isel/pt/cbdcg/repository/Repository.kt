@@ -1,7 +1,5 @@
 package isel.pt.cbdcg.repository
 
-import com.android.identity.cbor.Uint
-
 /**
  * Generic Interface for a Repository.
  */

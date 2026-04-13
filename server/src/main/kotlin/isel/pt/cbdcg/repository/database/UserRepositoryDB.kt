@@ -1,13 +1,13 @@
 package isel.pt.cbdcg.repository.database
 
-import isel.pt.cbdcg.configs.AuthUsers
-import isel.pt.cbdcg.configs.Users
 import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.repository.Repository
+import isel.pt.cbdcg.repository.database.Tables.AuthUsers
+import isel.pt.cbdcg.repository.database.Tables.Users
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.selectAll
