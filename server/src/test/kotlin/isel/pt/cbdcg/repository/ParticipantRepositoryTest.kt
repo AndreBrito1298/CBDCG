@@ -1,112 +1,58 @@
 package isel.pt.cbdcg.repository
 
-import isel.pt.cbdcg.error.TableError
-import isel.pt.cbdcg.domain.*
+import isel.pt.cbdcg.domain.Email
+import isel.pt.cbdcg.domain.Name
+import isel.pt.cbdcg.domain.Participant
+import isel.pt.cbdcg.domain.Password
+import isel.pt.cbdcg.domain.Role
+import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
-import isel.pt.cbdcg.repository.memory.TableRepositoryMem
-import isel.pt.cbdcg.repository.memory.UserRepositoryMem
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ParticipantRepositoryTest {
 
-    private val userRepo = UserRepositoryMem
-
-    private val tableRepo = TableRepositoryMem
-
     private val participantRepo = ParticipantRepositoryMem
 
+    private val user =
+        User(1u, Name("testName"), Email("testEmail@gmail.com"), Password("testPassword"))
+
     @BeforeTest
-    fun clearRepo(){
-
+    fun clearRepo() {
         participantRepo.participants.clear()
-        userRepo.clear()
-        tableRepo.clear()
-
-        val user1 = userRepo.createUser(
-            Name("testName"),
-            Email("testEmail@gmail.com"),
-            Password("testPassword")
-        )
-        val user2 = userRepo.createUser(
-            Name("randomName"),
-            Email("randomEmail@gmail.com"),
-            Password("randomPassword")
-        )
-
-        val participant1 = Participant(user1, Role.PLAYER)
-        tableRepo.createTable(
-            Name("tableName"),
-            user1,
-            participant1
-        )
-
-        val participant2 = Participant(user2, Role.PLAYER)
-        tableRepo.createTable(
-            Name("randomName"),
-            user2,
-            participant2
-        )
-
     }
 
     @Test
-    fun `user is available to join a table`(){
+    fun `create participant stores user and role`() {
+        val participant = participantRepo.createParticipant(user, Role.PLAYER)
 
-        val user = userRepo.users.first()
-        assert(participantRepo.userAvailability(user))
+        assertEquals(1, participantRepo.participants.size)
+        assertEquals(Participant(user, Role.PLAYER), participant)
     }
 
     @Test
-    fun `user is not available to join a table`(){
+    fun `user is available before joining a table`() {
+        assertTrue(participantRepo.userAvailability(user))
+    }
 
-        val user = userRepo.users.first()
+    @Test
+    fun `user is unavailable after becoming participant`() {
+        participantRepo.createParticipant(user, Role.SPECTATOR)
+
+        assertFalse(participantRepo.userAvailability(user))
+    }
+
+    @Test
+    fun `delete participant removes every participant for that user`() {
         participantRepo.createParticipant(user, Role.PLAYER)
-
-        assert(!participantRepo.userAvailability(user))
-    }
-
-    @Test
-    fun `join a table successfully`(){
-
-        val user = userRepo.users.first()
-
-        participantRepo.createParticipant(user, Role.PLAYER)
-        assert(participantRepo.participants.size == 1)
-    }
-
-    @Test
-    fun `user is found as a participant`(){
-
-        val user = userRepo.users.first()
-        participantRepo.createParticipant(user, Role.PLAYER)
-
-        assert(!participantRepo.userAvailability(user))
-
-    }
-
-    @Test
-    fun `user is not found as a participant, when he isn't participating`(){
-
-        val user = userRepo.users.first()
-
-        assert(participantRepo.userAvailability(user))
-
-    }
-
-    @Test
-    fun `leave a table successfully`(){
-
-        val user = userRepo.users.first()
-        participantRepo.createParticipant(user, Role.PLAYER)
+        participantRepo.createParticipant(user, Role.SPECTATOR)
 
         participantRepo.deleteParticipant(user)
-        assert(participantRepo.participants.isEmpty())
+
+        assertTrue(participantRepo.participants.isEmpty())
+        assertTrue(participantRepo.userAvailability(user))
     }
-
-
-
 }

@@ -36,6 +36,6 @@ fun Application.module() {
     routing {
         userWebApi(userService, httpClient)
         tableWebApi(tableService)
-        tableWebSocketApi(webSocketHub, tableService)
+        tableWebSocketApi(webSocketHub)
     }
 }

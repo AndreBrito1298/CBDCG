@@ -1,19 +1,19 @@
 package isel.pt.cbdcg.repository
 
+import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
-import isel.pt.cbdcg.service.UserService
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-class UserRepositoryMemTest {
+class UserRepositoryTest {
 
     private val userRepo = UserRepositoryMem
-    private val userService = UserService(userRepo)
 
     @BeforeTest
     fun clearRepo() {
@@ -21,63 +21,59 @@ class UserRepositoryMemTest {
     }
 
     @Test
-    fun `create user successfully`() {
+    fun `create user stores user`() {
+        val user = userRepo.createUser(Name("testName"), Email("testEmail@gmail.com"), Password("testPassword"))
 
-        val name = Name("testName")
-        val email = Email("testEmail@gmail.com")
-        val password = Password("testPassword")
-
-        userService.createUser(name, email, password)
-        assert(userRepo.users.find{ it.email.string == email.string } != null)
-
-    }
-
-
-    @Test
-    fun `create user with same name or password`() {
-
-        val name = Name("testName")
-        val email = Email("testEmail@gmail.com")
-        val password = Password("testPassword")
-        userService.createUser(name, email, password)
-
-        val newEmail = Email("randomEmail@gmail.com")
-
-        userService.createUser(name, newEmail, password)
-        assert(userRepo.users.find{ it.email.string == newEmail.string } != null)
-
+        assertEquals(user, userRepo.findById(user.id))
+        assertEquals(user, userRepo.findByEmail(user.email))
     }
 
     @Test
-    fun `login successfully`() {
+    fun `save replaces existing user by id`() {
+        val user = userRepo.createUser(Name("testName"), Email("testEmail@gmail.com"), Password("testPassword"))
+        val authenticated = user.copy(auth = AuthUser("token-123"))
 
-        val name = Name("testName")
-        val email = Email("testEmail@gmail.com")
-        val password = Password("testPassword")
-        val user = userService.createUser(name, email, password)
+        userRepo.save(authenticated)
 
-        val loggedInUser = userService.login(email, password).getOrNull()
-        assert(loggedInUser != null)
-        assertEquals(loggedInUser!!.email, user.getOrNull()!!.email)
-    }
-
-
-
-    @Test
-    fun `user can be found by email`(){
-
-        val name = Name("testName")
-        val email = Email("testEmail@gmail.com")
-        val password = Password("testPassword")
-        userRepo.createUser(name, email, password)
-
-        assert(userRepo.findByEmail(email)!!.email.string == email.string)
-
+        assertEquals(authenticated, userRepo.findById(user.id))
+        assertEquals(1, userRepo.users.count { it.id == user.id })
     }
 
     @Test
-    fun `user cannot be found by email, because it does not exist`(){
-        assertNull(userRepo.findByEmail(Email("randomEmail@gmail.com")))
+    fun `find by token returns authenticated user`() {
+        val user = userRepo.createUser(Name("testName"), Email("testEmail@gmail.com"), Password("testPassword"))
+        val authenticated = user.copy(auth = AuthUser("token-123"))
+        userRepo.save(authenticated)
+
+        val found = userRepo.findByToken("token-123")
+
+        assertEquals(authenticated, found)
     }
 
+    @Test
+    fun `find by token returns null for unknown token`() {
+        val user = userRepo.createUser(Name("testName"), Email("testEmail@gmail.com"), Password("testPassword"))
+        userRepo.save(user.copy(auth = AuthUser("token-123")))
+
+        assertNull(userRepo.findByToken("missing-token"))
+    }
+
+    @Test
+    fun `delete by id removes user`() {
+        val user = userRepo.createUser(Name("testName"), Email("testEmail@gmail.com"), Password("testPassword"))
+
+        userRepo.deleteById(user.id)
+
+        assertNull(userRepo.findById(user.id))
+    }
+
+    @Test
+    fun `ids grow with repository size`() {
+        val first = userRepo.createUser(Name("one"), Email("one@gmail.com"), Password("secret1"))
+        val second = userRepo.createUser(Name("two"), Email("two@gmail.com"), Password("secret2"))
+
+        assertNotNull(first)
+        assertEquals(0u, first.id)
+        assertEquals(1u, second.id)
+    }
 }

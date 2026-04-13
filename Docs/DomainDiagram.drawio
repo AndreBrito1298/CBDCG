@@ -1,0 +1,105 @@
+<mxfile host="app.diagrams.net" agent="Codex">
+  <diagram id="domain-diagram" name="Domain">
+    <mxGraphModel dx="717" dy="462" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="9LRTrC0x9r6aIhIoED24-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="560" width="730" x="20" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="user" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;align=left;spacingLeft=8;spacingTop=6;" value="&lt;b&gt;User&lt;/b&gt;&lt;hr/&gt;+ id: UInt&lt;br/&gt;+ name: Name&lt;br/&gt;+ email: Email&lt;br/&gt;+ password: Password&lt;br/&gt;+ auth: AuthUser?" vertex="1">
+          <mxGeometry height="150" width="220" x="400" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="auth" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;align=left;spacingLeft=8;spacingTop=6;" value="&lt;b&gt;AuthUser&lt;/b&gt;&lt;hr/&gt;+ token: String" vertex="1">
+          <mxGeometry height="80" width="180" x="560" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="table" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;align=left;spacingLeft=8;spacingTop=6;" value="&lt;b&gt;Table&lt;/b&gt;&lt;hr/&gt;+ id: UInt&lt;br/&gt;+ name: Name&lt;br/&gt;+ owner: User&lt;br/&gt;+ participants: List&amp;lt;Participant&amp;gt;&lt;br/&gt;&lt;hr/&gt;+ checkAvailability(): Boolean" vertex="1">
+          <mxGeometry height="170" width="270" x="50" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="participant" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;align=left;spacingLeft=8;spacingTop=6;" value="&lt;b&gt;Participant&lt;/b&gt;&lt;hr/&gt;+ user: User&lt;br/&gt;+ role: Role" vertex="1">
+          <mxGeometry height="90" width="220" x="180" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="role" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;align=center;spacingTop=6;" value="&lt;b&gt;&amp;lt;&amp;lt;enumeration&amp;gt;&amp;gt;&lt;/b&gt;&lt;br/&gt;&lt;b&gt;Role&lt;/b&gt;&lt;hr/&gt;PLAYER&lt;br/&gt;SPECTATOR" vertex="1">
+          <mxGeometry height="100" width="180" x="480" y="475" as="geometry" />
+        </mxCell>
+        <mxCell id="name" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;align=left;spacingLeft=8;spacingTop=6;" value="&lt;b&gt;&amp;lt;&amp;lt;value object&amp;gt;&amp;gt;&lt;/b&gt;&lt;br/&gt;&lt;b&gt;Name&lt;/b&gt;&lt;hr/&gt;+ string: String" vertex="1">
+          <mxGeometry height="90" width="190" x="30" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="email" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;align=left;spacingLeft=8;spacingTop=6;" value="&lt;b&gt;&amp;lt;&amp;lt;value object&amp;gt;&amp;gt;&lt;/b&gt;&lt;br/&gt;&lt;b&gt;Email&lt;/b&gt;&lt;hr/&gt;+ string: String" vertex="1">
+          <mxGeometry height="90" width="190" x="240" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="password" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;align=left;spacingLeft=8;spacingTop=6;" value="&lt;b&gt;&amp;lt;&amp;lt;value object&amp;gt;&amp;gt;&lt;/b&gt;&lt;br/&gt;&lt;b&gt;Password&lt;/b&gt;&lt;hr/&gt;+ string: String" vertex="1">
+          <mxGeometry height="90" width="200" x="440" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="user" style="endArrow=block;endFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#6c8ebf;fontSize=12;" target="auth" value="auth">
+          <mxGeometry relative="1" x="0.5062" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="650" y="280" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="user" style="endArrow=block;endFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#9673a6;fontSize=12;" target="name" value="uses">
+          <mxGeometry relative="1" x="-0.1209" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="510" y="180" />
+              <mxPoint x="280" y="180" />
+              <mxPoint x="280" y="150" />
+              <mxPoint x="125" y="150" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="user" style="endArrow=block;endFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#9673a6;fontSize=12;" target="email" value="uses">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="510" y="150" />
+              <mxPoint x="335" y="150" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="user" style="endArrow=block;endFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#9673a6;fontSize=12;" target="password" value="uses">
+          <mxGeometry relative="1" x="0.3333" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="510" y="190" />
+              <mxPoint x="540" y="190" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="table" style="endArrow=block;endFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#9673a6;fontSize=12;" target="name" value="uses">
+          <mxGeometry relative="1" x="-0.4286" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="125" y="190" />
+              <mxPoint x="125" y="190" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="table" style="endArrow=block;endFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#82b366;fontSize=12;exitX=1.007;exitY=0.676;exitDx=0;exitDy=0;exitPerimeter=0;" target="user" value="owner 1">
+          <mxGeometry relative="1" x="-0.0242" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="400" y="315" />
+              <mxPoint x="400" y="315" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="table" style="endArrow=block;endFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#82b366;fontSize=12;" target="participant" value="participants 0..*">
+          <mxGeometry relative="1" x="-0.3143" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="160" y="525" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="participant" style="endArrow=block;endFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;fontSize=12;" target="user" value="user">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="participant" style="endArrow=block;endFill=0;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;fontSize=12;" target="role" value="role">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
