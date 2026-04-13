@@ -7,11 +7,10 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import isel.pt.cbdcg.domain.toEmail
 import isel.pt.cbdcg.domain.toName
-import isel.pt.cbdcg.dto.CreateTableInput
+import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.TableOperationInput
-import isel.pt.cbdcg.dto.toTableOutput
+import isel.pt.cbdcg.dto.toTableDTO
 import isel.pt.cbdcg.service.TableService
 
 fun Route.tableWebApi(tableService: TableService) {
@@ -21,41 +20,41 @@ fun Route.tableWebApi(tableService: TableService) {
         get {
 
             val result = tableService.getTables().getOrThrow()
-            call.respond(HttpStatusCode.OK, result.map{ it.toTableOutput() })
+            call.respond(HttpStatusCode.OK, result.map{ it.toTableDTO() })
 
         }
 
         post("/create") {
 
-            val input = call.receive<CreateTableInput>()
+            val input = call.receive<CreateTableDTO>()
 
-            val result = tableService.createTableWithID(
+            val result = tableService.createTable(
                 tableName = input.name.toName(),
-                userID = input.email.toUInt(),
+                userId = input.userId.toUInt(),
                 token = input.token,
             ).getOrThrow()
 
-            call.respond(HttpStatusCode.Created, result.toTableOutput())
+            call.respond(HttpStatusCode.Created, result.toTableDTO())
         }
 
         post("/join") {
 
             val input = call.receive<TableOperationInput>()
 
-            val result = tableService.joinTableWithEmailAndName(
-                userEmail = input.user.toEmail(),
-                tableName = input.table.toName(),
+            val result = tableService.joinTable(
+                userId = input.user.toUInt(),
+                tableId = input.table.toUInt(),
                 token = input.token,
             ).getOrThrow()
 
-            call.respond(HttpStatusCode.OK, result.toTableOutput())
+            call.respond(HttpStatusCode.OK, result.toTableDTO())
         }
 
         post("/leave") {
 
             val input = call.receive<TableOperationInput>()
 
-            tableService.leaveTableWithID(
+            tableService.leaveTable(
                 userID = input.user.toUInt(),
                 tableID = input.table.toUInt(),
                 token = input.token,
@@ -68,7 +67,7 @@ fun Route.tableWebApi(tableService: TableService) {
 
             val input = call.receive<TableOperationInput>()
 
-            tableService.changeRoleWithID(
+            tableService.changeRole(
                 userID = input.user.toUInt(),
                 tableID = input.table.toUInt(),
                 token = input.token,

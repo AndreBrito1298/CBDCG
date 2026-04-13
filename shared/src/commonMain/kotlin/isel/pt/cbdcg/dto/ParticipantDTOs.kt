@@ -5,17 +5,18 @@ import isel.pt.cbdcg.domain.Role
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ParticipantOutput(
-    val user: UserOutput,
+data class ParticipantDTO(
+    val user: UserDTO,
     val role: String
 )
 
-fun Participant.toParticipantOutput(): ParticipantOutput = ParticipantOutput(
-    user = user.toUserOutput(),
+fun Participant.toParticipantDTO(): ParticipantDTO = ParticipantDTO(
+    user = user.toUserDTO(),
     role = role.name
 )
 
-fun ParticipantOutput.toParticipant(): Participant = Participant(
+fun ParticipantDTO.toParticipant(): Participant = Participant(
     user = user.toUser(),
     role = Role.valueOf(role)
 )
+

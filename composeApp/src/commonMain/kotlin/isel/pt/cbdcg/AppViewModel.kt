@@ -162,9 +162,7 @@ class AppViewModel(
 
             _ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val email = user.email
-
-            val table = clientApi.joinTable(table.name, email, token)
+            val table = clientApi.joinTable(user.id, table.id, token)
             table.onSuccess { table ->
                 _ui.update { it.copy(currentTable = table, isLoading = false, errorMessage = null) }
                 onSuccess(table)
@@ -187,9 +185,9 @@ class AppViewModel(
             _ui.update { it.copy(isLoading = true, errorMessage = null) }
 
             val name = Name(tableName)
-            val email = user.email
+            val id = user.id
 
-            val table = clientApi.createTable(name, email, token)
+            val table = clientApi.createTable(name, id, token)
             table.onSuccess { table ->
                 _ui.update { it.copy(currentTable = table, isLoading = false, errorMessage = null) }
                 onSuccess(table)
@@ -200,9 +198,10 @@ class AppViewModel(
         }
     }
 
-    fun changeRole(name: String): Job? {
+    fun changeRole(): Job? {
 
         val user = _ui.value.user ?: return null
+        val table = _ui.value.currentTable ?: return null
         val token = user.auth?.token ?: return null.also {
             _ui.update { it.copy(errorMessage = "No token found.") }
         }
@@ -211,10 +210,7 @@ class AppViewModel(
 
             _ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val userEmail = user.email
-            val tableName = Name(name)
-
-            val response = clientApi.changeRole(userEmail, tableName, token)
+            val response = clientApi.changeRole(user.id, table.id, token)
             response.onSuccess {
                 _ui.update{ it.copy(isLoading = false, errorMessage = null) }
             }
@@ -225,9 +221,10 @@ class AppViewModel(
 
     }
 
-    fun leaveTable(name: String, onSuccess: () -> Unit): Job? {
+    fun leaveTable(onSuccess: () -> Unit): Job? {
 
         val user = _ui.value.user ?: return null
+        val table = _ui.value.currentTable ?: return null
         val token = user.auth?.token ?: return null.also {
             _ui.update { it.copy(errorMessage = "No token found.") }
         }
@@ -236,10 +233,7 @@ class AppViewModel(
 
             _ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val userEmail = user.email
-            val tableName = Name(name)
-
-            val response = clientApi.leaveTable(userEmail, tableName, token)
+            val response = clientApi.leaveTable(user.id, table.id, token)
             response.onSuccess {
                 _ui.update { it.copy(currentTable = null, isLoading = false, errorMessage = null) }
                 onSuccess()

@@ -4,7 +4,7 @@ import io.ktor.server.websocket.DefaultWebSocketServerSession
 import io.ktor.websocket.Frame
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.dto.TableWsServerMessage
-import isel.pt.cbdcg.dto.toTableOutput
+import isel.pt.cbdcg.dto.toTableDTO
 import isel.pt.cbdcg.service.events.TableEventsPublisher
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -32,7 +32,6 @@ class WebSocketHub(
             lobbySessions.add(session)
         }
     }
-
     suspend fun registerTable(tableName: String, session: DefaultWebSocketServerSession) {
         mutex.withLock {
             // Stop listening to updates in the 'lobby'
@@ -41,7 +40,6 @@ class WebSocketHub(
             sessions.add(session)
         }
     }
-
     suspend fun unregisterAll(session: DefaultWebSocketServerSession) {
         mutex.withLock {
             lobbySessions.remove(session)
@@ -49,10 +47,11 @@ class WebSocketHub(
         }
     }
 
+
     override suspend fun publishLobbyTables(tables: List<Table>) {
 
         val message = TableWsServerMessage.LobbyTables(
-            tables = tables.map { it.toTableOutput() }
+            tables = tables.map { it.toTableDTO() }
         )
         val payload = json.encodeToString<TableWsServerMessage>(message)
 
@@ -61,11 +60,10 @@ class WebSocketHub(
             session.send(Frame.Text(payload))
         }
     }
-
     override suspend fun publishTableUpdated(table: Table) {
 
         val message = TableWsServerMessage.TableInfo(
-            table = table.toTableOutput()
+            table = table.toTableDTO()
         )
         val payload = json.encodeToString<TableWsServerMessage>(message)
 
@@ -74,6 +72,24 @@ class WebSocketHub(
         }
         sessions.forEach { session ->
             session.send(Frame.Text(payload))
+        }
+    }
+    override suspend fun publishTableDeleted(table: Table) {
+
+        val message = TableWsServerMessage.TableDeleted(
+            tableId = table.id.toInt()
+        )
+        val payload = json.encodeToString<TableWsServerMessage>(message)
+
+        val sessions = mutex.withLock {
+            tableSessions[table.name.string]?.toList().orEmpty()
+        }
+        sessions.forEach { session ->
+            session.send(Frame.Text(payload))
+        }
+
+        mutex.withLock {
+            tableSessions.remove(table.name.string)
         }
     }
 

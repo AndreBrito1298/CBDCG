@@ -6,12 +6,17 @@ sealed class TableWsServerMessage {
 
     @Serializable
     data class LobbyTables(
-        val tables: List<TableOutput>
+        val tables: List<TableDTO>
     ) : TableWsServerMessage()
 
     @Serializable
     data class TableInfo(
-        val table: TableOutput
+        val table: TableDTO
+    ) : TableWsServerMessage()
+
+    @Serializable
+    data class TableDeleted(
+        val tableId: Int
     ) : TableWsServerMessage()
 }
 

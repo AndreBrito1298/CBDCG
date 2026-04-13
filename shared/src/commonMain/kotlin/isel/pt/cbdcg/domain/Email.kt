@@ -18,6 +18,8 @@ value class Email(
         require(string.isEmailValid()) { "Email format is invalid." }
         require(string.isEmailLengthValid()) { "Email is too long." }
     }
+
+    override fun toString() = string
 }
 
 /**

@@ -18,6 +18,7 @@ value class Password(
         require(string.isPasswordLengthValid()) { "Password must have at least 5 characters." }
     }
 
+    override fun toString() = string
 }
 
 /**

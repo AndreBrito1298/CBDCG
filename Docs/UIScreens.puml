@@ -1,0 +1,46 @@
+@startuml
+title CBDCG UI Screens
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+skinparam ArrowColor #4B5563
+skinparam NoteBackgroundColor #FFF8DC
+skinparam NoteBorderColor #D4A017
+
+rectangle "Menu Screen" as Menu
+
+rectangle "LoginScreen" as Login
+
+rectangle "CreateUserScreen" as CreateUser
+
+rectangle "SearchTablesScreen" as SearchTables
+
+rectangle "WaitingTableScreen\n> Join Players\n> Join Spectators" as WaitingTable
+
+rectangle "DisplayError" as ErrorOverlay
+
+Menu --> Login : Log In
+Menu --> CreateUser : Create User
+
+Login --> Menu : Back
+CreateUser --> Menu : Back
+
+Login --> SearchTables : Successful login
+CreateUser --> SearchTables : Successful user creation
+
+SearchTables --> WaitingTable : Join Table
+SearchTables --> WaitingTable : Create Table
+SearchTables --> Menu : Logout
+
+WaitingTable --> SearchTables : Leave Table
+WaitingTable --> SearchTables : Table deleted by owner
+
+ErrorOverlay .. Menu
+ErrorOverlay .. Login
+ErrorOverlay .. CreateUser
+ErrorOverlay .. SearchTables
+ErrorOverlay .. WaitingTable
+
+@enduml

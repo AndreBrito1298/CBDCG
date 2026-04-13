@@ -17,6 +17,8 @@ value class Name(
         require(string.isNameFilled()) { "Name is empty." }
         require(string.isNameLengthValid()) { "Name cannot have more than 20 characters." }
     }
+
+    override fun toString() = string
 }
 
 /**

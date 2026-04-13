@@ -8,7 +8,7 @@ import isel.pt.cbdcg.AppViewModel
 import isel.pt.cbdcg.views.lobby.SearchTablesScreen
 import isel.pt.cbdcg.views.lobby.WaitingTableScreen
 import isel.pt.cbdcg.views.startMenu.CreateUserScreen
-import isel.pt.cbdcg.views.startMenu.IdleMenuScreen
+import isel.pt.cbdcg.views.startMenu.MenuScreen
 import isel.pt.cbdcg.views.startMenu.LoginScreen
 import isel.pt.cbdcg.views.utils.DisplayError
 
@@ -21,16 +21,13 @@ fun AppNavHost(vm: AppViewModel) {
 
     NavHost(
         navController = nav,
-        startDestination = IdleRoute
+        startDestination = MenuRoute
     ){
 
-        composable<IdleRoute> {
-            IdleMenuScreen(
-                user = ui.user,
+        composable<MenuRoute> {
+            MenuScreen(
                 loginNav = { nav.navigate(LoginRoute) },
                 createUserNav = { nav.navigate(CreateUserRoute) },
-                searchTablesNav = { nav.navigate(SearchTablesRoute) },
-                logout = { vm.logout(onSuccess = { nav.popBackStack(IdleRoute, inclusive = false) }) },
             )
         }
 
@@ -41,7 +38,7 @@ fun AppNavHost(vm: AppViewModel) {
                     vm.login(
                         email = email,
                         password = password,
-                        onSuccess = { nav.navigate(SearchTablesRoute){ popUpTo(IdleRoute) { inclusive = false } } }
+                        onSuccess = { nav.navigate(SearchTablesRoute){ popUpTo(MenuRoute) { inclusive = false } } }
                     )
                 }
             )
@@ -55,7 +52,7 @@ fun AppNavHost(vm: AppViewModel) {
                         name = name,
                         email = email,
                         password = password,
-                        onSuccess = { nav.navigate(SearchTablesRoute){ popUpTo(IdleRoute) { inclusive = false } } }
+                        onSuccess = { nav.navigate(SearchTablesRoute){ popUpTo(MenuRoute) { inclusive = false } } }
                     )
                 }
             )
@@ -73,7 +70,6 @@ fun AppNavHost(vm: AppViewModel) {
             SearchTablesScreen(
                 user = user,
                 tables = ui.tables,
-                mainMenuNav = { vm.stopObserving({ nav.navigateUp() }) },
                 joinTable = { table ->
                     vm.joinTable(
                         table = table,
@@ -85,14 +81,27 @@ fun AppNavHost(vm: AppViewModel) {
                         tableName = name,
                         onSuccess = { nav.navigate(WaitingTableRoute) }
                     )
-                }
+                },
+                logout = { vm.logout(onSuccess = { nav.popBackStack(MenuRoute, inclusive = false) }) }
             )
         }
 
         composable<WaitingTableRoute> {
 
             val user = ui.user ?: return@composable
-            val table = ui.currentTable ?: return@composable
+            val table = ui.currentTable
+
+            // If the table was deleted, send the participant to the lobby
+            LaunchedEffect(table) {
+                if (table == null) {
+                    nav.navigate(SearchTablesRoute) {
+                        popUpTo(WaitingTableRoute) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            }
+
+            if(table == null) return@composable
 
             LaunchedEffect(Unit) {
                 vm.observeTable(table.name.string)
@@ -101,9 +110,10 @@ fun AppNavHost(vm: AppViewModel) {
             WaitingTableScreen(
                 user = user,
                 table = table,
-                changeRole = { vm.changeRole(table.name.string) },
-                leaveTable = { vm.leaveTable(table.name.string) { nav.popBackStack() } }
+                changeRole = { vm.changeRole() },
+                leaveTable = { vm.leaveTable() { nav.popBackStack() } }
             )
+
         }
 
     }

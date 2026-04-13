@@ -2,6 +2,7 @@ package isel.pt.cbdcg.views.lobby
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -10,6 +11,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.Table
@@ -19,9 +21,9 @@ import isel.pt.cbdcg.domain.User
 fun SearchTablesScreen(
     user: User,
     tables: List<Table>,
-    mainMenuNav: () -> Unit,
     joinTable: (Table) -> Unit,
     createTable: (String) -> Unit,
+    logout: () -> Unit
 ) {
 
     Column(
@@ -29,23 +31,27 @@ fun SearchTablesScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-
-        Button(onClick = mainMenuNav) {
-            Text("Back")
-        }
 
         Text(
             text = "Available Tables",
             style = MaterialTheme.typography.headlineMedium,
         )
 
-        Text(
-            text = "User: ${user.name.string}",
-            style = MaterialTheme.typography.headlineSmall,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ){
+            Text(
+                text = "User: ${user.name.string}",
+                style = MaterialTheme.typography.headlineSmall,
+            )
 
+            Button(onClick = logout) {
+                Text("Logout")
+            }
+        }
 
         tables.forEach { table ->
             TableCard(
