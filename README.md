@@ -1,78 +1,36 @@
-This is a Kotlin Multiplatform project targeting Web, Desktop (JVM), Server.
+# Card-Based Dungeon Crawling Game
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-    - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-    - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-      For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-      the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-      Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-      folder is the appropriate location.
+This is a Kotlin Multiplatform application for a turn-based digital card game experience. The project combines a Compose Multiplatform client with a Ktor server to support cross-platform play, shared domain logic, and real-time interaction between players.
 
-* [/server](./server/src/main/kotlin) is for the Ktor server application.
+The game is centered around a dungeon-crawling board game structure in which players progressively shape the board, control characters with distinct attributes and abilities, move through said board, interact with enemies, and engage in battles to obtain items and advance toward victory. The design aims to combine strategic board building, character management, and competitive encounters within a multiplayer environment.
 
-* [/shared](./shared/src) is for the code that will be shared between all targets in the project.
-  The most important subfolder is [commonMain](./shared/src/commonMain/kotlin). If preferred, you
-  can add code to the platform-specific folders here too.
+## Project Overview
 
-### Build and Run Desktop (JVM) Application
+CBDCG is designed as a client-server application with shared models and communication contracts across platforms.
 
-To build and run the development version of the desktop app, use the run configuration from the run widget
-in your IDE’s toolbar or run it directly from the terminal:
+- `composeApp/` contains the Compose Multiplatform client application
+- `server/` contains the Ktor backend and multiplayer communication layer
+- `shared/` contains shared domain models, DTOs, and common logic
+- `Docs/` contains supporting documentation, diagrams, and design notes
 
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:run
-  ```
+## Game Concept
 
-### Build and Run Server
+The application is based on a turn-based card game flow where players participate in a shared session and progress through multiple phases of play. Core ideas of the game include:
 
-To build and run the development version of the server, use the run configuration from the run widget
-in your IDE’s toolbar or run it directly from the terminal:
+- building and expanding the board over the course of the match;
+- managing playable characters with unique stats and abilities;
+- moving across the map and reacting to the evolving board state;
+- encountering enemies and other players;
+- resolving battles and collecting items that influence progression and victory conditions.
 
-- on macOS/Linux
-  ```shell
-  ./gradlew :server:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :server:run
-  ```
+The broader goal of the project is to provide the full digital support layer for this experience, including session management, game state synchronization, and multiplayer interaction.
 
-### Build and Run Web Application
+## Technology Stack
 
-To build and run the development version of the web app, use the run configuration from the run widget
-in your IDE's toolbar or run it directly from the terminal:
+- Kotlin Multiplatform
+- Compose Multiplatform
+- Ktor
+- WebSockets
+- client-server architecture
 
-- for the Wasm target (faster, modern browsers):
-    - on macOS/Linux
-      ```shell
-      ./gradlew :composeApp:wasmJsBrowserDevelopmentRun
-      ```
-    - on Windows
-      ```shell
-      .\gradlew.bat :composeApp:wasmJsBrowserDevelopmentRun
-      ```
-- for the JS target (slower, supports older browsers):
-    - on macOS/Linux
-      ```shell
-      ./gradlew :composeApp:jsBrowserDevelopmentRun
-      ```
-    - on Windows
-      ```shell
-      .\gradlew.bat :composeApp:jsBrowserDevelopmentRun
-      ```
-
----
-
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html),
-[Compose Multiplatform](https://github.com/JetBrains/compose-multiplatform/#compose-multiplatform),
-[Kotlin/Wasm](https://kotl.in/wasm/)…
-
-We would appreciate your feedback on Compose/Web and Kotlin/Wasm in the public Slack
-channel [#compose-web](https://slack-chats.kotlinlang.org/c/compose-web).
-If you face any issues, please report them on [YouTrack](https://youtrack.jetbrains.com/newIssue?project=CMP).
+## Running the Project
