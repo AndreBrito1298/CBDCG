@@ -68,6 +68,22 @@ sealed class ParticipantError(
 
     class ParticipantEmailNotFound(email: String) : ParticipantError("Participant $email not found.")
 
-    class UserNotOnTable() : ParticipantError("User is not participating in any table.")
+    class UserNotOnTable : ParticipantError("User is not participating in any table.")
 
+}
+
+sealed class BoardPlacementError(
+    msg: String,
+): Error(msg, "Error found when performing a Board Tile related operation."){
+
+    class PositionTaken(x: Int, y: Int): BoardPlacementError("The position ($x,$y) is already taken.")
+
+    class TileConnectionMismatch: BoardPlacementError("The tile does not connect to the rest of the board.")
+}
+
+sealed class GameplayError(
+    msg: String,
+): Error(msg, "Error found while playing the game."){
+
+    class NotYourTurn: GameplayError("Wait for your turn.")
 }
