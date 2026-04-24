@@ -5,12 +5,13 @@ import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.domain.verifyToken
 import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
 import isel.pt.cbdcg.repository.memory.TableRepositoryMem
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
-import isel.pt.cbdcg.service.events.TableEventsPublisher
+import isel.pt.cbdcg.webapi.websocket.EventsPublisher
 import kotlin.collections.plus
 import kotlin.runCatching
 
@@ -18,7 +19,7 @@ class TableService(
     private val userRepo: UserRepositoryMem,
     private val tableRepo: TableRepositoryMem,
     private val participantRepo: ParticipantRepositoryMem,
-    private val events: TableEventsPublisher,
+    private val events: EventsPublisher,
 ) {
 
     fun getTables(): Result<List<Table>> = runCatching {
@@ -114,15 +115,7 @@ class TableService(
         events.publishLobbyTables(tables)
         events.publishTableUpdated(newTable)
     }
-    private fun String.verifyToken(user: User) {
 
-        if(user.auth == null)
-            throw UserError.TokenNotFound()
-
-        if(user.auth!!.token != this)
-            throw UserError.TokenMismatch()
-
-    }
     private fun isParticipant(user: User, table: Table): Participant? {
         return table.participants.find{ it.user.id == user.id }
     }

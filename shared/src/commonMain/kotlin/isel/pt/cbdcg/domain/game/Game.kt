@@ -1,7 +1,5 @@
 package isel.pt.cbdcg.domain.game
 
-import isel.pt.cbdcg.error.GameplayError
-
 data class Game(
     val id: UInt,
     val players: List<Player>,
@@ -10,10 +8,10 @@ data class Game(
 ){
 
     fun placeTile(player: Player, position: BoardPosition, tile: Tile): Game{
-
+        /*
         if(player.turn % turn != 0u)
             throw GameplayError.NotYourTurn()
-
+        */
         return copy(board = board.place(position, tile), turn = turn + 1u)
     }
 

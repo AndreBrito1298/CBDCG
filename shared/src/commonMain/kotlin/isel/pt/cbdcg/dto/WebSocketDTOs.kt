@@ -2,32 +2,42 @@ package isel.pt.cbdcg.dto
 
 import kotlinx.serialization.Serializable
 @Serializable
-sealed class TableWsServerMessage {
+sealed class WsServerMessage {
 
     @Serializable
     data class LobbyTables(
         val tables: List<TableDTO>
-    ) : TableWsServerMessage()
+    ) : WsServerMessage()
 
     @Serializable
     data class TableInfo(
         val table: TableDTO
-    ) : TableWsServerMessage()
+    ) : WsServerMessage()
 
     @Serializable
     data class TableDeleted(
         val tableId: Int
-    ) : TableWsServerMessage()
+    ) : WsServerMessage()
+
+    @Serializable
+    data class GameInfo(
+        val game: GameDTO
+    ) : WsServerMessage()
 }
 
 @Serializable
-sealed class TableWsClientMessage {
+sealed class WsClientMessage {
 
     @Serializable
-    data object SubscribeLobby : TableWsClientMessage()
+    data object SubscribeLobby : WsClientMessage()
 
     @Serializable
     data class SubscribeTable(
         val tableName: String
-    ) : TableWsClientMessage()
+    ) : WsClientMessage()
+
+    @Serializable
+    data class SubscribeGame(
+        val gameId: Int
+    ) : WsClientMessage()
 }

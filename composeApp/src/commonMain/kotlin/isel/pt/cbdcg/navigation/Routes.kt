@@ -6,3 +6,5 @@ import kotlinx.serialization.Serializable
 @Serializable data object CreateUserRoute
 @Serializable data object SearchTablesRoute
 @Serializable data object WaitingTableRoute
+
+@Serializable data object GameRoute

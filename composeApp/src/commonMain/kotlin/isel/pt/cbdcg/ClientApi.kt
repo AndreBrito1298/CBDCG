@@ -19,15 +19,19 @@ import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.domain.game.Game
+import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.CreateUserDTO
+import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
 import isel.pt.cbdcg.dto.TableOperationInput
 import isel.pt.cbdcg.dto.TableDTO
-import isel.pt.cbdcg.dto.TableWsClientMessage
-import isel.pt.cbdcg.dto.TableWsServerMessage
+import isel.pt.cbdcg.dto.WsClientMessage
+import isel.pt.cbdcg.dto.WsServerMessage
 import isel.pt.cbdcg.dto.UserDTO
+import isel.pt.cbdcg.dto.toGame
 import isel.pt.cbdcg.dto.toTable
 import isel.pt.cbdcg.dto.toUser
 import kotlinx.coroutines.CoroutineScope
@@ -50,6 +54,10 @@ class ClientApi(private val client: HttpClient) {
     private val _currentTable = MutableStateFlow<Table?>(null)
     val currentTable = _currentTable.asStateFlow()
 
+    private val _game = MutableStateFlow<Game?>(null)
+
+    val game = _game.asStateFlow()
+
     // Session opened with the Server
     private var socketSession: ClientWebSocketSession? = null
 
@@ -59,22 +67,27 @@ class ClientApi(private val client: HttpClient) {
     // Translates a message and updates the local state ('tables' or 'currentTable')
     private fun handleServerMessage(text: String) {
 
-        val message = json.decodeFromString<TableWsServerMessage>(text)
+        val message = json.decodeFromString<WsServerMessage>(text)
 
         when (message) {
-            is TableWsServerMessage.LobbyTables -> {
+
+            is WsServerMessage.LobbyTables -> {
                 _tables.value = message.tables.map { it.toTable() }
             }
 
-            is TableWsServerMessage.TableInfo -> {
+            is WsServerMessage.TableInfo -> {
                 _currentTable.value = message.table.toTable()
             }
 
-            is TableWsServerMessage.TableDeleted -> {
+            is WsServerMessage.TableDeleted -> {
                 val current = _currentTable.value
                 if (current?.id?.toInt() == message.tableId) {
                     _currentTable.value = null
                 }
+            }
+
+            is WsServerMessage.GameInfo -> {
+                _game.value = message.game.toGame()
             }
         }
     }
@@ -84,7 +97,7 @@ class ClientApi(private val client: HttpClient) {
 
         if (socketSession != null) return
 
-        val session = client.webSocketSession("ws://localhost:$SERVER_PORT/ws/tables")
+        val session = client.webSocketSession("ws://localhost:$SERVER_PORT/ws")
         socketSession = session
 
         listenJob = CoroutineScope(Dispatchers.Default).launch {
@@ -106,8 +119,8 @@ class ClientApi(private val client: HttpClient) {
 
         ensureConnected()
 
-        val payload = json.encodeToString<TableWsClientMessage>(
-            TableWsClientMessage.SubscribeLobby
+        val payload = json.encodeToString<WsClientMessage>(
+            WsClientMessage.SubscribeLobby
         )
 
         socketSession?.send(Frame.Text(payload))
@@ -117,8 +130,19 @@ class ClientApi(private val client: HttpClient) {
 
         ensureConnected()
 
-        val payload = json.encodeToString<TableWsClientMessage>(
-            TableWsClientMessage.SubscribeTable(tableName)
+        val payload = json.encodeToString<WsClientMessage>(
+            WsClientMessage.SubscribeTable(tableName)
+        )
+
+        socketSession?.send(Frame.Text(payload))
+    }
+
+    suspend fun subscribeGame(gameId: UInt) {
+
+        ensureConnected()
+
+        val payload = json.encodeToString<WsClientMessage>(
+            WsClientMessage.SubscribeGame(gameId.toInt())
         )
 
         socketSession?.send(Frame.Text(payload))
@@ -188,6 +212,13 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = TableOperationInput(tableId.toInt(), userId.toInt(), token)
         )
+
+    suspend fun createGame(tableId: UInt, userId: UInt, token: String): Result<Game> =
+        fetch<GameDTO>(
+            path = "game/create",
+            method = HttpMethod.Post,
+            body = CreateGameDTO(userId.toInt(), token, tableId.toInt())
+        ).map{ it.toGame() }
 
     private suspend inline fun <reified T> fetch(
         path: String,

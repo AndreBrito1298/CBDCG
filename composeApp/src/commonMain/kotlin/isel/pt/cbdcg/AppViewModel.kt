@@ -7,6 +7,7 @@ import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.domain.game.Game
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 data class AppUIState(
     val user: User? = null,
     val tables: List<Table> = emptyList(),
+    val game: Game? = null,
     val isLoading: Boolean = false,
     val currentTable: Table? = null,
     val errorMessage: String? = null
@@ -44,6 +46,12 @@ class AppViewModel(
                 _ui.update { it.copy(currentTable = table) }
             }
         }
+
+        viewModelScope.launch {
+            clientApi.game.collect { game ->
+                _ui.update { it.copy(game = game) }
+            }
+        }
     }
 
     fun dismissError() {
@@ -58,6 +66,10 @@ class AppViewModel(
 
     fun observeTable(tableName: String): Job = viewModelScope.launch {
         clientApi.subscribeTable(tableName)
+    }
+
+    fun observeGame(gameId: UInt): Job = viewModelScope.launch{
+        clientApi.subscribeGame(gameId)
     }
 
     fun stopObserving(onSuccess: () -> Unit): Job =
@@ -76,13 +88,13 @@ class AppViewModel(
             val email = Email(email)
             val password = Password(password)
 
-            val user = clientApi.login(email, password)
+            val response = clientApi.login(email, password)
 
-            user.onSuccess { user ->
+            response.onSuccess { user ->
                 _ui.update { it.copy(user = user, isLoading = false, errorMessage = null) }
                 onSuccess()
             }
-            user.onFailure { error ->
+            response.onFailure { error ->
                 _ui.update { it.copy(isLoading = false, errorMessage = error.message ?: "Login Failed.") }
             }
         }
@@ -120,13 +132,13 @@ class AppViewModel(
             val email = Email(email)
             val password = Password(password)
 
-            val user = clientApi.createUser(name, email, password)
+            val response = clientApi.createUser(name, email, password)
 
-            user.onSuccess { user ->
+            response.onSuccess { user ->
                 _ui.update { it.copy(user = user, isLoading = false, errorMessage = null) }
                 onSuccess()
             }
-            user.onFailure { error ->
+            response.onFailure { error ->
                 _ui.update{ it.copy(isLoading = false, errorMessage = error.message ?: "Create User Failed.") }
             }
         }
@@ -141,11 +153,11 @@ class AppViewModel(
 
             _ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val tables = clientApi.getTables()
-            tables.onSuccess { tables ->
+            val response = clientApi.getTables()
+            response.onSuccess { tables ->
                     _ui.update { it.copy(user = user, tables = tables, isLoading = false, errorMessage = null) }
                 }
-            tables.onFailure { error ->
+            response.onFailure { error ->
                 _ui.update { it.copy(isLoading = false, errorMessage = error.message ?: "Could not load tables.") }
             }
         }
@@ -162,12 +174,12 @@ class AppViewModel(
 
             _ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val table = clientApi.joinTable(user.id, table.id, token)
-            table.onSuccess { table ->
+            val response = clientApi.joinTable(user.id, table.id, token)
+            response.onSuccess { table ->
                 _ui.update { it.copy(currentTable = table, isLoading = false, errorMessage = null) }
                 onSuccess(table)
             }
-            table.onFailure { error ->
+            response.onFailure { error ->
                 _ui.update { it.copy(isLoading = false, errorMessage = error.message ?: "Join Table Failed.") }
             }
         }
@@ -187,12 +199,12 @@ class AppViewModel(
             val name = Name(tableName)
             val id = user.id
 
-            val table = clientApi.createTable(name, id, token)
-            table.onSuccess { table ->
+            val response = clientApi.createTable(name, id, token)
+            response.onSuccess { table ->
                 _ui.update { it.copy(currentTable = table, isLoading = false, errorMessage = null) }
                 onSuccess(table)
             }
-            table.onFailure { error ->
+            response.onFailure { error ->
                 _ui.update { it.copy(isLoading = false, errorMessage = error.message ?: "Create Table Failed.") }
             }
         }
@@ -240,6 +252,31 @@ class AppViewModel(
             }
             response.onFailure { error ->
                 _ui.update { it.copy(isLoading = false, errorMessage = error.message ?: "Leave Table Failed.") }
+            }
+        }
+    }
+
+    // Game-related operations
+
+    fun createGame(onSuccess: () -> Unit): Job? {
+
+        val user = _ui.value.user ?: return null
+        val token = user.auth?.token ?: return null.also {
+            _ui.update { it.copy(errorMessage = "No token found.") }
+        }
+
+        val table = _ui.value.currentTable ?: return null
+
+        return viewModelScope.launch{
+
+            _ui.update { it.copy(isLoading = true, errorMessage = null) }
+
+            val response = clientApi.createGame(user.id, table.id, token)
+            response.onSuccess { game ->
+                _ui.update { it.copy(game = game, isLoading = false, errorMessage = null) }
+            }
+            response.onFailure { error ->
+                _ui.update { it.copy(isLoading = false, errorMessage = error.message ?: "Create Game Failed.") }
             }
         }
     }

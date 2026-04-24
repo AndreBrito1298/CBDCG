@@ -5,6 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import isel.pt.cbdcg.AppViewModel
+import isel.pt.cbdcg.views.game.GameScreen
 import isel.pt.cbdcg.views.lobby.SearchTablesScreen
 import isel.pt.cbdcg.views.lobby.WaitingTableScreen
 import isel.pt.cbdcg.views.startMenu.CreateUserScreen
@@ -33,7 +34,7 @@ fun AppNavHost(vm: AppViewModel) {
 
         composable<LoginRoute> {
             LoginScreen(
-                mainMenuNav = { vm.stopObserving({ nav.navigateUp() }) },
+                mainMenuNav = { vm.stopObserving { nav.navigateUp() } },
                 login = { email, password ->
                     vm.login(
                         email = email,
@@ -46,7 +47,7 @@ fun AppNavHost(vm: AppViewModel) {
 
         composable<CreateUserRoute> {
             CreateUserScreen(
-                mainMenuNav = { vm.stopObserving({ nav.navigateUp() }) },
+                mainMenuNav = { vm.stopObserving { nav.navigateUp() } },
                 create = { name, email, password ->
                     vm.createUser(
                         name = name,
@@ -112,6 +113,22 @@ fun AppNavHost(vm: AppViewModel) {
                 table = table,
                 changeRole = { vm.changeRole() },
                 leaveTable = { vm.leaveTable() { nav.popBackStack() } }
+            )
+
+        }
+
+        composable<GameRoute> {
+
+            val user = ui.user ?: return@composable
+            val game = ui.game ?: return@composable
+
+            LaunchedEffect(Unit) {
+                vm.observeGame(game.id)
+            }
+
+            GameScreen(
+                game = game,
+                placePiece = {  },
             )
 
         }

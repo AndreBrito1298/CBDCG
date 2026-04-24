@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class TableDTO(
-    val id: UInt,
+    val id: Int,
     val name: String,
     val owner: UserDTO,
     val participants: Array<ParticipantDTO>,
@@ -50,14 +50,14 @@ data class CreateTableDTO(
 )
 
 fun Table.toTableDTO(): TableDTO = TableDTO(
-    id = id,
+    id = id.toInt(),
     name = name.string,
     owner = owner.toUserDTO(),
     participants = participants.map{ it.toParticipantDTO() }.toTypedArray()
 )
 
 fun TableDTO.toTable(): Table = Table(
-    id = id,
+    id = id.toUInt(),
     name = Name(name),
     owner = owner.toUser(),
     participants = participants.map{ it.toParticipant() }

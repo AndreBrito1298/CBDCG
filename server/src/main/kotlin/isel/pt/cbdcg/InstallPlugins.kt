@@ -17,7 +17,9 @@ import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
 import io.ktor.util.collections.ConcurrentMap
+import isel.pt.cbdcg.error.BoardPlacementError
 import isel.pt.cbdcg.error.Error
+import isel.pt.cbdcg.error.GameError
 import isel.pt.cbdcg.error.ParticipantError
 import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.error.UserError
@@ -100,21 +102,33 @@ fun Application.installPlugins(httpclient: HttpClient) {
     }
 }
 
-fun Error.toHttpResponse(): Pair<HttpStatusCode, String> =
-    when (this) {
-        is UserError.DuplicateEmail -> HttpStatusCode.Conflict to (message ?: desc)
-        is UserError.EmailNotFound -> HttpStatusCode.NotFound to (message ?: desc)
-        is UserError.PasswordMismatch -> HttpStatusCode.Unauthorized to (message ?: desc)
-        is TableError.DuplicateName -> HttpStatusCode.Conflict to (message ?: desc)
-        is TableError.UserUnavailable -> HttpStatusCode.Conflict to (message ?: desc)
-        is TableError.UserNotFound -> HttpStatusCode.NotFound to (message ?: desc)
-        is TableError.TableDoesNotExist -> HttpStatusCode.NotFound to (message ?: desc)
-        is ParticipantError.ParticipantEmailNotFound -> HttpStatusCode.NotFound to (message ?: desc)
-        is ParticipantError.ParticipantIdNotFound -> HttpStatusCode.NotFound to (message ?: desc)
-        is ParticipantError.UserNotOnTable -> HttpStatusCode.NotFound to (message ?: desc)
+fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
+
+    val message = (message ?: desc)
+
+    val code = when (this) {
+        is UserError.DuplicateEmail -> HttpStatusCode.Conflict
+        is UserError.EmailNotFound -> HttpStatusCode.NotFound
+        is UserError.PasswordMismatch -> HttpStatusCode.Unauthorized
+        is TableError.DuplicateName -> HttpStatusCode.Conflict
+        is TableError.UserUnavailable -> HttpStatusCode.Conflict
+        is TableError.UserNotFound -> HttpStatusCode.NotFound
+        is TableError.TableDoesNotExist -> HttpStatusCode.NotFound
+        is ParticipantError.ParticipantEmailNotFound -> HttpStatusCode.NotFound
+        is ParticipantError.ParticipantIdNotFound -> HttpStatusCode.NotFound
+        is ParticipantError.UserNotOnTable -> HttpStatusCode.NotFound
         is UserError.OAuthError -> TODO()
-        is UserError.AlreadyLoggedIn -> HttpStatusCode.Conflict to (message ?: desc)
-        is UserError.TokenMismatch -> HttpStatusCode.Unauthorized to (message ?: desc)
-        is UserError.TokenNotFound -> HttpStatusCode.NotFound to (message ?: desc)
+        is UserError.AlreadyLoggedIn -> HttpStatusCode.Conflict
+        is UserError.TokenMismatch -> HttpStatusCode.Unauthorized
+        is UserError.TokenNotFound -> HttpStatusCode.NotFound
         is UserError.IdNotFound -> TODO()
+        is BoardPlacementError.PositionTaken -> HttpStatusCode.Conflict
+        is BoardPlacementError.TileConnectionMismatch -> HttpStatusCode.Conflict
+        is GameError.InvalidDirection -> HttpStatusCode.BadRequest
+        is GameError.MinimumPlayersNeeded -> HttpStatusCode.Conflict
+        is GameError.NotYourTurn -> HttpStatusCode.Forbidden
+        is TableError.OwnerOnly -> HttpStatusCode.Forbidden
     }
+
+    return code to message
+}

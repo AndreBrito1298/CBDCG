@@ -1,5 +1,7 @@
 package isel.pt.cbdcg.domain.game
 
+import isel.pt.cbdcg.error.GameError
+
 enum class Direction { NORTH, EAST, SOUTH, WEST }
 
 fun Direction.opposite() = when(this){
@@ -21,4 +23,12 @@ fun Direction.rotateLeft() = when(this){
     Direction.EAST -> Direction.NORTH
     Direction.SOUTH -> Direction.EAST
     Direction.WEST -> Direction.SOUTH
+}
+
+fun Char.toDirection(): Direction = when(this){
+    'N' -> Direction.NORTH
+    'E' -> Direction.EAST
+    'S' -> Direction.SOUTH
+    'W' -> Direction.WEST
+    else -> throw GameError.InvalidDirection(this)
 }

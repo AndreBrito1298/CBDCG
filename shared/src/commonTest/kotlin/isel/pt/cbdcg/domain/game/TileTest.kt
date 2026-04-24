@@ -11,7 +11,7 @@ class TileTest {
         val horizontal = Tile(listOf(Direction.EAST))
         val oppositeHorizontal = Tile(listOf(Direction.WEST))
 
-        assertTrue(horizontal.canConnectTo(oppositeHorizontal))
+        assertTrue(horizontal.canConnectTo(Direction.EAST, oppositeHorizontal))
     }
 
     @Test
@@ -19,6 +19,6 @@ class TileTest {
         val tile = Tile(listOf(Direction.NORTH))
         val other = Tile(listOf(Direction.NORTH, Direction.EAST))
 
-        assertFalse(tile.canConnectTo(other))
+        assertFalse(tile.canConnectTo(Direction.NORTH, other))
     }
 }

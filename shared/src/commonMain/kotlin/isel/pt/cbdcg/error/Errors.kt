@@ -58,6 +58,9 @@ sealed class TableError(
     class TableDoesNotExist(table: String) :
             TableError("Table '$table' was not found.")
 
+    class OwnerOnly :
+            TableError("This operation can only be performed by the owner of the table.")
+
 }
 
 sealed class ParticipantError(
@@ -81,9 +84,11 @@ sealed class BoardPlacementError(
     class TileConnectionMismatch: BoardPlacementError("The tile does not connect to the rest of the board.")
 }
 
-sealed class GameplayError(
+sealed class GameError(
     msg: String,
 ): Error(msg, "Error found while playing the game."){
 
-    class NotYourTurn: GameplayError("Wait for your turn.")
+    class NotYourTurn: GameError("Wait for your turn.")
+    class MinimumPlayersNeeded: GameError("There must be at least 2 players to start a game.")
+    class InvalidDirection(char: Char): GameError("Something went wrong decoding direction: $char")
 }
