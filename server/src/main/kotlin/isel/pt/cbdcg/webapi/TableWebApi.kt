@@ -55,8 +55,8 @@ fun Route.tableWebApi(tableService: TableService) {
             val input = call.receive<TableOperationInput>()
 
             tableService.leaveTable(
-                userID = input.user.toUInt(),
-                tableID = input.table.toUInt(),
+                userId = input.user.toUInt(),
+                tableId = input.table.toUInt(),
                 token = input.token,
             ).getOrThrow()
 
@@ -68,8 +68,21 @@ fun Route.tableWebApi(tableService: TableService) {
             val input = call.receive<TableOperationInput>()
 
             tableService.changeRole(
-                userID = input.user.toUInt(),
-                tableID = input.table.toUInt(),
+                userId = input.user.toUInt(),
+                tableId = input.table.toUInt(),
+                token = input.token,
+            ).getOrThrow()
+
+            call.response.status(HttpStatusCode.OK)
+        }
+
+        post("/ready") {
+
+            val input = call.receive<TableOperationInput>()
+
+            tableService.toggleReady(
+                userId = input.user.toUInt(),
+                tableId = input.table.toUInt(),
                 token = input.token,
             ).getOrThrow()
 

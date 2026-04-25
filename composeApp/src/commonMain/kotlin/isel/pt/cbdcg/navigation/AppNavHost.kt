@@ -91,8 +91,9 @@ fun AppNavHost(vm: AppViewModel) {
 
             val user = ui.user ?: return@composable
             val table = ui.currentTable
+            val game = ui.game
 
-            // If the table was deleted, send the participant to the lobby
+            // If the table was deleted
             LaunchedEffect(table) {
                 if (table == null) {
                     nav.navigate(SearchTablesRoute) {
@@ -104,6 +105,12 @@ fun AppNavHost(vm: AppViewModel) {
 
             if(table == null) return@composable
 
+            LaunchedEffect(game) {
+                if (game != null) {
+                    nav.navigate(GameRoute)
+                }
+            }
+
             LaunchedEffect(Unit) {
                 vm.observeTable(table.name.string)
             }
@@ -112,7 +119,9 @@ fun AppNavHost(vm: AppViewModel) {
                 user = user,
                 table = table,
                 changeRole = { vm.changeRole() },
-                leaveTable = { vm.leaveTable() { nav.popBackStack() } }
+                toggleReady = { vm.toggleReady() },
+                leaveTable = { vm.leaveTable { nav.popBackStack() } },
+                createGame = { vm.createGame { nav.navigate(GameRoute) } }
             )
 
         }

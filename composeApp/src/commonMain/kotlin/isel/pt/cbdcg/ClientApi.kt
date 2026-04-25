@@ -125,7 +125,6 @@ class ClientApi(private val client: HttpClient) {
 
         socketSession?.send(Frame.Text(payload))
     }
-
     suspend fun subscribeTable(tableName: String) {
 
         ensureConnected()
@@ -136,7 +135,6 @@ class ClientApi(private val client: HttpClient) {
 
         socketSession?.send(Frame.Text(payload))
     }
-
     suspend fun subscribeGame(gameId: UInt) {
 
         ensureConnected()
@@ -147,7 +145,6 @@ class ClientApi(private val client: HttpClient) {
 
         socketSession?.send(Frame.Text(payload))
     }
-
     suspend fun disconnectAll() {
         listenJob?.cancel()
         listenJob = null
@@ -164,26 +161,24 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = CreateUserDTO(name.string, email.string, password.string)
         ).map { it.toUser() }
-
     suspend fun login(email: Email, password: Password): Result<User> =
         fetch<UserDTO>(
             path = "auth/users/login",
             method = HttpMethod.Post,
             body = LoginInput(email.string, password.string)
         ).map { it.toUser() }
-
     suspend fun logout(token: String): Result<Unit> =
         fetch<Unit>(
             path = "auth/users/logout",
             method = HttpMethod.Post,
             body = LogoutInput(token)
         )
-
     suspend fun getTables(): Result<List<Table>> =
         fetch<Array<TableDTO>>(
             path = "tables",
             method = HttpMethod.Get
         ).map { it.map{ tableOutput -> tableOutput.toTable() } }
+
 
     suspend fun createTable(tableName: Name, id: UInt, token: String): Result<Table> =
         fetch<TableDTO>(
@@ -191,27 +186,31 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = CreateTableDTO(tableName.string, id.toInt(), token)
         ).map{ it.toTable() }
-
     suspend fun joinTable(userId: UInt, tableId: UInt, token: String): Result<Table> =
         fetch<TableDTO>(
             path = "tables/join",
             method = HttpMethod.Post,
             body = TableOperationInput(tableId.toInt(), userId.toInt(), token)
         ).map{ it.toTable() }
-
     suspend fun leaveTable(userId: UInt, tableId: UInt, token: String): Result<Unit> =
         fetch<Unit>(
             path = "tables/leave",
             method = HttpMethod.Post,
             body = TableOperationInput(tableId.toInt(), userId.toInt(), token)
         )
-
     suspend fun changeRole(userId: UInt, tableId: UInt, token: String): Result<Unit> =
         fetch<Unit>(
             path = "tables/change-role",
             method = HttpMethod.Post,
             body = TableOperationInput(tableId.toInt(), userId.toInt(), token)
         )
+    suspend fun toggleReady(userId: UInt, tableId: UInt, token: String): Result<Unit> =
+        fetch<Unit>(
+            path = "tables/ready",
+            method = HttpMethod.Post,
+            body = TableOperationInput(tableId.toInt(), userId.toInt(), token)
+        )
+
 
     suspend fun createGame(tableId: UInt, userId: UInt, token: String): Result<Game> =
         fetch<GameDTO>(
@@ -250,5 +249,4 @@ class ClientApi(private val client: HttpClient) {
         if (T::class == Unit::class) Unit as T
         else response.body<T>()
     }
-
 }

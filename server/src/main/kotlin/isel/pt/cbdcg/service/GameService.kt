@@ -19,7 +19,7 @@ class GameService(
     private val events: EventsPublisher,
 ) {
 
-    fun createGame(tableId: UInt, userId: UInt, token: String): Result<Game> = runCatching {
+    suspend fun createGame(tableId: UInt, userId: UInt, token: String): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
@@ -39,6 +39,7 @@ class GameService(
             throw GameError.MinimumPlayersNeeded()
 
         val game = gameRepo.createGame(players)
+        events.publishGameStarted(table, game)
 
         game
     }

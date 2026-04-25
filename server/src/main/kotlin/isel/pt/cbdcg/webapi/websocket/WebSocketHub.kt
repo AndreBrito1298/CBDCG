@@ -80,6 +80,18 @@ class WebSocketHub(
             session.send(Frame.Text(payload))
         }
     }
+    override suspend fun publishGameStarted(table: Table, game: Game) {
+
+        val message = WsServerMessage.GameInfo(game.toGameDTO())
+        val payload = json.encodeToString<WsServerMessage>(message)
+
+        val sessions = mutex.withLock {
+            tableSessions[table.name.string]?.toList().orEmpty()
+        }
+        sessions.forEach{ session ->
+            session.send(Frame.Text(payload))
+        }
+    }
     override suspend fun publishGameUpdated(game: Game) {
 
         val message = WsServerMessage.GameInfo(game.toGameDTO())

@@ -29,9 +29,9 @@ fun Tile.codeString(): String {
 
 fun String.decodeTile(): Tile {
 
-    val (connectionsString, blockedString) = split("_")
-    val connections = connectionsString.map{ it.toDirection() }
-    val blocked = blockedString.map{ it.toDirection() }
+    val string = split("_")
+    val connections = string[0].map{ it.toDirection() }
+    val blocked = if(string.size == 2) string[1].map{ it.toDirection() } else emptyList()
 
     return Tile(connections, blocked)
 }

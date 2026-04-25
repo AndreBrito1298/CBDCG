@@ -71,7 +71,7 @@ fun GameDTO.toGame(): Game {
     val tiles = board.map{ string ->
 
         val (posString, tileString) = string.split("|")
-        val pos = posString.split(", ").map{ it.toInt() }
+        val pos = posString.split(",").map{ it.toInt() }
         val tile = tileString.decodeTile()
 
         BoardTile(
@@ -89,6 +89,7 @@ fun GameDTO.toGame(): Game {
 
 }
 
+@Serializable
 data class CreateGameDTO(
     val userId: Int,
     val token: String,

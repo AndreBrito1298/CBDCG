@@ -36,7 +36,7 @@ fun TableCard(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(
-                    text = "Table: '${table.name.string} | Owner: '${table.owner.name.string} [#${table.owner.id}]'",
+                    text = "Table: '${table.name.string}' | Owner: '${table.owner.name.string}[#${table.owner.id}]'",
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(

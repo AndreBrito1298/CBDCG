@@ -14,7 +14,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
@@ -25,19 +27,22 @@ fun WaitingTableScreen(
     user: User,
     table: Table,
     changeRole: () -> Unit,
-    leaveTable: () -> Unit
+    toggleReady: () -> Unit,
+    leaveTable: () -> Unit,
+    createGame: () -> Unit
 ){
 
-    var participants = table.participants
+    val participants = table.participants
 
     val players = participants
         .filter { it.role == Role.PLAYER }
-        .map { it.user }
+        .map { it.user to it.ready }
     val spectators = participants
         .filter { it.role == Role.SPECTATOR }
-        .map { it.user }
+        .map { it.user to null }
 
-    val currentRole = if(players.find{ it.id == user.id } != null) Role.PLAYER else Role.SPECTATOR
+    val participant = participants.first{ it.user.id == user.id }
+    val startFlag = participant.user.id == table.owner.id && players.all{ it.second }
 
     Column(
         modifier = Modifier
@@ -45,24 +50,37 @@ fun WaitingTableScreen(
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = table.name.string,
-            style = MaterialTheme.typography.headlineMedium,
-        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Text(
+                text = table.name.string,
+                style = MaterialTheme.typography.headlineMedium,
+            )
+
+            Button(
+                onClick = leaveTable,
+            ) {
+                Text("Leave Table")
+            }
+        }
 
         Text(
-            text = "User: ${user.name.string}",
+            text = "Owner: ${table.owner.name}[#${table.owner.id}]",
             style = MaterialTheme.typography.headlineSmall,
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Button(
                 onClick = changeRole,
-                enabled = currentRole != Role.PLAYER,
+                enabled = participant.role != Role.PLAYER,
                 modifier = Modifier.weight(1f),
             ) {
                 Text("Join Players")
@@ -70,18 +88,11 @@ fun WaitingTableScreen(
 
             Button(
                 onClick = changeRole,
-                enabled = currentRole != Role.SPECTATOR,
+                enabled = participant.role != Role.SPECTATOR,
                 modifier = Modifier.weight(1f),
             ) {
                 Text("Join Spectators")
             }
-        }
-
-        Button(
-            onClick = leaveTable,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Leave Table")
         }
 
         Row(
@@ -100,11 +111,25 @@ fun WaitingTableScreen(
                 modifier = Modifier.weight(1f),
             )
         }
+
+        Button(
+            onClick = if(startFlag) createGame else toggleReady,
+            enabled = participant.role == Role.PLAYER,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+
+            val text =
+                if(participant.ready && !startFlag) "Ready"
+                else if(startFlag) "Start Game"
+                else "Not Ready"
+
+            Text(text)
+        }
     }
 }
 
 @Composable
-private fun WaitingColumn(title: String, users: List<User>, modifier: Modifier = Modifier) {
+private fun WaitingColumn(title: String, users: List<Pair<User, Boolean?>>, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.widthIn(min = 180.dp),
     ) {
@@ -125,9 +150,15 @@ private fun WaitingColumn(title: String, users: List<User>, modifier: Modifier =
                     style = MaterialTheme.typography.bodyMedium,
                 )
             } else {
-                users.forEach { user ->
+                users.forEach { (user, ready) ->
+
+                    val readyColor =
+                        if(ready == null) Color.Black
+                        else if (ready) Color.Green else Color.Red
+
                     Text(
-                        text = "${user.name.string} [#${user.id}]", // temporary?
+                        text = "${user.name.string} [#${user.id}]",
+                        color = readyColor,
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
