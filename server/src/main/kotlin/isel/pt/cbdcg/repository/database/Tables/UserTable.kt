@@ -3,36 +3,53 @@ package isel.pt.cbdcg.repository.database.Tables
 import com.android.identity.cbor.Uint
 import isel.pt.cbdcg.configs.MAX_EMAIL_LENGTH
 import isel.pt.cbdcg.configs.MAX_NAME_LENGTH
-import org.jetbrains.exposed.sql.Table
+import isel.pt.cbdcg.domain.AuthUser
+import isel.pt.cbdcg.domain.Email
+import isel.pt.cbdcg.domain.Name
+import isel.pt.cbdcg.domain.Password
+import isel.pt.cbdcg.domain.User
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.dao.id.IntIdTable
+import org.jetbrains.exposed.v1.dao.IntEntity
+import org.jetbrains.exposed.v1.dao.IntEntityClass
 
-object Users : Table("users") {
-    val id = uinteger("id").autoIncrement()
+
+object Users : IntIdTable("users") {
     val name = varchar("name", MAX_NAME_LENGTH)
     val email = varchar("email", 255).uniqueIndex()
     val password = varchar("password", MAX_NAME_LENGTH)
     val creationDate = long("creation_date")
-    val creationTime = long("creation_date")
-
-    override val primaryKey = PrimaryKey(id)
 }
 
-object AuthUsers : Table("authUsers") {
+class UsersDao(id: EntityID<Int>) : IntEntity(id){
+    companion object : IntEntityClass<UsersDao>(Users)
+
+    var name by Users.name
+    var email by Users.email
+    var password by Users.password
+    var creationDate by Users.creationDate
+
+    override fun toString():String {
+        return "User(id=$id, name=$name, email=$email, password=$password, creation_date=$creationDate)"
+    }
+
+    fun toUser() = User(
+        id = id.value.toUInt(),
+        name = Name(name),
+        email = Email(email),
+        password = Password(password),
+    )
+}
+
+object AuthUsers : IntIdTable("authUsers") {
     val token = varchar("token", 255)
-    val userEmail = varchar("user_email", MAX_EMAIL_LENGTH).references(Users.email).uniqueIndex()
-
-    override val primaryKey = PrimaryKey(userEmail)
+    val userId = integer("user_id").index()
 }
 
-data class UsersDTO(
-    val id: Uint,
-    val name: String,
-    val email: String,
-    val password: String,
-    val creationDate: Long,
-    val creationTime: Long,
-)
+class AuthUsersDao(id: EntityID<Int>) : IntEntity(id) {
+    companion object : IntEntityClass<AuthUsersDao>(AuthUsers)
 
-data class AuthUsersDTO(
-    val token: String,
-    val userEmail: String
-)
+    var token by AuthUsers.token
+    var userId by AuthUsers.userId
+
+}

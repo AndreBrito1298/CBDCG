@@ -2,20 +2,36 @@ package isel.pt.cbdcg.repository.database.Tables
 
 import com.android.identity.cbor.Uint
 import isel.pt.cbdcg.configs.MAX_NAME_LENGTH
-import org.jetbrains.exposed.sql.Table
+import isel.pt.cbdcg.domain.Name
+import isel.pt.cbdcg.domain.Table
+import isel.pt.cbdcg.repository.database.TableRepositoryDB.getAllParticipants
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.dao.id.IntIdTable
+import org.jetbrains.exposed.v1.dao.IntEntity
+import org.jetbrains.exposed.v1.dao.IntEntityClass
 
-object Tables : Table("tables") {
-    val id = uinteger("id").autoIncrement()
+object Tables : IntIdTable("tables") {
     val name = varchar("name", MAX_NAME_LENGTH).uniqueIndex()
-    val owner = uinteger("owner").references(Users.id)
-    val capacity = uinteger("capacity")
+    val owner = integer("owner").references(Users.id)
+    val capacity = integer("capacity")
 
-    override val primaryKey = PrimaryKey(id)
 }
 
-data class TableDTO(
-    val id: Uint,
-    val name: String,
-    val owner: Uint,
-    val capacity: Uint
-)
+class TablesDao(id: EntityID<Int>) : IntEntity(id) {
+    companion object : IntEntityClass<TablesDao>(Tables)
+
+    var name by Tables.name
+    var owner by Tables.owner
+    var capacity by Tables.capacity
+
+    override fun toString(): String {
+        return "Table(id=$id, name=$name, owner=$owner, capacity=$capacity)"
+    }
+
+    fun toTable() = Table(
+        id = id.value.toUInt(),
+        name = Name(name),
+        owner = UsersDao.findById(owner)?.toUser()!!,
+        participants = getAllParticipants(Name(name))
+    )
+}

@@ -7,40 +7,44 @@ import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.repository.Repository
 import isel.pt.cbdcg.repository.database.Tables.AuthUsers
+import isel.pt.cbdcg.repository.database.Tables.AuthUsersDao
 import isel.pt.cbdcg.repository.database.Tables.Users
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import isel.pt.cbdcg.repository.database.Tables.UsersDao
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 object UserRepositoryDB: Repository<User> {
 
     fun loginUser(authenticatedUser: AuthUser) {
-        return transaction {
-            AuthUsers.insert {
-                it[token] = authenticatedUser.token
-                it[userEmail] = authenticatedUser.email.toString()
+        transaction {
+            val user = UsersDao.find { Users.email eq authenticatedUser.email.string }.singleOrNull()
+                ?: return@transaction
+
+            AuthUsersDao.new {
+                token = authenticatedUser.token
+                userId = user.id.value
             }
         }
     }
 
     fun logoutUser(email: Email) {
-        return transaction {
-            AuthUsers.deleteWhere { AuthUsers.userEmail eq email.string }
+        transaction {
+            val user = UsersDao.find { Users.email eq email.string }.singleOrNull()
+                ?: return@transaction
+            AuthUsersDao.find { AuthUsers.userId eq user.id.value }
+                .forEach { it.delete() }
         }
     }
 
     override fun findById(id: UInt): User? {
         return transaction {
-            Users.selectAll().where { Users.id eq id }
-                .singleOrNull()
-                ?.toUser()
+            UsersDao.findById(id.toInt())?.toUser()
         }
     }
 
     fun findByEmail(email: Email): User? {
         return transaction {
-            Users.selectAll().where { Users.email eq email.string }
+            UsersDao.find { Users.email eq email.string }
                 .singleOrNull()
                 ?.toUser()
         }
@@ -48,41 +52,32 @@ object UserRepositoryDB: Repository<User> {
 
     override fun save(element: User) {
         transaction {
-            Users.insert {
-                it[name] = element.name.string
-                it[email] = element.email.string
-                it[password] = element.password.string
+            val existing = UsersDao.findById(element.id.toInt())
+            if (existing == null) {
+                UsersDao.new {
+                    name = element.name.string
+                    email = element.email.string
+                    password = element.password.string
+                    creationDate = 0L
+                }
+            } else {
+                existing.name = element.name.string
+                existing.email = element.email.string
+                existing.password = element.password.string
             }
         }
     }
 
     override fun deleteById(id: UInt) {
         transaction {
-            Users.deleteWhere { Users.id eq id }
+            UsersDao.findById(id.toInt())?.delete()
         }
     }
 
     override fun clear() {
         transaction {
-            Users.deleteAll()
+            AuthUsersDao.all().forEach { it.delete() }
+            UsersDao.all().forEach { it.delete() }
         }
     }
-
-    /**
-     * Helper function to convert a ResultRow to a User domain object.
-     */
-
-    // Usar DAO's
-    private fun ResultRow.toUser() = User(
-        id = this[Users.id],
-        name = Name(this[Users.name]),
-        email = Email(this[Users.email]),
-        password = Password(this[Users.password]),
-    )
-
-    private fun ResultRow.toAuthUser() = AuthUser(
-        token = this[AuthUsers.token],
-        email = Email(this[AuthUsers.userEmail]),
-        name = Name(this[Users.name])
-    )
 }

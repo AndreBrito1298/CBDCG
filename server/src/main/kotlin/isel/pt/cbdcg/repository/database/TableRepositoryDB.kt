@@ -4,25 +4,28 @@ import isel.pt.cbdcg.domain.*
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.repository.TableRepository
 import isel.pt.cbdcg.repository.database.Tables.Participants
+import isel.pt.cbdcg.repository.database.Tables.ParticipantsDao
 import isel.pt.cbdcg.repository.database.Tables.Tables
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
+import isel.pt.cbdcg.repository.database.Tables.TablesDao
+import isel.pt.cbdcg.repository.database.Tables.UsersDao
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 object TableRepositoryDB : TableRepository {
 
     override fun createTable(name: Name, owner: User, participant: Participant): Table {
         transaction {
-            Tables.insert {
-                it[Tables.name] = name.string
-                it[Tables.owner] = owner.id
-                it[capacity] = 1u
+            val createdTable = TablesDao.new {
+                this.name = name.string
+                this.owner = owner.id.toInt()
+                this.capacity = 1
             }
-            Participants.insert {
-                it[id] = participant.user.id
-                it[userEmail] = participant.user.email.string
-                it[lobbyName] = name.string
-                it[role] = participant.role.name
+
+            ParticipantsDao.new(participant.user.id.toInt()) {
+                userEmail = participant.user.email.string
+                lobbyName = createdTable.name
+                role = participant.role.name
             }
         }
         return findByName(name)!!
@@ -30,15 +33,13 @@ object TableRepositoryDB : TableRepository {
 
     override fun findById(id: UInt): Table? {
         return transaction {
-            Tables.selectAll().where { Tables.id eq id }
-                .singleOrNull()
-                ?.toTable()
+            TablesDao.findById(id.toInt())?.toTable()
         }
     }
 
     override fun findByName(name: Name): Table? {
         return transaction {
-            Tables.selectAll().where { Tables.name eq name.string }
+            TablesDao.find { Tables.name eq name.string }
                 .singleOrNull()
                 ?.toTable()
         }
@@ -46,89 +47,72 @@ object TableRepositoryDB : TableRepository {
 
     override fun getAllTables(): List<Table> {
         return transaction {
-            Tables.selectAll().map { it.toTable() }
+            TablesDao.all().map { it.toTable() }
         }
     }
 
     override fun getAllParticipants(tableName: Name): List<Participant> {
         return transaction {
-            Participants.selectAll().where { Participants.lobbyName eq tableName.string }
+            ParticipantsDao.find { Participants.lobbyName eq tableName.string }
                 .map { it.toParticipant() }
         }
     }
 
     override fun save(element: Table) {
         transaction {
-            if (element.id == 0u) {
-                Tables.insert {
-                    it[name] = element.name.string
-                    it[owner] = element.owner.id
-                    it[capacity] = element.participants.size.toUInt()
+            val existing = TablesDao.findById(element.id.toInt())
+            if (existing == null) {
+                TablesDao.new {
+                    name = element.name.string
+                    owner = element.owner.id.toInt()
+                    capacity = element.participants.size
                 }
             } else {
-                Tables.update({ Tables.id eq element.id }) {
-                    it[name] = element.name.string
-                    it[owner] = element.owner.id
-                    it[capacity] = element.participants.size.toUInt()
-                }
+                existing.name = element.name.string
+                existing.owner = element.owner.id.toInt()
+                existing.capacity = element.participants.size
             }
         }
     }
 
     override fun deleteById(id: UInt) {
         transaction {
-            Tables.deleteWhere { Tables.id eq id }
+            TablesDao.findById(id.toInt())?.delete()
         }
     }
 
     override fun clear() {
         transaction {
-            Tables.deleteAll()
+            ParticipantsDao.all().forEach { it.delete() }
+            TablesDao.all().forEach { it.delete() }
         }
     }
 
     override fun removeParticipant(table: Table, user: User): Table {
         transaction {
-            Participants.deleteWhere { (lobbyName eq table.name.string) and (id eq user.id) }
-            Tables.update({ Tables.id eq table.id }) {
-                it[capacity] = (table.participants.size - 1).toUInt()
-            }
+            ParticipantsDao.find { (Participants.lobbyName eq table.name.string) and (Participants.id eq user.id.toInt()) }
+                .forEach { it.delete() }
+            TablesDao.findById(table.id.toInt())?.capacity = (table.participants.size - 1)
         }
         return findById(table.id)!!
     }
 
     override fun updateParticipants(table: Table, participant: Participant): Table {
         transaction {
-            val count = Participants.selectAll().where { (Participants.lobbyName eq table.name.string) and (Participants.id eq participant.user.id) }.count()
-            if (count == 0L) {
-                Participants.insert {
-                    it[id] = participant.user.id
-                    it[userEmail] = participant.user.email.string
-                    it[lobbyName] = table.name.string
-                    it[role] = participant.role.name
+            val existing = ParticipantsDao.find {
+                (Participants.lobbyName eq table.name.string) and (Participants.id eq participant.user.id.toInt())
+            }.singleOrNull()
+            if (existing == null) {
+                ParticipantsDao.new(participant.user.id.toInt()) {
+                    userEmail = participant.user.email.string
+                    lobbyName = table.name.string
+                    role = participant.role.name
                 }
             } else {
-                Participants.update({ (Participants.lobbyName eq table.name.string) and (Participants.id eq participant.user.id) }) {
-                    it[role] = participant.role.name
-                }
+                existing.role = participant.role.name
             }
-            Tables.update({ Tables.id eq table.id }) {
-                it[capacity] = getAllParticipants(table.name).size.toUInt()
-            }
+            TablesDao.findById(table.id.toInt())?.capacity = getAllParticipants(table.name).size
         }
         return findById(table.id)!!
     }
-
-    private fun ResultRow.toTable() = Table(
-        id = this[Tables.id],
-        name = Name(this[Tables.name]),
-        owner = UserRepositoryDB.findById(this[Tables.owner])!!,
-        participants = getAllParticipants(Name(this[Tables.name]))
-    )
-
-    private fun ResultRow.toParticipant() = Participant(
-        user = UserRepositoryDB.findById(this[Participants.id])!!,
-        role = this[Participants.role].toRole() ?: Role.SPECTATOR
-    )
-
 }

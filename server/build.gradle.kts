@@ -17,6 +17,10 @@ application {
 }
 
 dependencies {
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.dao)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.h2)
     implementation("io.ktor:ktor-server-auth:${libs.versions.ktor.get()}")
     implementation("io.ktor:ktor-server-auth-jwt:${libs.versions.ktor.get()}")
     implementation(libs.ktor.clientCore)
@@ -24,9 +28,6 @@ dependencies {
     implementation(libs.ktor.clientContentNegotiation)
     implementation(libs.ktor.serverWebsockets)
     implementation(projects.shared)
-    implementation(libs.exposed.core)
-    implementation(libs.exposed.jdbc)
-    implementation(libs.h2)
     implementation(libs.logback)
     implementation(libs.kotlinx.serializationJson)
     implementation(libs.ktor.serializationKotlinxJson)
