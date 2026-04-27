@@ -1,6 +1,6 @@
 package isel.pt.cbdcg.domain
 
-import org.junit.Test
+import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 

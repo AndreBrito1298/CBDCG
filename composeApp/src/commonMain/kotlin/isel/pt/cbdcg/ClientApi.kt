@@ -19,16 +19,19 @@ import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
-import isel.pt.cbdcg.dto.ChangeRoleInput
-import isel.pt.cbdcg.dto.CreateTableInput
-import isel.pt.cbdcg.dto.CreateUserInput
+import isel.pt.cbdcg.domain.game.Game
+import isel.pt.cbdcg.dto.CreateGameDTO
+import isel.pt.cbdcg.dto.CreateTableDTO
+import isel.pt.cbdcg.dto.CreateUserDTO
+import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
 import isel.pt.cbdcg.dto.TableOperationInput
-import isel.pt.cbdcg.dto.TableOutput
-import isel.pt.cbdcg.dto.TableWsClientMessage
-import isel.pt.cbdcg.dto.TableWsServerMessage
-import isel.pt.cbdcg.dto.UserOutput
+import isel.pt.cbdcg.dto.TableDTO
+import isel.pt.cbdcg.dto.WsClientMessage
+import isel.pt.cbdcg.dto.WsServerMessage
+import isel.pt.cbdcg.dto.UserDTO
+import isel.pt.cbdcg.dto.toGame
 import isel.pt.cbdcg.dto.toTable
 import isel.pt.cbdcg.dto.toUser
 import kotlinx.coroutines.CoroutineScope
@@ -51,6 +54,10 @@ class ClientApi(private val client: HttpClient) {
     private val _currentTable = MutableStateFlow<Table?>(null)
     val currentTable = _currentTable.asStateFlow()
 
+    private val _game = MutableStateFlow<Game?>(null)
+
+    val game = _game.asStateFlow()
+
     // Session opened with the Server
     private var socketSession: ClientWebSocketSession? = null
 
@@ -60,15 +67,27 @@ class ClientApi(private val client: HttpClient) {
     // Translates a message and updates the local state ('tables' or 'currentTable')
     private fun handleServerMessage(text: String) {
 
-        val message = json.decodeFromString<TableWsServerMessage>(text)
+        val message = json.decodeFromString<WsServerMessage>(text)
 
         when (message) {
-            is TableWsServerMessage.LobbyTables -> {
+
+            is WsServerMessage.LobbyTables -> {
                 _tables.value = message.tables.map { it.toTable() }
             }
 
-            is TableWsServerMessage.TableInfo -> {
+            is WsServerMessage.TableInfo -> {
                 _currentTable.value = message.table.toTable()
+            }
+
+            is WsServerMessage.TableDeleted -> {
+                val current = _currentTable.value
+                if (current?.id?.toInt() == message.tableId) {
+                    _currentTable.value = null
+                }
+            }
+
+            is WsServerMessage.GameInfo -> {
+                _game.value = message.game.toGame()
             }
         }
     }
@@ -78,7 +97,7 @@ class ClientApi(private val client: HttpClient) {
 
         if (socketSession != null) return
 
-        val session = client.webSocketSession("ws://localhost:$SERVER_PORT/ws/tables")
+        val session = client.webSocketSession("ws://localhost:$SERVER_PORT/ws")
         socketSession = session
 
         listenJob = CoroutineScope(Dispatchers.Default).launch {
@@ -100,24 +119,32 @@ class ClientApi(private val client: HttpClient) {
 
         ensureConnected()
 
-        val payload = json.encodeToString<TableWsClientMessage>(
-            TableWsClientMessage.SubscribeLobby
+        val payload = json.encodeToString<WsClientMessage>(
+            WsClientMessage.SubscribeLobby
         )
 
         socketSession?.send(Frame.Text(payload))
     }
-
     suspend fun subscribeTable(tableName: String) {
 
         ensureConnected()
 
-        val payload = json.encodeToString<TableWsClientMessage>(
-            TableWsClientMessage.SubscribeTable(tableName)
+        val payload = json.encodeToString<WsClientMessage>(
+            WsClientMessage.SubscribeTable(tableName)
         )
 
         socketSession?.send(Frame.Text(payload))
     }
+    suspend fun subscribeGame(gameId: UInt) {
 
+        ensureConnected()
+
+        val payload = json.encodeToString<WsClientMessage>(
+            WsClientMessage.SubscribeGame(gameId.toInt())
+        )
+
+        socketSession?.send(Frame.Text(payload))
+    }
     suspend fun disconnectAll() {
         listenJob?.cancel()
         listenJob = null
@@ -129,59 +156,68 @@ class ClientApi(private val client: HttpClient) {
     // HTTP connection with the Server
 
     suspend fun createUser(name: Name, email: Email, password: Password): Result<User> =
-        fetch<UserOutput>(
+        fetch<UserDTO>(
             path = "auth/users/create",
             method = HttpMethod.Post,
-            body = CreateUserInput(name.string, email.string, password.string)
+            body = CreateUserDTO(name.string, email.string, password.string)
         ).map { it.toUser() }
-
     suspend fun login(email: Email, password: Password): Result<User> =
-        fetch<UserOutput>(
+        fetch<UserDTO>(
             path = "auth/users/login",
             method = HttpMethod.Post,
             body = LoginInput(email.string, password.string)
         ).map { it.toUser() }
-
     suspend fun logout(token: String): Result<Unit> =
         fetch<Unit>(
             path = "auth/users/logout",
             method = HttpMethod.Post,
             body = LogoutInput(token)
         )
-
     suspend fun getTables(): Result<List<Table>> =
-        fetch<Array<TableOutput>>(
+        fetch<Array<TableDTO>>(
             path = "tables",
             method = HttpMethod.Get
         ).map { it.map{ tableOutput -> tableOutput.toTable() } }
 
-    suspend fun createTable(tableName: Name, userEmail: Email, token: String): Result<Table> =
-        fetch<TableOutput>(
+
+    suspend fun createTable(tableName: Name, id: UInt, token: String): Result<Table> =
+        fetch<TableDTO>(
             path = "tables/create",
             method = HttpMethod.Post,
-            body = CreateTableInput(tableName.string, userEmail.string, token)
+            body = CreateTableDTO(tableName.string, id.toInt(), token)
         ).map{ it.toTable() }
-
-    suspend fun joinTable(tableName: Name, userEmail: Email, token: String): Result<Table> =
-        fetch<TableOutput>(
+    suspend fun joinTable(userId: UInt, tableId: UInt, token: String): Result<Table> =
+        fetch<TableDTO>(
             path = "tables/join",
             method = HttpMethod.Post,
-            body = TableOperationInput(tableName.string, userEmail.string, token)
+            body = TableOperationInput(tableId.toInt(), userId.toInt(), token)
         ).map{ it.toTable() }
-
-    suspend fun leaveTable(userEmail: Email, tableName: Name, token: String): Result<Unit> =
+    suspend fun leaveTable(userId: UInt, tableId: UInt, token: String): Result<Unit> =
         fetch<Unit>(
             path = "tables/leave",
             method = HttpMethod.Post,
-            body = TableOperationInput(tableName.string, userEmail.string, token)
+            body = TableOperationInput(tableId.toInt(), userId.toInt(), token)
         )
-
-    suspend fun changeRole(userEmail: Email, tableName: Name, token: String): Result<Unit> =
+    suspend fun changeRole(userId: UInt, tableId: UInt, token: String): Result<Unit> =
         fetch<Unit>(
             path = "tables/change-role",
             method = HttpMethod.Post,
-            body = ChangeRoleInput(userEmail.string, tableName.string, token)
+            body = TableOperationInput(tableId.toInt(), userId.toInt(), token)
         )
+    suspend fun toggleReady(userId: UInt, tableId: UInt, token: String): Result<Unit> =
+        fetch<Unit>(
+            path = "tables/ready",
+            method = HttpMethod.Post,
+            body = TableOperationInput(tableId.toInt(), userId.toInt(), token)
+        )
+
+
+    suspend fun createGame(tableId: UInt, userId: UInt, token: String): Result<Game> =
+        fetch<GameDTO>(
+            path = "game/create",
+            method = HttpMethod.Post,
+            body = CreateGameDTO(userId.toInt(), token, tableId.toInt())
+        ).map{ it.toGame() }
 
     private suspend inline fun <reified T> fetch(
         path: String,
@@ -213,5 +249,4 @@ class ClientApi(private val client: HttpClient) {
         if (T::class == Unit::class) Unit as T
         else response.body<T>()
     }
-
 }

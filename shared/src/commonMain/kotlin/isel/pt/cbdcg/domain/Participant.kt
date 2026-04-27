@@ -7,5 +7,6 @@ package isel.pt.cbdcg.domain
  */
 data class Participant(
     val user: User,
-    val role: Role
+    val role: Role,
+    val ready: Boolean
 )

@@ -5,12 +5,13 @@ import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
+import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
 import isel.pt.cbdcg.repository.memory.TableRepositoryMem
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
-import isel.pt.cbdcg.service.events.TableEventsPublisher
+import isel.pt.cbdcg.webapi.websocket.EventsPublisher
 import kotlinx.coroutines.runBlocking
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -20,7 +21,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-private class FakeEventsPublisher : TableEventsPublisher {
+private class FakeEventsPublisher : EventsPublisher {
     val lobbyEvents = mutableListOf<List<Table>>()
     val tableEvents = mutableListOf<Table>()
 
@@ -30,6 +31,18 @@ private class FakeEventsPublisher : TableEventsPublisher {
 
     override suspend fun publishTableUpdated(table: Table) {
         tableEvents += table
+    }
+
+    override suspend fun publishGameStarted(table: Table, game: Game) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun publishTableDeleted(table: Table) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun publishGameUpdated(game: Game) {
+        TODO("Not yet implemented")
     }
 }
 
@@ -57,7 +70,7 @@ class TableServiceTest {
     @Test
     fun `get tables returns current repository contents`() = runBlocking {
         val owner = createAuthenticatedUser("Alice", "alice@email.com")
-        tableService.createTable(Name("tableOne"), owner.email, owner.auth!!.token).getOrThrow()
+        tableService.createTable(Name("tableOne"), owner.id, owner.auth!!.token).getOrThrow()
 
         val result = tableService.getTables().getOrThrow()
 
@@ -69,7 +82,7 @@ class TableServiceTest {
     fun `create table successfully creates owner participant and publishes events`() = runBlocking {
         val owner = createAuthenticatedUser("Alice", "alice@email.com")
 
-        val table = tableService.createTable(Name("lobbyOne"), owner.email, owner.auth!!.token).getOrThrow()
+        val table = tableService.createTable(Name("lobbyOne"), owner.id, owner.auth!!.token).getOrThrow()
 
         assertEquals(owner, table.owner)
         assertEquals(1, table.participants.size)
@@ -80,9 +93,9 @@ class TableServiceTest {
     }
 
     @Test
-    fun `create table fails when owner email does not exist`(): Unit = runBlocking {
+    fun `create table fails when owner id does not exist`(): Unit = runBlocking {
         assertFailsWith<UserError.EmailNotFound> {
-            tableService.createTable(Name("lobbyOne"), Email("missing@email.com"), "token").getOrThrow()
+            tableService.createTable(Name("lobbyOne"), 9128u, "token").getOrThrow()
         }
     }
 
@@ -91,7 +104,7 @@ class TableServiceTest {
         val owner = userRepo.createUser(Name("Alice"), Email("alice@email.com"), Password("secret1"))
 
         assertFailsWith<UserError.TokenNotFound> {
-            tableService.createTable(Name("lobbyOne"), owner.email, "token").getOrThrow()
+            tableService.createTable(Name("lobbyOne"), owner.id, "token").getOrThrow()
         }
     }
 
@@ -100,7 +113,7 @@ class TableServiceTest {
         val owner = createAuthenticatedUser("Alice", "alice@email.com")
 
         assertFailsWith<UserError.TokenMismatch> {
-            tableService.createTable(Name("lobbyOne"), owner.email, "wrong-token").getOrThrow()
+            tableService.createTable(Name("lobbyOne"), owner.id, "wrong-token").getOrThrow()
         }
     }
 
@@ -108,9 +121,9 @@ class TableServiceTest {
     fun `join table successfully adds player and publishes events`() = runBlocking {
         val owner = createAuthenticatedUser("Alice", "alice@email.com")
         val guest = createAuthenticatedUser("Bea", "bea@email.com")
-        tableService.createTable(Name("lobbyOne"), owner.email, owner.auth!!.token).getOrThrow()
+        tableService.createTable(Name("lobbyOne"), owner.id, owner.auth!!.token).getOrThrow()
 
-        val updated = tableService.joinTable(guest.email, Name("lobbyOne"), guest.auth!!.token).getOrThrow()
+        val updated = tableService.joinTable(guest.id, 0u, guest.auth!!.token).getOrThrow()
 
         assertEquals(2, updated.participants.size)
         assertEquals(Role.PLAYER, updated.participants.last().role)
@@ -126,12 +139,12 @@ class TableServiceTest {
         val p4 = createAuthenticatedUser("Dio", "dio@email.com")
         val p5 = createAuthenticatedUser("Eva", "eva@email.com")
 
-        tableService.createTable(Name("lobbyOne"), owner.email, owner.auth!!.token).getOrThrow()
-        tableService.joinTable(p2.email, Name("lobbyOne"), p2.auth!!.token).getOrThrow()
-        tableService.joinTable(p3.email, Name("lobbyOne"), p3.auth!!.token).getOrThrow()
-        tableService.joinTable(p4.email, Name("lobbyOne"), p4.auth!!.token).getOrThrow()
+        tableService.createTable(Name("lobbyOne"), 0u, owner.auth!!.token).getOrThrow()
+        tableService.joinTable(1u, 0u, p2.auth!!.token).getOrThrow()
+        tableService.joinTable(2u, 0u, p3.auth!!.token).getOrThrow()
+        tableService.joinTable(3u, 0u, p4.auth!!.token).getOrThrow()
 
-        val updated = tableService.joinTable(p5.email, Name("lobbyOne"), p5.auth!!.token).getOrThrow()
+        val updated = tableService.joinTable(4u, 0u, p5.auth!!.token).getOrThrow()
 
         assertEquals(5, updated.participants.size)
         assertEquals(Role.SPECTATOR, updated.participants.last().role)
@@ -142,7 +155,7 @@ class TableServiceTest {
         val user = createAuthenticatedUser("Bea", "bea@email.com")
 
         assertFailsWith<TableError.TableDoesNotExist> {
-            tableService.joinTable(user.email, Name("missing"), user.auth!!.token).getOrThrow()
+            tableService.joinTable(user.id, 1999u, user.auth!!.token).getOrThrow()
         }
     }
 
@@ -152,12 +165,12 @@ class TableServiceTest {
         val user = createAuthenticatedUser("Bea", "bea@email.com")
         val otherOwner = createAuthenticatedUser("Cai", "cai@email.com")
 
-        tableService.createTable(Name("lobbyOne"), owner.email, owner.auth!!.token).getOrThrow()
-        tableService.createTable(Name("lobbyTwo"), otherOwner.email, otherOwner.auth!!.token).getOrThrow()
-        tableService.joinTable(user.email, Name("lobbyOne"), user.auth!!.token).getOrThrow()
+        tableService.createTable(Name("lobbyOne"), owner.id, owner.auth!!.token).getOrThrow()
+        tableService.createTable(Name("lobbyTwo"), otherOwner.id, otherOwner.auth!!.token).getOrThrow()
+        tableService.joinTable(user.id, 0u, user.auth!!.token).getOrThrow()
 
         assertFailsWith<TableError.UserUnavailable> {
-            tableService.joinTable(user.email, Name("lobbyTwo"), user.auth!!.token).getOrThrow()
+            tableService.joinTable(user.id, 1u, user.auth!!.token).getOrThrow()
         }
     }
 
@@ -165,10 +178,10 @@ class TableServiceTest {
     fun `leave table removes non owner from table and participant repository`() = runBlocking {
         val owner = createAuthenticatedUser("Alice", "alice@email.com")
         val guest = createAuthenticatedUser("Bea", "bea@email.com")
-        tableService.createTable(Name("lobbyOne"), owner.email, owner.auth!!.token).getOrThrow()
-        tableService.joinTable(guest.email, Name("lobbyOne"), guest.auth!!.token).getOrThrow()
+        tableService.createTable(Name("lobbyOne"), owner.id, owner.auth!!.token).getOrThrow()
+        tableService.joinTable(guest.id, 0u, guest.auth!!.token).getOrThrow()
 
-        tableService.leaveTable(guest.email, Name("lobbyOne"), guest.auth!!.token).getOrThrow()
+        tableService.leaveTable(guest.id, 0u, guest.auth!!.token).getOrThrow()
 
         val stored = tableRepo.findByName(Name("lobbyOne"))
         assertNotNull(stored)
@@ -182,10 +195,10 @@ class TableServiceTest {
     fun `leave table by owner deletes entire table`() = runBlocking {
         val owner = createAuthenticatedUser("Alice", "alice@email.com")
         val guest = createAuthenticatedUser("Bea", "bea@email.com")
-        tableService.createTable(Name("lobbyOne"), owner.email, owner.auth!!.token).getOrThrow()
-        tableService.joinTable(guest.email, Name("lobbyOne"), guest.auth!!.token).getOrThrow()
+        tableService.createTable(Name("lobbyOne"), owner.id, owner.auth!!.token).getOrThrow()
+        tableService.joinTable(guest.id, 0u, guest.auth!!.token).getOrThrow()
 
-        tableService.leaveTable(owner.email, Name("lobbyOne"), owner.auth!!.token).getOrThrow()
+        tableService.leaveTable(owner.id, 0u, owner.auth!!.token).getOrThrow()
 
         assertNull(tableRepo.findByName(Name("lobbyOne")))
         assertTrue(participantRepo.userAvailability(owner))
@@ -196,10 +209,10 @@ class TableServiceTest {
     fun `leave table fails when user is not in table`(): Unit = runBlocking {
         val owner = createAuthenticatedUser("Alice", "alice@email.com")
         val guest = createAuthenticatedUser("Bea", "bea@email.com")
-        tableService.createTable(Name("lobbyOne"), owner.email, owner.auth!!.token).getOrThrow()
+        tableService.createTable(Name("lobbyOne"), owner.id, owner.auth!!.token).getOrThrow()
 
         assertFailsWith<TableError.UserNotFound> {
-            tableService.leaveTable(guest.email, Name("lobbyOne"), guest.auth!!.token).getOrThrow()
+            tableService.leaveTable(guest.id, 0u, guest.auth!!.token).getOrThrow()
         }
     }
 
@@ -207,10 +220,10 @@ class TableServiceTest {
     fun `change role toggles participant role and publishes events`() = runBlocking {
         val owner = createAuthenticatedUser("Alice", "alice@email.com")
         val guest = createAuthenticatedUser("Bea", "bea@email.com")
-        tableService.createTable(Name("lobbyOne"), owner.email, owner.auth!!.token).getOrThrow()
-        tableService.joinTable(guest.email, Name("lobbyOne"), guest.auth!!.token).getOrThrow()
+        tableService.createTable(Name("lobbyOne"), owner.id, owner.auth!!.token).getOrThrow()
+        tableService.joinTable(guest.id, 0u, guest.auth!!.token).getOrThrow()
 
-        tableService.changeRole(guest.email, Name("lobbyOne"), guest.auth!!.token).getOrThrow()
+        tableService.changeRole(guest.id, 0u, guest.auth!!.token).getOrThrow()
 
         val stored = tableRepo.findByName(Name("lobbyOne"))
         assertNotNull(stored)
