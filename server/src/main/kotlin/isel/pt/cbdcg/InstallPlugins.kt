@@ -114,6 +114,7 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is TableError.UserUnavailable -> HttpStatusCode.Conflict
         is TableError.UserNotFound -> HttpStatusCode.NotFound
         is TableError.TableDoesNotExist -> HttpStatusCode.NotFound
+        is TableError.OwnerOnly -> HttpStatusCode.Forbidden
         is ParticipantError.ParticipantEmailNotFound -> HttpStatusCode.NotFound
         is ParticipantError.ParticipantIdNotFound -> HttpStatusCode.NotFound
         is ParticipantError.UserNotOnTable -> HttpStatusCode.NotFound
@@ -127,7 +128,9 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is GameError.InvalidDirection -> HttpStatusCode.BadRequest
         is GameError.MinimumPlayersNeeded -> HttpStatusCode.Conflict
         is GameError.NotYourTurn -> HttpStatusCode.Forbidden
-        is TableError.OwnerOnly -> HttpStatusCode.Forbidden
+        is GameError.EveryPlayerReady -> HttpStatusCode.Conflict
+        is GameError.GameNotFound -> HttpStatusCode.NotFound
+        is GameError.PlayerNotFound -> HttpStatusCode.NotFound
     }
 
     return code to message

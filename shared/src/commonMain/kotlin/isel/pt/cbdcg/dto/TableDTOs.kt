@@ -43,6 +43,14 @@ data class TableOperationInput(
 )
 
 @Serializable
+data class RoleChangeInput(
+    val table: Int,
+    val user: Int,
+    val token: String,
+    val role: String
+)
+
+@Serializable
 data class CreateTableDTO(
     val name: String,
     val userId: Int,

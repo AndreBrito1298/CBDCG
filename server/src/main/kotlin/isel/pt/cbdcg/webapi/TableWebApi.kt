@@ -8,7 +8,9 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import isel.pt.cbdcg.domain.toName
+import isel.pt.cbdcg.domain.toRole
 import isel.pt.cbdcg.dto.CreateTableDTO
+import isel.pt.cbdcg.dto.RoleChangeInput
 import isel.pt.cbdcg.dto.TableOperationInput
 import isel.pt.cbdcg.dto.toTableDTO
 import isel.pt.cbdcg.service.TableService
@@ -65,25 +67,13 @@ fun Route.tableWebApi(tableService: TableService) {
 
         post("/change-role") {
 
-            val input = call.receive<TableOperationInput>()
+            val input = call.receive<RoleChangeInput>()
 
             tableService.changeRole(
                 userId = input.user.toUInt(),
                 tableId = input.table.toUInt(),
                 token = input.token,
-            ).getOrThrow()
-
-            call.response.status(HttpStatusCode.OK)
-        }
-
-        post("/ready") {
-
-            val input = call.receive<TableOperationInput>()
-
-            tableService.toggleReady(
-                userId = input.user.toUInt(),
-                tableId = input.table.toUInt(),
-                token = input.token,
+                role = input.role.toRole()!!
             ).getOrThrow()
 
             call.response.status(HttpStatusCode.OK)

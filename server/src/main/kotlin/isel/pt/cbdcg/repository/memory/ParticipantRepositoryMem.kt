@@ -13,7 +13,7 @@ object ParticipantRepositoryMem: ParticipantRepository {
 
     override fun createParticipant(user: User, role: Role): Participant {
 
-        val participant = Participant(user, role, false)
+        val participant = Participant(user, role)
         participants.add(participant)
 
         return participant

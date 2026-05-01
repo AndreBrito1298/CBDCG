@@ -118,8 +118,7 @@ fun AppNavHost(vm: AppViewModel) {
             WaitingTableScreen(
                 user = user,
                 table = table,
-                changeRole = { vm.changeRole() },
-                toggleReady = { vm.toggleReady() },
+                changeRole = { role -> vm.changeRole(role) },
                 leaveTable = { vm.leaveTable { nav.popBackStack() } },
                 createGame = { vm.createGame { nav.navigate(GameRoute) } }
             )
@@ -130,14 +129,16 @@ fun AppNavHost(vm: AppViewModel) {
 
             val user = ui.user ?: return@composable
             val game = ui.game ?: return@composable
+            val player = ui.game?.players?.find { it.user == user.id } ?: return@composable
 
             LaunchedEffect(Unit) {
                 vm.observeGame(game.id)
             }
 
             GameScreen(
+                player = player,
                 game = game,
-                placePiece = {  },
+                placeTile = { tile, pos -> vm.placeTile(tile, pos) },
             )
 
         }

@@ -13,16 +13,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import cbdcg.composeapp.generated.resources.Res
 import cbdcg.composeapp.generated.resources.allDrawableResources
-import isel.pt.cbdcg.domain.game.BoardTile
-import isel.pt.cbdcg.domain.game.codeString
+import isel.pt.cbdcg.domain.game.BoardPosition
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun BoardTile(tile: BoardTile) {
+fun BoardTile(tileCode: String, position: BoardPosition) {
 
-    val fileName = tile.tile.codeString()
-    val resource = Res.allDrawableResources[fileName]
-        ?: error("Drawable not found: $fileName")
+    val resource = Res.allDrawableResources[tileCode]
+        ?: error("Drawable not found: $tileCode")
 
     Box(
         modifier = Modifier
@@ -31,18 +29,28 @@ fun BoardTile(tile: BoardTile) {
     ){
         Image(
             painter = painterResource(resource),
-            contentDescription = "Tile ${tile.pos.x}, ${tile.pos.y}",
+            contentDescription = "Tile ${position.x}, ${position.y}",
             modifier = Modifier.fillMaxSize()
         )
     }
 }
 
 @Composable
-fun EmptyBoardTile(placePiece: () -> Unit) {
+fun EmptyBoardTile(
+    seeGrid: Boolean,
+    placeTile: () -> Unit
+) {
     Box(
         modifier = Modifier
             .size(128.dp)
-            .border(1.dp, Color.Gray)
-            .clickable(onClick = placePiece)
+            .then(
+                if (seeGrid) {
+                    Modifier
+                        .border(1.dp, Color.Gray)
+                        .clickable(onClick = placeTile)
+                } else {
+                    Modifier
+                }
+            )
     )
 }

@@ -17,15 +17,20 @@ import io.ktor.websocket.readText
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
+import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.domain.game.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
+import isel.pt.cbdcg.domain.game.Tile
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.CreateUserDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
+import isel.pt.cbdcg.dto.PlacePieceDTO
+import isel.pt.cbdcg.dto.RoleChangeInput
 import isel.pt.cbdcg.dto.TableOperationInput
 import isel.pt.cbdcg.dto.TableDTO
 import isel.pt.cbdcg.dto.WsClientMessage
@@ -198,25 +203,24 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = TableOperationInput(tableId.toInt(), userId.toInt(), token)
         )
-    suspend fun changeRole(userId: UInt, tableId: UInt, token: String): Result<Unit> =
+    suspend fun changeRole(userId: UInt, tableId: UInt, token: String, role: Role): Result<Unit> =
         fetch<Unit>(
             path = "tables/change-role",
             method = HttpMethod.Post,
-            body = TableOperationInput(tableId.toInt(), userId.toInt(), token)
+            body = RoleChangeInput(tableId.toInt(), userId.toInt(), token, role.toString())
         )
-    suspend fun toggleReady(userId: UInt, tableId: UInt, token: String): Result<Unit> =
-        fetch<Unit>(
-            path = "tables/ready",
-            method = HttpMethod.Post,
-            body = TableOperationInput(tableId.toInt(), userId.toInt(), token)
-        )
-
 
     suspend fun createGame(tableId: UInt, userId: UInt, token: String): Result<Game> =
         fetch<GameDTO>(
             path = "game/create",
             method = HttpMethod.Post,
             body = CreateGameDTO(userId.toInt(), token, tableId.toInt())
+        ).map{ it.toGame() }
+    suspend fun placeTile(userId: UInt, gameId: UInt, token: String, tile: Tile, pos: BoardPosition): Result<Game> =
+        fetch<GameDTO>(
+            path = "game/place",
+            method = HttpMethod.Post,
+            body = PlacePieceDTO(userId.toInt(), gameId.toInt(), token, tile.codeString(), pos.coords())
         ).map{ it.toGame() }
 
     private suspend inline fun <reified T> fetch(

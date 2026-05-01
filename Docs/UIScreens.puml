@@ -19,13 +19,8 @@ rectangle "SearchTablesScreen" as SearchTables
 
 rectangle "WaitingTableScreen\n> Join Players\n> Join Spectators" as WaitingTable
 
-rectangle "DisplayError" as ErrorOverlay
-
 Menu --> Login : Log In
 Menu --> CreateUser : Create User
-
-Login --> Menu : Back
-CreateUser --> Menu : Back
 
 Login --> SearchTables : Successful login
 CreateUser --> SearchTables : Successful user creation
@@ -37,10 +32,5 @@ SearchTables --> Menu : Logout
 WaitingTable --> SearchTables : Leave Table
 WaitingTable --> SearchTables : Table deleted by owner
 
-ErrorOverlay .. Menu
-ErrorOverlay .. Login
-ErrorOverlay .. CreateUser
-ErrorOverlay .. SearchTables
-ErrorOverlay .. WaitingTable
 
 @enduml

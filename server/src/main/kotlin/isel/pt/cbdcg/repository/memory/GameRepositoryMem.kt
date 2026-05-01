@@ -3,19 +3,22 @@ package isel.pt.cbdcg.repository.memory
 import isel.pt.cbdcg.domain.game.Board
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
+import isel.pt.cbdcg.domain.game.Tile
+import isel.pt.cbdcg.domain.game.Turn
 import isel.pt.cbdcg.repository.GameRepository
 
 object GameRepositoryMem: GameRepository {
 
     val games = mutableListOf<Game>()
 
-    override fun createGame(players: List<Player>): Game {
+    override fun createGame(players: List<Player>, turnOrder: List<UInt>, startingDeck: Map<Tile, UInt>): Game {
 
         val game = Game(
             id = games.size.toUInt(),
             players = players,
             board = Board(),
-            turn = 0u
+            tileDeck = startingDeck,
+            turn = Turn(0u, turnOrder),
         )
 
         games.add(game)

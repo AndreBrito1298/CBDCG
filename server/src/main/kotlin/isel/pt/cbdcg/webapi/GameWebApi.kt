@@ -6,7 +6,10 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
+import isel.pt.cbdcg.domain.game.decodeTile
+import isel.pt.cbdcg.domain.game.toPosition
 import isel.pt.cbdcg.dto.CreateGameDTO
+import isel.pt.cbdcg.dto.PlacePieceDTO
 import isel.pt.cbdcg.dto.toGameDTO
 import isel.pt.cbdcg.service.GameService
 
@@ -25,7 +28,21 @@ fun Route.gameWebApi(gameService: GameService) {
             ).getOrThrow()
 
             call.respond(HttpStatusCode.Created, result.toGameDTO())
+        }
 
+        post("/place"){
+
+            val input = call.receive<PlacePieceDTO>()
+
+            val result = gameService.placeTile(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token,
+                tile = input.tile.decodeTile(),
+                pos = input.pos.toPosition()
+            ).getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.toGameDTO())
         }
     }
 }

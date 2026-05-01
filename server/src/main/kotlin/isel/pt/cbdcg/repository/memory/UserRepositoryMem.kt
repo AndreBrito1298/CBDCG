@@ -11,7 +11,10 @@ object UserRepositoryMem: UserRepository {
     /**
      * List of Users registered.
      */
-    val users = mutableListOf<User>()
+    val users = mutableListOf<User>(
+        User(0u, Name("Andre"), Email("a@gmail.com"), Password("teste")),
+        User(1u, Name("Teste"), Email("t@gmail.com"), Password("teste")),
+    )
 
     override fun findByEmail(email: Email): User? {
         return users.find{ it.email.string == email.string }

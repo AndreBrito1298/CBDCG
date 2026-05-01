@@ -91,8 +91,98 @@ Documentação e diagramas de apoio encontram-se em `Docs/`.
 
 ### 3.3 Diagramas de blocos
 
-- **Diagrama de Domínio:** ![Diagrama de dominio](./DomainDiagram.png)
-- **Diagrama de navegacao/UI:** ![Diagrama de navegação/UI](./UIScreens.png)
+- **Diagrama de Domínio:**
+```plantuml
+@startuml DomainDiagram
+hide empty members
+skinparam classAttributeIconSize 0
+
+class User {
+  +id: UInt
+}
+
+class AuthUser {
+  +token: String
+}
+
+class Table {
+  +id: UInt
+  --
+  +checkAvailability(): Boolean
+}
+
+class Participant { }
+
+enum Role {
+  PLAYER
+  SPECTATOR
+}
+
+class Name <<value>> {
+  +string: String
+}
+
+class Email <<value>> {
+  +string: String
+}
+
+class Password <<value>> {
+  +string: String
+}
+
+User *-- "0..1       " AuthUser : auth
+User *-- Name : name
+User *-- Email : email
+User *-- Password : password
+
+Table *-- Name : name
+Table o-- "1  " User : owner
+Table *-- "0..*" Participant : participants
+
+Participant o-- User : user
+Participant *- Role : role
+@enduml
+```
+
+- **Diagrama de navegacao/UI:**
+```plantuml
+@startuml
+title CBDCG UI Screens
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+skinparam ArrowColor #4B5563
+skinparam NoteBackgroundColor #FFF8DC
+skinparam NoteBorderColor #D4A017
+
+rectangle "Menu Screen" as Menu
+
+rectangle "LoginScreen" as Login
+
+rectangle "CreateUserScreen" as CreateUser
+
+rectangle "SearchTablesScreen" as SearchTables
+
+rectangle "WaitingTableScreen\n> Join Players\n> Join Spectators" as WaitingTable
+
+Menu --> Login : Log In
+Menu --> CreateUser : Create User
+
+Login --> SearchTables : Successful login
+CreateUser --> SearchTables : Successful user creation
+
+SearchTables --> WaitingTable : Join Table
+SearchTables --> WaitingTable : Create Table
+SearchTables --> Menu : Logout
+
+WaitingTable --> SearchTables : Leave Table
+WaitingTable --> SearchTables : Table deleted by owner
+
+
+@enduml
+```
 
 ### 3.4 Modelo de dados
 

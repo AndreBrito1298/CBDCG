@@ -26,8 +26,7 @@ import isel.pt.cbdcg.domain.User
 fun WaitingTableScreen(
     user: User,
     table: Table,
-    changeRole: () -> Unit,
-    toggleReady: () -> Unit,
+    changeRole: (Role) -> Unit,
     leaveTable: () -> Unit,
     createGame: () -> Unit
 ){
@@ -35,8 +34,8 @@ fun WaitingTableScreen(
     val participants = table.participants
 
     val players = participants
-        .filter { it.role == Role.PLAYER }
-        .map { it.user to it.ready }
+        .filter { it.role == Role.PLAYER || it.role == Role.READY }
+        .map { it.user to if(it.role == Role.READY) true else false }
     val spectators = participants
         .filter { it.role == Role.SPECTATOR }
         .map { it.user to null }
@@ -79,15 +78,15 @@ fun WaitingTableScreen(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Button(
-                onClick = changeRole,
-                enabled = participant.role != Role.PLAYER,
+                onClick = { changeRole(Role.PLAYER) },
+                enabled = participant.role != Role.PLAYER && participant.role != Role.READY,
                 modifier = Modifier.weight(1f),
             ) {
                 Text("Join Players")
             }
 
             Button(
-                onClick = changeRole,
+                onClick = { changeRole(Role.SPECTATOR) },
                 enabled = participant.role != Role.SPECTATOR,
                 modifier = Modifier.weight(1f),
             ) {
@@ -113,13 +112,21 @@ fun WaitingTableScreen(
         }
 
         Button(
-            onClick = if(startFlag) createGame else toggleReady,
-            enabled = participant.role == Role.PLAYER,
+            onClick = {
+
+                val role =
+                    if(participant.role == Role.READY) Role.PLAYER
+                    else Role.READY
+
+                if (startFlag) createGame()
+                else changeRole(role)
+            },
+            enabled = participant.role != Role.SPECTATOR,
             modifier = Modifier.fillMaxWidth(),
         ) {
 
             val text =
-                if(participant.ready && !startFlag) "Ready"
+                if(participant.role == Role.READY && !startFlag) "Ready"
                 else if(startFlag) "Start Game"
                 else "Not Ready"
 

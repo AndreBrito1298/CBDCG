@@ -2,7 +2,7 @@ package isel.pt.cbdcg.domain.game
 
 import isel.pt.cbdcg.error.GameError
 
-enum class Direction { NORTH, EAST, SOUTH, WEST }
+enum class Direction { EAST, NORTH, SOUTH, WEST }
 
 fun Direction.opposite() = when(this){
     Direction.NORTH -> Direction.SOUTH

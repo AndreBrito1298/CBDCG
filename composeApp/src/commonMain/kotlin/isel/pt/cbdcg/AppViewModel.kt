@@ -5,9 +5,12 @@ import androidx.lifecycle.viewModelScope
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
+import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.domain.game.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
+import isel.pt.cbdcg.domain.game.Tile
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,17 +55,6 @@ class AppViewModel(
                 _ui.update { it.copy(game = game) }
             }
         }
-    }
-    fun shutdown(){
-
-        val token = _ui.value.user?.auth?.token
-
-        if(token != null){
-            leaveTable {  } // Isto vai limpar as mesas, no futuro pode ser para tirar
-            logout {  }
-            stopObserving {  }
-        }
-
     }
 
     fun dismissError() {
@@ -119,7 +111,8 @@ class AppViewModel(
 
             val response = clientApi.logout(token)
             response.onSuccess {
-                clientApi.disconnectAll()
+                leaveTable {  }
+                stopObserving {  }
                 _ui.value = AppUIState()
                 onSuccess()
             }
@@ -212,7 +205,7 @@ class AppViewModel(
             }
         }
     }
-    fun changeRole(): Job? {
+    fun changeRole(role: Role): Job? {
 
         val user = _ui.value.user ?: return null
         val table = _ui.value.currentTable ?: return null
@@ -224,7 +217,7 @@ class AppViewModel(
 
             _ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val response = clientApi.changeRole(user.id, table.id, token)
+            val response = clientApi.changeRole(user.id, table.id, token, role)
             response.onSuccess {
                 _ui.update{ it.copy(isLoading = false, errorMessage = null) }
             }
@@ -233,27 +226,6 @@ class AppViewModel(
             }
         }
 
-    }
-    fun toggleReady(): Job? {
-
-        val user = _ui.value.user ?: return null
-        val table = _ui.value.currentTable ?: return null
-        val token = user.auth?.token ?: return null.also {
-            _ui.update { it.copy(errorMessage = "No token found.") }
-        }
-
-        return viewModelScope.launch {
-
-            _ui.update { it.copy(isLoading = true, errorMessage = null) }
-
-            val response = clientApi.toggleReady(user.id, table.id, token)
-            response.onSuccess {
-                _ui.update{ it.copy(isLoading = false, errorMessage = null) }
-            }
-            response.onFailure { error ->
-                _ui.update { it.copy(isLoading = false, errorMessage = error.message ?: "Change Role Failed.") }
-            }
-        }
     }
     fun leaveTable(onSuccess: () -> Unit): Job? {
 
@@ -300,6 +272,28 @@ class AppViewModel(
             }
             response.onFailure { error ->
                 _ui.update { it.copy(isLoading = false, errorMessage = error.message ?: "Create Game Failed.") }
+            }
+        }
+    }
+    fun placeTile(tile: Tile, pos: BoardPosition): Job? {
+
+        val user = _ui.value.user ?: return null
+        val token = user.auth?.token ?: return null.also {
+            _ui.update { it.copy(errorMessage = "No token found.") }
+        }
+
+        val game = _ui.value.game ?: return null
+
+        return viewModelScope.launch{
+
+            _ui.update { it.copy(isLoading = true, errorMessage = null) }
+
+            val response = clientApi.placeTile(user.id, game.id, token, tile, pos)
+            response.onSuccess { newGame ->
+                _ui.update { it.copy(game = newGame, isLoading = false, errorMessage = null) }
+            }
+            response.onFailure { error ->
+                _ui.update { it.copy(isLoading = false, errorMessage = error.message ?: "Place Piece Failed.") }
             }
         }
     }

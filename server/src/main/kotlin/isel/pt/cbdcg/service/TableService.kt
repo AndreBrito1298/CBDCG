@@ -93,7 +93,7 @@ class TableService(
         val tables = tableRepo.getAllTables()
         events.publishLobbyTables(tables)
     }
-    suspend fun changeRole(userId: UInt, tableId: UInt, token: String): Result<Unit> = runCatching  {
+    suspend fun changeRole(userId: UInt, tableId: UInt, token: String, role: Role): Result<Unit> = runCatching  {
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
@@ -105,30 +105,7 @@ class TableService(
         val participant = isParticipant(user, table)
             ?: throw TableError.UserNotFound(user.name.toString(), table.name.toString())
 
-        val newRole =
-            if(participant.role == Role.PLAYER) Role.SPECTATOR
-            else Role.PLAYER
-
-        val newTable = tableRepo.updateParticipants(table, participant.copy(role = newRole))
-
-        val tables = tableRepo.getAllTables()
-        events.publishLobbyTables(tables)
-        events.publishTableUpdated(newTable)
-    }
-
-    suspend fun toggleReady(userId: UInt, tableId: UInt, token: String): Result<Unit> = runCatching {
-
-        val user = userRepo.findById(userId)
-            ?: throw UserError.IdNotFound()
-        token.verifyToken(user)
-
-        val table = tableRepo.findById(tableId)
-            ?: throw TableError.TableDoesNotExist(tableId.toString())
-
-        val participant = isParticipant(user, table)
-            ?: throw TableError.UserNotFound(user.name.toString(), table.name.toString())
-
-        val newTable = tableRepo.updateParticipants(table, participant.copy(ready= !participant.ready))
+        val newTable = tableRepo.updateParticipants(table, participant.copy(role = role))
 
         val tables = tableRepo.getAllTables()
         events.publishLobbyTables(tables)

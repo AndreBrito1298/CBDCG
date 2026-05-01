@@ -90,5 +90,8 @@ sealed class GameError(
 
     class NotYourTurn: GameError("Wait for your turn.")
     class MinimumPlayersNeeded: GameError("There must be at least 2 players to start a game.")
+    class EveryPlayerReady: GameError("Every Player must be ready to start a Game.")
     class InvalidDirection(char: Char): GameError("Something went wrong decoding direction: $char")
+    class GameNotFound(id: Int): GameError("No game found with the id '$id'.")
+    class PlayerNotFound(email: String, game: Int): GameError("Player with email '$email' was not found in game '$game'.")
 }
