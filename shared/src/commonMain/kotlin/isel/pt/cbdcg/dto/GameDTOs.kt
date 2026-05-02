@@ -63,13 +63,16 @@ data class GameDTO(
 fun Player.toPlayerInfo(): PlayerDTO =
     PlayerDTO(
         user = user.toInt(),
-        hand = hand.map{ it.codeString() }.toTypedArray()
+        hand = hand.map{ (idx, tile) -> "$idx|${tile.codeString()}" }.toTypedArray()
     )
 
 fun PlayerDTO.toPlayer(): Player =
     Player(
         user = user.toUInt(),
-        hand = hand.map{ it.decodeTile() }
+        hand = hand.associate { string ->
+            val (idx, tile) = string.split("|")
+            idx.toUInt() to tile.decodeTile()
+        }
     )
 
 fun Game.toGameDTO(): GameDTO {
@@ -131,5 +134,15 @@ data class PlacePieceDTO(
     val gameId: Int,
     val token: String,
     val tile: String,
+    val idx: Int,
     val pos: String
+)
+
+@Serializable
+data class RotatePieceDTO(
+    val userId: Int,
+    val gameId: Int,
+    val token: String,
+    val idx: Int,
+    val right: Boolean
 )

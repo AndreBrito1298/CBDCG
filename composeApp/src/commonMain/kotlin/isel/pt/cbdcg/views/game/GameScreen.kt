@@ -25,10 +25,11 @@ import isel.pt.cbdcg.domain.game.Tile
 fun GameScreen(
     player: Player,
     game: Game,
-    placeTile: (Tile, BoardPosition) -> Unit,
+    placeTile: (Tile, UInt, BoardPosition) -> Unit,
+    rotateTile: (UInt, Boolean) -> Unit
 ) {
 
-    var tileSelected by remember { mutableStateOf<Tile?>(null) }
+    var selection by remember { mutableStateOf<TileSelection>(TileSelection.None) }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -65,13 +66,18 @@ fun GameScreen(
                         .weight(2f)
                         .fillMaxWidth()
                 ) {
-                    Board(game.board.tiles, tileSelected != null) { pos ->
-                        val tile = tileSelected
-                        if(tile != null) {
-                            placeTile(tile, pos)
-                            tileSelected = null
-                        }
-                    }
+                    Board(
+                        gameBoard = game.board.tiles,
+                        seeGrid = selection is TileSelection.Placing,
+                        placeTile = { pos ->
+                            if(selection is TileSelection.Placing) {
+                                val selected = (selection as TileSelection.Placing)
+                                placeTile(selected.tile, selected.idx, pos)
+
+                                selection = TileSelection.None
+                            }
+                        },
+                    )
                 }
 
                 Box(
@@ -79,12 +85,61 @@ fun GameScreen(
                         .weight(1f)
                         .fillMaxWidth()
                 ) {
-                    PlayerHand(player.hand) { tile ->
-                        tileSelected =  if(tile == tileSelected) null
-                                        else tile
-                    }
+
+                    PlayerHand(
+                        hand = player.hand,
+                        selectTile = { idx, tile ->
+                            selection = when(selection) {
+                                is TileSelection.None -> TileSelection.Selected(idx, tile)
+                                is TileSelection.Selected -> {
+                                    if((selection as TileSelection.Selected).idx == idx)
+                                        TileSelection.None
+                                    else TileSelection.Selected(idx, tile)
+                                }
+                                is TileSelection.Placing -> TileSelection.Selected(idx, tile)
+                            }
+                        },
+                        selected = when(selection){
+                            is TileSelection.None -> null
+                            is TileSelection.Placing -> null
+                            is TileSelection.Selected -> (selection as TileSelection.Selected).idx
+                        },
+                        placeSignal = {
+                            if(selection is TileSelection.Selected){
+                                val (idx, tile) = (selection as TileSelection.Selected)
+                                selection = TileSelection.Placing(idx, tile)
+                            }
+                        },
+                        rotateLeft = { idx ->
+                            rotateTile(idx, false)
+                            val (idx, tile) = (selection as TileSelection.Selected)
+                            selection = TileSelection.Selected(idx, tile.rotate(false))
+                        },
+                        rotateRight = {
+                            idx -> rotateTile(idx, true)
+                            val (idx, tile) = (selection as TileSelection.Selected)
+                            selection = TileSelection.Selected(idx, tile.rotate(true))
+                        }
+                    )
+
                 }
             }
         }
     }
+}
+
+sealed interface TileSelection {
+
+    data object None : TileSelection
+
+    data class Selected(
+        val idx: UInt,
+        val tile: Tile
+    ) : TileSelection
+
+    data class Placing(
+        val idx: UInt,
+        val tile: Tile
+    ) : TileSelection
+
 }

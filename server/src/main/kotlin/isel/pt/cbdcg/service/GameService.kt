@@ -34,13 +34,6 @@ class GameService(
         if(table.owner.id != userId)
             throw TableError.OwnerOnly()
 
-        val players = table.participants
-            .filter{ it.role == Role.READY }
-            .map{ participant -> Player(participant.user.id, emptyList()) }
-
-        if(players.size < 2)
-            throw GameError.MinimumPlayersNeeded()
-
         if(table.participants.any{ it.role == Role.PLAYER })
             throw GameError.EveryPlayerReady()
 
@@ -51,28 +44,34 @@ class GameService(
             Tile(listOf(Direction.NORTH, Direction.SOUTH)) to 31u,
         )
 
-        val updatedPlayers = players.map{ player ->
+        val players = table.participants.filter{ it.role == Role.READY }
+            .map{ player ->
 
-            val hand = mutableListOf<Tile>()
+                val hand = mutableMapOf<UInt, Tile>()
 
-            repeat(3){
-                val available = startingDeck.filterValues { it > 0u }.keys.toList()
-                val drawnTile = available.random()
-                hand.add(drawnTile)
-                startingDeck[drawnTile] = startingDeck[drawnTile]!! - 1u
+                repeat(3){ idx ->
+                    val available = startingDeck.filterValues { it > 0u }.keys.toList()
+                    val drawnTile = available.random()
+
+                    hand[idx.toUInt()] = drawnTile
+                    startingDeck[drawnTile] = startingDeck[drawnTile]!! - 1u
+                }
+
+                Player(player.user.id, hand)
             }
 
-            player.copy(hand = hand)
-        }
-        val turnOrder = updatedPlayers.map{ it.user }
+        if(players.size < 2)
+            throw GameError.MinimumPlayersNeeded()
 
-        val game = gameRepo.createGame(updatedPlayers, turnOrder, startingDeck)
+        val turnOrder = players.map{ it.user }
+
+        val game = gameRepo.createGame(players, turnOrder, startingDeck)
         events.publishGameStarted(table, game)
 
         game
     }
 
-    suspend fun placeTile(userId: UInt, gameId: UInt, token: String, tile: Tile, pos: BoardPosition): Result<Game> = runCatching {
+    suspend fun placeTile(userId: UInt, gameId: UInt, token: String, tile: Tile, idx: UInt, pos: BoardPosition): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
@@ -84,12 +83,41 @@ class GameService(
         val player = game.players.find{ it.user == user.id }
             ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
 
-        val newGame = game.placeTile(player, pos, tile)
+        val newGame = game.placeTile(player, pos, tile, idx)
+            .resolveState()
 
         gameRepo.save(newGame)
 
         events.publishGameUpdated(newGame)
         newGame
 
+    }
+
+    fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> = runCatching {
+
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
+        token.verifyToken(user)
+
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
+
+
+        val newPlayers = game.players.map{ player ->
+            if(player.user == userId) {
+
+                val newHand = player.hand.map{ (index, tile) ->
+                    if(idx == index) index to tile.rotate(right)
+                    else index to tile
+                }.toMap()
+
+                player.copy(hand = newHand)
+            } else player
+        }
+
+        val newGame = game.copy(players = newPlayers)
+        gameRepo.save(newGame)
+
+        newGame
     }
 }

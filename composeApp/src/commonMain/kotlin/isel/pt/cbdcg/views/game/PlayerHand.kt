@@ -16,8 +16,12 @@ import isel.pt.cbdcg.domain.game.Tile
 
 @Composable
 fun PlayerHand(
-    hand: List<Tile>,
-    selectTile: (Tile) -> Unit,
+    hand: Map<UInt, Tile>,
+    selectTile: (UInt, Tile) -> Unit,
+    selected: UInt?,
+    placeSignal: () -> Unit,
+    rotateLeft: (UInt) -> Unit,
+    rotateRight: (UInt) -> Unit,
 ){
 
     if (hand.isEmpty()) {
@@ -38,11 +42,15 @@ fun PlayerHand(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        hand.forEachIndexed { index, tile ->
+        hand.forEach { (index, tile) ->
             PlayerHandTile(
                 tile = tile,
                 index = index,
-                select = { selectTile(tile) }
+                select = { selectTile(index, tile) },
+                isSelected = if(selected == null) false else selected == index,
+                place = placeSignal,
+                rotateLeft = { rotateLeft(index) },
+                rotateRight = { rotateRight(index) }
             )
         }
     }

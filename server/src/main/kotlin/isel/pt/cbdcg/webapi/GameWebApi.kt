@@ -10,6 +10,7 @@ import isel.pt.cbdcg.domain.game.decodeTile
 import isel.pt.cbdcg.domain.game.toPosition
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.PlacePieceDTO
+import isel.pt.cbdcg.dto.RotatePieceDTO
 import isel.pt.cbdcg.dto.toGameDTO
 import isel.pt.cbdcg.service.GameService
 
@@ -39,7 +40,23 @@ fun Route.gameWebApi(gameService: GameService) {
                 gameId = input.gameId.toUInt(),
                 token = input.token,
                 tile = input.tile.decodeTile(),
+                idx = input.idx.toUInt(),
                 pos = input.pos.toPosition()
+            ).getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.toGameDTO())
+        }
+
+        post("/rotate") {
+
+            val input = call.receive<RotatePieceDTO>()
+
+            val result = gameService.rotateTile(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token,
+                idx = input.idx.toUInt(),
+                right = input.right
             ).getOrThrow()
 
             call.respond(HttpStatusCode.OK, result.toGameDTO())

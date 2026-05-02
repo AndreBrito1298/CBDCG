@@ -3,7 +3,6 @@ package isel.pt.cbdcg.domain.game
 data class Tile(
     val connections: List<Direction>,
 ){
-
     fun canConnectTo(dir: Direction, tile: Tile): Boolean{
 
         if(!this.connections.contains(dir)) return false
@@ -31,7 +30,6 @@ data class Tile(
             if(neighbourTile != null) dir to neighbourTile
             else null
         }
-
 
     fun codeString(): String {
 

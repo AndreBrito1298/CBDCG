@@ -138,7 +138,8 @@ fun AppNavHost(vm: AppViewModel) {
             GameScreen(
                 player = player,
                 game = game,
-                placeTile = { tile, pos -> vm.placeTile(tile, pos) },
+                placeTile = { tile, idx,  pos -> vm.placeTile(tile, idx, pos) },
+                rotateTile = { idx, flag -> vm.rotateTile(idx, flag) }
             )
 
         }

@@ -275,7 +275,7 @@ class AppViewModel(
             }
         }
     }
-    fun placeTile(tile: Tile, pos: BoardPosition): Job? {
+    fun placeTile(tile: Tile, idx: UInt, pos: BoardPosition): Job? {
 
         val user = _ui.value.user ?: return null
         val token = user.auth?.token ?: return null.also {
@@ -288,7 +288,7 @@ class AppViewModel(
 
             _ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val response = clientApi.placeTile(user.id, game.id, token, tile, pos)
+            val response = clientApi.placeTile(user.id, game.id, token, tile, idx, pos)
             response.onSuccess { newGame ->
                 _ui.update { it.copy(game = newGame, isLoading = false, errorMessage = null) }
             }
@@ -296,6 +296,29 @@ class AppViewModel(
                 _ui.update { it.copy(isLoading = false, errorMessage = error.message ?: "Place Piece Failed.") }
             }
         }
+    }
+    fun rotateTile(idx: UInt, right: Boolean): Job? {
+
+        val user = _ui.value.user ?: return null
+        val token = user.auth?.token ?: return null.also {
+            _ui.update { it.copy(errorMessage = "No token found.") }
+        }
+
+        val game = _ui.value.game ?: return null
+
+        return viewModelScope.launch{
+
+            _ui.update { it.copy(isLoading = true, errorMessage = null) }
+
+            val response = clientApi.rotateTile(user.id, game.id, token, idx, right)
+            response.onSuccess { newGame ->
+                _ui.update { it.copy(game = newGame, isLoading = false, errorMessage = null) }
+            }
+            response.onFailure { error ->
+                _ui.update { it.copy(isLoading = false, errorMessage = error.message ?: "Place Piece Failed.") }
+            }
+        }
+
     }
 
 }

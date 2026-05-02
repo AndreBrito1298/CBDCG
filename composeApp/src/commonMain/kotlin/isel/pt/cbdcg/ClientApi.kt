@@ -31,6 +31,7 @@ import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
 import isel.pt.cbdcg.dto.PlacePieceDTO
 import isel.pt.cbdcg.dto.RoleChangeInput
+import isel.pt.cbdcg.dto.RotatePieceDTO
 import isel.pt.cbdcg.dto.TableOperationInput
 import isel.pt.cbdcg.dto.TableDTO
 import isel.pt.cbdcg.dto.WsClientMessage
@@ -216,11 +217,17 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = CreateGameDTO(userId.toInt(), token, tableId.toInt())
         ).map{ it.toGame() }
-    suspend fun placeTile(userId: UInt, gameId: UInt, token: String, tile: Tile, pos: BoardPosition): Result<Game> =
+    suspend fun placeTile(userId: UInt, gameId: UInt, token: String, tile: Tile, idx: UInt, pos: BoardPosition): Result<Game> =
         fetch<GameDTO>(
             path = "game/place",
             method = HttpMethod.Post,
-            body = PlacePieceDTO(userId.toInt(), gameId.toInt(), token, tile.codeString(), pos.coords())
+            body = PlacePieceDTO(userId.toInt(), gameId.toInt(), token, tile.codeString(), idx.toInt(), pos.coords())
+        ).map{ it.toGame() }
+    suspend fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> =
+        fetch<GameDTO>(
+            path = "game/rotate",
+            method = HttpMethod.Post,
+            body = RotatePieceDTO(userId.toInt(), gameId.toInt(), token, idx.toInt(), right)
         ).map{ it.toGame() }
 
     private suspend inline fun <reified T> fetch(
