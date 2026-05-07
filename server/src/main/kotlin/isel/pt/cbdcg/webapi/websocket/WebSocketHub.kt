@@ -5,7 +5,6 @@ import io.ktor.websocket.Frame
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.dto.WsServerMessage
-import isel.pt.cbdcg.dto.toGameDTO
 import isel.pt.cbdcg.dto.toTableDTO
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock

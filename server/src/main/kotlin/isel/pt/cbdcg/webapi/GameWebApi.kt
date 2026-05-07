@@ -11,7 +11,6 @@ import isel.pt.cbdcg.domain.game.toPosition
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.PlacePieceDTO
 import isel.pt.cbdcg.dto.RotatePieceDTO
-import isel.pt.cbdcg.dto.toGameDTO
 import isel.pt.cbdcg.service.GameService
 
 fun Route.gameWebApi(gameService: GameService) {

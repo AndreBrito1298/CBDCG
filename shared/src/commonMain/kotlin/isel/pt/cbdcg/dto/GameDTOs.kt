@@ -6,6 +6,7 @@ import isel.pt.cbdcg.domain.game.BoardTile
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.decodeTile
+import isel.pt.cbdcg.domain.game.toSpectator
 import isel.pt.cbdcg.domain.game.toTurn
 import kotlinx.serialization.Serializable
 
@@ -25,18 +26,28 @@ data class PlayerDTO(
 
         return true
     }
-
     override fun hashCode(): Int {
         var result = user
         result = 31 * result + hand.contentHashCode()
         return result
     }
+
+    fun toPlayer(): Player =
+        Player(
+            user = user.toUInt(),
+            hand = hand.associate { string ->
+                val (idx, tile) = string.split("|")
+                idx.toUInt() to tile.decodeTile()
+            }
+        )
 }
+
 
 @Serializable
 data class GameDTO(
     val id: Int,
     val players: Array<PlayerDTO>,
+    val spectators: Array<String>,
     val board: Array<String>,
     val tileDeck: Array<String>,
     val turn: String
@@ -52,74 +63,46 @@ data class GameDTO(
 
         return true
     }
-
     override fun hashCode(): Int {
         var result = id
         result = 31 * result + players.contentHashCode()
         return result
     }
-}
 
-fun Player.toPlayerInfo(): PlayerDTO =
-    PlayerDTO(
-        user = user.toInt(),
-        hand = hand.map{ (idx, tile) -> "$idx|${tile.codeString()}" }.toTypedArray()
-    )
+    fun toGame(): Game {
 
-fun PlayerDTO.toPlayer(): Player =
-    Player(
-        user = user.toUInt(),
-        hand = hand.associate { string ->
-            val (idx, tile) = string.split("|")
-            idx.toUInt() to tile.decodeTile()
+        val players = players.map{ it.toPlayer() }
+        val spectators = spectators.map{ it.toSpectator() }
+        val tiles = board.map{ string ->
+
+            val (posString, tileString) = string.split("|")
+            val pos = posString.split(",").map{ it.toInt() }
+            val tile = tileString.decodeTile()
+
+            BoardTile(
+                pos = BoardPosition(pos[0], pos[1]),
+                tile = tile
+            )
         }
-    )
+        val tileDeck = tileDeck.map{ string ->
+            val (tileString, nr) = string.split("|")
+            val tile = tileString.decodeTile()
+            tile to nr.toUInt()
+        }.toMap()
 
-fun Game.toGameDTO(): GameDTO {
+        return Game(
+            id = id.toUInt(),
+            players = players,
+            spectators = spectators,
+            board = Board(tiles),
+            tileDeck = tileDeck,
+            turn = turn.toTurn()
+        )
 
-    val playersDTO = players.map{ it.toPlayerInfo() }
-    val boardDTO = board.tiles.map{ (pos, tile) -> "${pos.coords()}|${tile.codeString()}" }
-    val tileDeck = tileDeck.map{ (tile, nr) -> "${tile.codeString()}|${nr}" }.toTypedArray()
-
-    return GameDTO(
-        id = id.toInt(),
-        players = playersDTO.toTypedArray(),
-        board = boardDTO.toTypedArray(),
-        tileDeck = tileDeck,
-        turn = turn.turnString()
-    )
+    }
 }
 
 // Game / Board não quer saber de "blocked", tenho de mudar alguma cena aqui? Talvez não.
-fun GameDTO.toGame(): Game {
-
-    val players = players.map{ it.toPlayer() }
-    val tiles = board.map{ string ->
-
-        val (posString, tileString) = string.split("|")
-        val pos = posString.split(",").map{ it.toInt() }
-        val tile = tileString.decodeTile()
-
-        BoardTile(
-            pos = BoardPosition(pos[0], pos[1]),
-            tile = tile
-        )
-    }
-    val tileDeck = tileDeck.map{ string ->
-        val (tileString, nr) = string.split("|")
-        val tile = tileString.decodeTile()
-        tile to nr.toUInt()
-    }.toMap()
-
-    return Game(
-        id = id.toUInt(),
-        players = players,
-        board = Board(tiles),
-        tileDeck = tileDeck,
-        turn = turn.toTurn()
-    )
-
-}
 
 @Serializable
 data class CreateGameDTO(

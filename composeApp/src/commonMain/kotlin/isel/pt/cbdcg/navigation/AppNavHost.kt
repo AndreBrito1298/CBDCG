@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import isel.pt.cbdcg.AppViewModel
 import isel.pt.cbdcg.views.game.GameScreen
+import isel.pt.cbdcg.views.game.SpectatorScreen
 import isel.pt.cbdcg.views.lobby.SearchTablesScreen
 import isel.pt.cbdcg.views.lobby.WaitingTableScreen
 import isel.pt.cbdcg.views.startMenu.CreateUserScreen
@@ -33,6 +34,7 @@ fun AppNavHost(vm: AppViewModel) {
         }
 
         composable<LoginRoute> {
+
             LoginScreen(
                 mainMenuNav = { vm.stopObserving { nav.navigateUp() } },
                 login = { email, password ->
@@ -83,7 +85,13 @@ fun AppNavHost(vm: AppViewModel) {
                         onSuccess = { nav.navigate(WaitingTableRoute) }
                     )
                 },
-                logout = { vm.logout(onSuccess = { nav.popBackStack(MenuRoute, inclusive = false) }) }
+                logout = {
+                    vm.logout(
+                        onSuccess = {
+                            nav.popBackStack(MenuRoute, inclusive = false)
+                        }
+                    )
+                }
             )
         }
 
@@ -129,21 +137,30 @@ fun AppNavHost(vm: AppViewModel) {
 
             val user = ui.user ?: return@composable
             val game = ui.game ?: return@composable
-            val player = ui.game?.players?.find { it.user == user.id } ?: return@composable
+            val player = ui.game?.players?.find { it.user == user.id }
+            val spectator = ui.game?.spectators?.find{ it.user == user.id }
 
-            LaunchedEffect(Unit) {
-                vm.observeGame(game.id)
+            if(player == null && spectator == null) return@composable
+            else{
+
+                LaunchedEffect(Unit) {
+                    vm.observeGame(game.id)
+                }
+
+                if(player != null)
+                    GameScreen(
+                        player = player,
+                        game = game,
+                        placeTile = { tile, idx, pos -> vm.placeTile(tile, idx, pos) },
+                        rotateTile = { idx, flag -> vm.rotateTile(idx, flag) }
+                    )
+
+                if(spectator != null)
+                    SpectatorScreen(
+                        game = game
+                    )
             }
-
-            GameScreen(
-                player = player,
-                game = game,
-                placeTile = { tile, idx,  pos -> vm.placeTile(tile, idx, pos) },
-                rotateTile = { idx, flag -> vm.rotateTile(idx, flag) }
-            )
-
         }
-
     }
 
     ui.errorMessage?.let { message ->

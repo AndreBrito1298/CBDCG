@@ -37,7 +37,6 @@ import isel.pt.cbdcg.dto.TableDTO
 import isel.pt.cbdcg.dto.WsClientMessage
 import isel.pt.cbdcg.dto.WsServerMessage
 import isel.pt.cbdcg.dto.UserDTO
-import isel.pt.cbdcg.dto.toGame
 import isel.pt.cbdcg.dto.toTable
 import isel.pt.cbdcg.dto.toUser
 import kotlinx.coroutines.CoroutineScope

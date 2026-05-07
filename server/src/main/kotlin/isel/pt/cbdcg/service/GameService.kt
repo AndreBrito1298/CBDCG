@@ -5,6 +5,7 @@ import isel.pt.cbdcg.domain.game.BoardPosition
 import isel.pt.cbdcg.domain.game.Direction
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
+import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.Tile
 import isel.pt.cbdcg.domain.verifyToken
 import isel.pt.cbdcg.error.GameError
@@ -60,12 +61,15 @@ class GameService(
                 Player(player.user.id, hand)
             }
 
+        val spectators = table.participants.filter{ it.role == Role.SPECTATOR }
+            .map{ spectator -> Spectator(spectator.user.id) }
+
         if(players.size < 2)
             throw GameError.MinimumPlayersNeeded()
 
         val turnOrder = players.map{ it.user }
 
-        val game = gameRepo.createGame(players, turnOrder, startingDeck)
+        val game = gameRepo.createGame(players, spectators, turnOrder, startingDeck)
         events.publishGameStarted(table, game)
 
         game
@@ -84,7 +88,8 @@ class GameService(
             ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
 
         val newGame = game.placeTile(player, pos, tile, idx)
-            .resolveState()
+            .nextTurn()
+            .startTurnDraw()
 
         gameRepo.save(newGame)
 
