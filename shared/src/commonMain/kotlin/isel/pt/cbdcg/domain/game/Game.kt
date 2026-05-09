@@ -3,12 +3,23 @@ package isel.pt.cbdcg.domain.game
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.error.GameError
 
+typealias TileDeck = Map<Tile, UInt>
+
+fun TileDeck.draw(): Tile{
+
+    val tiles = this.flatMap{ (tile, copies) -> List(copies.toInt()){ tile } }
+    return tiles.random()
+}
+fun TileDeck.remove(removedTile: Tile): TileDeck =
+    this.map{ (tile, copies) -> if(tile == removedTile) tile to copies - 1u else tile to copies }
+        .toMap()
+
 data class Game(
     val id: UInt,
     val players: List<Player>,
     val spectators: List<Spectator>,
     val board: Board = Board(),
-    val tileDeck: Map<Tile, UInt>,
+    val tileDeck: TileDeck,
     val turn: Turn
 ){
 
@@ -45,8 +56,6 @@ data class Game(
         return copy(board = newBoard, players= updatedPlayers)
     }
 
-
-    // memória persistente (biblioteca KMP chave-valor)
     fun nextTurn(): Game{
 
         val list = turn.playerTurn.drop(1)
@@ -60,22 +69,19 @@ data class Game(
     }
     fun startTurnDraw(): Game {
 
-        if(turn.gameTurn == 0u) return this
+        if(turn.gameTurn == 0u || tileDeck.values.all{ it == 0u }) return this
 
         val nextPlayer = turn.playerTurn.first()
 
-        val available = tileDeck.filterValues { it > 0u }.keys.toList()
-        val drawnTile = available.random()
+        val drawnTile = tileDeck.draw()
+        val updatedDeck = tileDeck.remove(drawnTile)
 
         val updatedPlayers = players.map{ player ->
             if(player.user == nextPlayer) player.addToHand(drawnTile)
             else player
         }
-        val remainingTiles = tileDeck.map{ (tile, nr) ->
-            if(tile == drawnTile) tile to nr - 1u else tile to nr
-        }.toMap()
 
-        return copy(players = updatedPlayers, tileDeck = remainingTiles)
+        return copy(players = updatedPlayers, tileDeck = updatedDeck)
     }
     private fun getTurnOrder(): List<UInt>{
 

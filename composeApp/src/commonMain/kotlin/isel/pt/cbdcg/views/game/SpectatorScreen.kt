@@ -19,6 +19,9 @@ import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.Game
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import isel.pt.cbdcg.views.game.utils.Board
+import isel.pt.cbdcg.views.game.utils.SpectatorPlayerSelector
+import isel.pt.cbdcg.views.game.utils.ZoomButtons
 
 @Composable
 fun SpectatorScreen(
@@ -26,6 +29,7 @@ fun SpectatorScreen(
 ){
 
     var selectedId by remember(game.id) { mutableStateOf<UInt?>(null) }
+    var zoom by remember { mutableStateOf(1f) }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -61,7 +65,13 @@ fun SpectatorScreen(
                     Board(
                         gameBoard = game.board.tiles,
                         seeGrid = false,
+                        tileSize = 128.dp * zoom,
                         placeTile = {},
+                    )
+                    ZoomButtons(
+                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                        amplify = { zoom = (zoom + 0.25f).coerceAtMost(2f) },
+                        reduce = { zoom = (zoom - 0.25f).coerceAtLeast(0.5f) },
                     )
                 }
 
@@ -72,7 +82,7 @@ fun SpectatorScreen(
                 ) {
                     SpectatorPlayerSelector(
                         players = game.players,
-                        selectedPlayer = game.players.find{ it.user == selectedId },
+                        selectedPlayer = game.players.find { it.user == selectedId },
                         onSelectPlayer = { playerId ->
                             selectedId =
                                 if (selectedId == playerId) null

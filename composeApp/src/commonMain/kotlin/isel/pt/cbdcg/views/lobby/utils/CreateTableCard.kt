@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views.lobby
+package isel.pt.cbdcg.views.lobby.utils
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row

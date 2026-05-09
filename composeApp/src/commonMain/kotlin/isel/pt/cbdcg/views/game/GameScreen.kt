@@ -22,6 +22,9 @@ import isel.pt.cbdcg.domain.game.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Tile
+import isel.pt.cbdcg.views.game.utils.Board
+import isel.pt.cbdcg.views.game.utils.PlayerHand
+import isel.pt.cbdcg.views.game.utils.ZoomButtons
 
 @Composable
 fun GameScreen(
@@ -32,6 +35,11 @@ fun GameScreen(
 ) {
 
     var selection by remember { mutableStateOf<TileSelection>(TileSelection.None) }
+    var zoom by remember { mutableStateOf(1f) }
+
+    val myTurn = game.turn.playerTurn.first() == player.user
+    val turnText =  if(myTurn) "It is your turn to play."
+                    else "Wait, it is not your turn yet."
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -44,11 +52,6 @@ fun GameScreen(
                 .height(32.dp),
             contentAlignment = Alignment.CenterStart
         ) {
-
-            val myTurn = game.turn.playerTurn.first() == player.user
-            val turnText =  if(myTurn) "It is your turn to play."
-                            else "Wait, it is not your turn yet."
-
             Text(
                 text = "Dungeon Turn: ${game.turn.gameTurn} [ $turnText ]",
                 style = MaterialTheme.typography.titleSmall
@@ -73,14 +76,20 @@ fun GameScreen(
                     Board(
                         gameBoard = game.board.tiles,
                         seeGrid = selection is TileSelection.Placing,
+                        tileSize = 128.dp * zoom,
                         placeTile = { pos ->
-                            if(selection is TileSelection.Placing) {
+                            if (selection is TileSelection.Placing) {
                                 val selected = (selection as TileSelection.Placing)
                                 placeTile(selected.tile, selected.idx, pos)
 
                                 selection = TileSelection.None
                             }
                         },
+                    )
+                    ZoomButtons(
+                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                        amplify = { zoom = (zoom + 0.25f).coerceAtMost(2f) },
+                        reduce = { zoom = (zoom - 0.25f).coerceAtLeast(0.5f) },
                     )
                 }
 
@@ -92,23 +101,24 @@ fun GameScreen(
                     PlayerHand(
                         hand = player.hand,
                         selectTile = { idx, tile ->
-                            selection = when(selection) {
+                            selection = when (selection) {
                                 is TileSelection.None -> TileSelection.Selected(idx, tile)
                                 is TileSelection.Selected -> {
-                                    if((selection as TileSelection.Selected).idx == idx)
+                                    if ((selection as TileSelection.Selected).idx == idx)
                                         TileSelection.None
                                     else TileSelection.Selected(idx, tile)
                                 }
+
                                 is TileSelection.Placing -> TileSelection.Selected(idx, tile)
                             }
                         },
-                        selected = when(selection){
+                        selected = when (selection) {
                             is TileSelection.None -> null
                             is TileSelection.Placing -> null
                             is TileSelection.Selected -> (selection as TileSelection.Selected).idx
                         },
                         placeSignal = {
-                            if(selection is TileSelection.Selected){
+                            if (selection is TileSelection.Selected) {
                                 val (idx, tile) = (selection as TileSelection.Selected)
                                 selection = TileSelection.Placing(idx, tile)
                             }
@@ -118,8 +128,8 @@ fun GameScreen(
                             val (idx, tile) = (selection as TileSelection.Selected)
                             selection = TileSelection.Selected(idx, tile.rotate(false))
                         },
-                        rotateRight = {
-                            idx -> rotateTile(idx, true)
+                        rotateRight = { idx ->
+                            rotateTile(idx, true)
                             val (idx, tile) = (selection as TileSelection.Selected)
                             selection = TileSelection.Selected(idx, tile.rotate(true))
                         }

@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views.game
+package isel.pt.cbdcg.views.game.utils
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import isel.pt.cbdcg.domain.game.BoardPosition
 import isel.pt.cbdcg.domain.game.BoardTiles
 
@@ -15,6 +16,7 @@ import isel.pt.cbdcg.domain.game.BoardTiles
 fun Board(
     gameBoard: BoardTiles,
     seeGrid: Boolean,
+    tileSize: Dp,
     placeTile: (BoardPosition) -> Unit
 ) {
 
@@ -47,9 +49,9 @@ fun Board(
                             if(blocked.isNotEmpty()) "_" + blocked.map{ it.name[0] }.joinToString("")
                             else ""
 
-                        BoardTile(tileCode, position)
+                        BoardTile(tileCode, position, tileSize)
                     }
-                    else EmptyBoardTile(seeGrid){ placeTile(BoardPosition(x,y)) }
+                    else EmptyBoardTile(seeGrid, tileSize){ placeTile(BoardPosition(x,y)) }
                 }
             }
         }

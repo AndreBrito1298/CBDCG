@@ -25,6 +25,8 @@ import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.error.UserError
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
+import io.ktor.http.HttpHeaders
+import io.ktor.server.plugins.cors.routing.CORS
 
 fun Application.installPlugins(httpclient: HttpClient) {
 
@@ -41,6 +43,15 @@ fun Application.installPlugins(httpclient: HttpClient) {
                 ignoreUnknownKeys = true
             }
         )
+    }
+
+    install(CORS) {
+        allowHost("localhost:8080")
+        allowHost("localhost:8081")
+        allowHeader(HttpHeaders.ContentType)
+        allowHeader(HttpHeaders.Accept)
+        allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
     }
 
     val redirects = ConcurrentMap<String, String>()

@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.views.lobby.utils.CreateTableCard
+import isel.pt.cbdcg.views.lobby.utils.TableCard
 
 @Composable
 fun SearchTablesScreen(

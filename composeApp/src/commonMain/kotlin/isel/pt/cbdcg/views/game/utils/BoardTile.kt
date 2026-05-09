@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views.game
+package isel.pt.cbdcg.views.game.utils
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cbdcg.composeapp.generated.resources.Res
 import cbdcg.composeapp.generated.resources.allDrawableResources
@@ -17,14 +18,14 @@ import isel.pt.cbdcg.domain.game.BoardPosition
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun BoardTile(tileCode: String, position: BoardPosition) {
+fun BoardTile(tileCode: String, position: BoardPosition, tileSize: Dp) {
 
     val resource = Res.allDrawableResources[tileCode]
         ?: error("Drawable not found: $tileCode")
 
     Box(
         modifier = Modifier
-            .size(128.dp),
+            .size(tileSize),
         contentAlignment = Alignment.Center
     ){
         Image(
@@ -38,11 +39,12 @@ fun BoardTile(tileCode: String, position: BoardPosition) {
 @Composable
 fun EmptyBoardTile(
     seeGrid: Boolean,
+    tileSize: Dp,
     placeTile: () -> Unit
 ) {
     Box(
         modifier = Modifier
-            .size(128.dp)
+            .size(tileSize)
             .then(
                 if (seeGrid) {
                     Modifier

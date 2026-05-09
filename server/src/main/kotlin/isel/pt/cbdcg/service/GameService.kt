@@ -7,6 +7,7 @@ import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.Tile
+import isel.pt.cbdcg.domain.game.draw
 import isel.pt.cbdcg.domain.verifyToken
 import isel.pt.cbdcg.error.GameError
 import isel.pt.cbdcg.error.TableError
@@ -15,6 +16,7 @@ import isel.pt.cbdcg.repository.GameRepository
 import isel.pt.cbdcg.repository.TableRepository
 import isel.pt.cbdcg.repository.UserRepository
 import isel.pt.cbdcg.webapi.websocket.EventsPublisher
+
 
 class GameService(
     private val gameRepo: GameRepository,
@@ -39,10 +41,10 @@ class GameService(
             throw GameError.EveryPlayerReady()
 
         val startingDeck = mutableMapOf(
-            Tile(Direction.entries) to 10u,
-            Tile(listOf(Direction.EAST, Direction.NORTH, Direction.SOUTH)) to 18u,
-            Tile(listOf(Direction.EAST, Direction.NORTH)) to 31u,
-            Tile(listOf(Direction.NORTH, Direction.SOUTH)) to 31u,
+            Tile(Direction.entries) to 12u,
+            Tile(listOf(Direction.EAST, Direction.NORTH, Direction.SOUTH)) to 22u,
+            Tile(listOf(Direction.EAST, Direction.NORTH)) to 28u,
+            Tile(listOf(Direction.NORTH, Direction.SOUTH)) to 28u,
         )
 
         val players = table.participants.filter{ it.role == Role.READY }
@@ -51,8 +53,8 @@ class GameService(
                 val hand = mutableMapOf<UInt, Tile>()
 
                 repeat(3){ idx ->
-                    val available = startingDeck.filterValues { it > 0u }.keys.toList()
-                    val drawnTile = available.random()
+
+                    val drawnTile = startingDeck.draw()
 
                     hand[idx.toUInt()] = drawnTile
                     startingDeck[drawnTile] = startingDeck[drawnTile]!! - 1u
