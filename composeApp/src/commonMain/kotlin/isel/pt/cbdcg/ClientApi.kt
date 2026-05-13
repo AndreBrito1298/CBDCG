@@ -20,9 +20,9 @@ import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
-import isel.pt.cbdcg.domain.game.BoardPosition
+import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
-import isel.pt.cbdcg.domain.game.Tile
+import isel.pt.cbdcg.domain.game.board.Tile
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.CreateUserDTO
@@ -220,7 +220,7 @@ class ClientApi(private val client: HttpClient) {
         fetch<GameDTO>(
             path = "game/place",
             method = HttpMethod.Post,
-            body = PlacePieceDTO(userId.toInt(), gameId.toInt(), token, tile.codeString(), idx.toInt(), pos.coords())
+            body = PlacePieceDTO(userId.toInt(), gameId.toInt(), token, tile.toString(), idx.toInt(), pos.coords())
         ).map{ it.toGame() }
     suspend fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> =
         fetch<GameDTO>(

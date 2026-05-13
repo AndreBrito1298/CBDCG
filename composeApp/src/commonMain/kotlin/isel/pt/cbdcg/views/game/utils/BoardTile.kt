@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cbdcg.composeapp.generated.resources.Res
 import cbdcg.composeapp.generated.resources.allDrawableResources
-import isel.pt.cbdcg.domain.game.BoardPosition
+import isel.pt.cbdcg.domain.game.board.BoardPosition
 import org.jetbrains.compose.resources.painterResource
 
 @Composable

@@ -12,11 +12,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import isel.pt.cbdcg.domain.game.Tile
+import isel.pt.cbdcg.domain.game.Card
+import isel.pt.cbdcg.domain.game.CharacterCard
+import isel.pt.cbdcg.domain.game.TileCard
+import isel.pt.cbdcg.domain.game.board.Tile
 
 @Composable
 fun PlayerHand(
-    hand: Map<UInt, Tile>,
+    hand: Map<UInt, Card>,
     selectTile: (UInt, Tile) -> Unit,
     selected: UInt?,
     placeSignal: () -> Unit,
@@ -42,16 +45,20 @@ fun PlayerHand(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        hand.forEach { (index, tile) ->
-            PlayerHandTile(
-                tile = tile,
-                index = index,
-                select = { selectTile(index, tile) },
-                isSelected = if(selected == null) false else selected == index,
-                place = placeSignal,
-                rotateLeft = { rotateLeft(index) },
-                rotateRight = { rotateRight(index) }
-            )
+        hand.forEach { (index, card) ->
+            when(card){
+                is TileCard -> PlayerTileCard(
+                    tile = card.tile,
+                    select = { selectTile(index, card.tile) },
+                    isSelected = if (selected == null) false else selected == index,
+                    place = placeSignal,
+                    rotateLeft = { rotateLeft(index) },
+                    rotateRight = { rotateRight(index) }
+                )
+                is CharacterCard -> PlayerCharacterCard(
+                    character = card.character
+                )
+            }
         }
     }
 }

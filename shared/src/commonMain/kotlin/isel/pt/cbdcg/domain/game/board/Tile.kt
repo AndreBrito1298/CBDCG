@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.domain.game
+package isel.pt.cbdcg.domain.game.board
 
 data class Tile(
     val connections: List<Direction>,
@@ -31,12 +31,10 @@ data class Tile(
             else null
         }
 
-    fun codeString(): String {
-
+    override fun toString(): String {
         val connections = connections.map { it.name[0] }.sorted().joinToString("")
         return connections
     }
-
 }
 
 fun String.decodeTile(): Tile {

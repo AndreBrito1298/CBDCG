@@ -1,5 +1,9 @@
 package isel.pt.cbdcg.domain.game
 
+import isel.pt.cbdcg.domain.game.board.Direction
+import isel.pt.cbdcg.domain.game.board.opposite
+import isel.pt.cbdcg.domain.game.board.rotateLeft
+import isel.pt.cbdcg.domain.game.board.rotateRight
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

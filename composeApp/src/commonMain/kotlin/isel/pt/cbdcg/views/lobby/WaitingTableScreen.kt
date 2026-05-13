@@ -70,7 +70,7 @@ fun WaitingTableScreen(
         }
 
         Text(
-            text = "Owner: ${table.owner.name}[#${table.owner.id}]",
+            text = "User: ${user.name.string}[#${user.id}]",
             style = MaterialTheme.typography.headlineSmall,
         )
 

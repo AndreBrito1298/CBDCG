@@ -1,10 +1,10 @@
 package isel.pt.cbdcg.repository.memory
 
-import isel.pt.cbdcg.domain.game.Board
+import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
-import isel.pt.cbdcg.domain.game.Tile
+import isel.pt.cbdcg.domain.game.board.Tile
 import isel.pt.cbdcg.domain.game.Turn
 import isel.pt.cbdcg.repository.GameRepository
 

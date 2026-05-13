@@ -1,5 +1,10 @@
 package isel.pt.cbdcg.domain.game
 
+import isel.pt.cbdcg.domain.game.board.Board
+import isel.pt.cbdcg.domain.game.board.BoardPosition
+import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.Direction
+import isel.pt.cbdcg.domain.game.board.Tile
 import isel.pt.cbdcg.error.BoardPlacementError
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
@@ -48,9 +53,9 @@ class BoardTest {
 
 
         assertTrue(result.tiles.containsAll(listOf(
-                BoardTile(firstPos, firstTile),
-                BoardTile(secondPos, secondTile),
-                BoardTile(thirdPos, thirdTile)
+            BoardTile(firstPos, firstTile),
+            BoardTile(secondPos, secondTile),
+            BoardTile(thirdPos, thirdTile)
         )))
     }
 }

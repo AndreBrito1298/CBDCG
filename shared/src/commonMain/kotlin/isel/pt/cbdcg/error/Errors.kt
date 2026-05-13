@@ -94,4 +94,5 @@ sealed class GameError(
     class InvalidDirection(char: Char): GameError("Something went wrong decoding direction: $char")
     class GameNotFound(id: Int): GameError("No game found with the id '$id'.")
     class PlayerNotFound(email: String, game: Int): GameError("Player with email '$email' was not found in game '$game'.")
+    class CardDoesNotExist(string: String) : GameError("The Card '$string' could not be decoded.")
 }

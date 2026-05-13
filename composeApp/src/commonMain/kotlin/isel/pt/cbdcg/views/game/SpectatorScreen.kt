@@ -82,7 +82,7 @@ fun SpectatorScreen(
                 ) {
                     SpectatorPlayerSelector(
                         players = game.players,
-                        selectedPlayer = game.players.find { it.user == selectedId },
+                        selectedPlayer = game.players.find { it.user.id == selectedId },
                         onSelectPlayer = { playerId ->
                             selectedId =
                                 if (selectedId == playerId) null

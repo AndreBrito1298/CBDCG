@@ -1,11 +1,14 @@
 package isel.pt.cbdcg.domain.game
 
+import isel.pt.cbdcg.domain.game.board.Board
+import isel.pt.cbdcg.domain.game.board.BoardPosition
+import isel.pt.cbdcg.domain.game.board.Tile
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.error.GameError
 
 typealias TileDeck = Map<Tile, UInt>
 
-fun TileDeck.draw(): Tile{
+fun TileDeck.draw(): Tile {
 
     val tiles = this.flatMap{ (tile, copies) -> List(copies.toInt()){ tile } }
     return tiles.random()
@@ -25,10 +28,10 @@ data class Game(
 
     fun toGameDTO(): GameDTO {
 
-        val playersDTO = players.map{ it.toPlayerInfo() }
+        val playersDTO = players.map{ it.toPlayerDTO() }
         val spectatorsDTO = spectators.map{ it.toSpectatorInfo() }
-        val boardDTO = board.tiles.map{ (pos, tile) -> "${pos.coords()}|${tile.codeString()}" }
-        val tileDeck = tileDeck.map{ (tile, nr) -> "${tile.codeString()}|${nr}" }.toTypedArray()
+        val boardDTO = board.tiles.map{ (pos, tile) -> "${pos.coords()}|${tile}" }
+        val tileDeck = tileDeck.map{ (tile, nr) -> "${tile}|${nr}" }.toTypedArray()
 
         return GameDTO(
             id = id.toInt(),
@@ -43,7 +46,7 @@ data class Game(
 
     fun placeTile(player: Player, position: BoardPosition, tile: Tile, idx: UInt): Game{
 
-        if(player.user != turn.playerTurn.first())
+        if(player.user.id != turn.playerTurn.first())
             throw GameError.NotYourTurn()
 
         val newBoard = board.place(position, tile)
@@ -55,13 +58,12 @@ data class Game(
 
         return copy(board = newBoard, players= updatedPlayers)
     }
-
     fun nextTurn(): Game{
 
         val list = turn.playerTurn.drop(1)
 
         val nextGameTurn =
-            if(turn.gameTurn == 0u && players.any{ it.hand.isNotEmpty() }) 0u
+            if(turn.gameTurn == 0u && players.any{ it.hand.numTileCards() == 0 }) 0u
             else turn.gameTurn + 1u
 
         return  if(list.isEmpty()) copy(turn =Turn(nextGameTurn, getTurnOrder()))
@@ -77,7 +79,7 @@ data class Game(
         val updatedDeck = tileDeck.remove(drawnTile)
 
         val updatedPlayers = players.map{ player ->
-            if(player.user == nextPlayer) player.addToHand(drawnTile)
+            if(player.user.id == nextPlayer) player.addToHand(TileCard(drawnTile))
             else player
         }
 
@@ -85,6 +87,6 @@ data class Game(
     }
     private fun getTurnOrder(): List<UInt>{
 
-        return players.map{ it.user }
+        return players.map{ it.user.id }
     }
 }

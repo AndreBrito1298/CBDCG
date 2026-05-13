@@ -1,18 +1,20 @@
 package isel.pt.cbdcg.dto
 
-import isel.pt.cbdcg.domain.game.Board
-import isel.pt.cbdcg.domain.game.BoardPosition
-import isel.pt.cbdcg.domain.game.BoardTile
+import isel.pt.cbdcg.domain.game.board.Board
+import isel.pt.cbdcg.domain.game.board.BoardPosition
+import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
-import isel.pt.cbdcg.domain.game.decodeTile
-import isel.pt.cbdcg.domain.game.toSpectator
+import isel.pt.cbdcg.domain.game.Spectator
+import isel.pt.cbdcg.domain.game.board.decodeTile
+import isel.pt.cbdcg.domain.game.decodeCard
 import isel.pt.cbdcg.domain.game.toTurn
+import isel.pt.cbdcg.error.GameError
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class PlayerDTO(
-    val user: Int,
+    val user: UserDTO,
     val hand: Array<String>
 ) {
     override fun equals(other: Any?): Boolean {
@@ -27,27 +29,39 @@ data class PlayerDTO(
         return true
     }
     override fun hashCode(): Int {
-        var result = user
+        var result = user.hashCode()
         result = 31 * result + hand.contentHashCode()
         return result
     }
 
     fun toPlayer(): Player =
         Player(
-            user = user.toUInt(),
+            user = user.toUser(),
             hand = hand.associate { string ->
-                val (idx, tile) = string.split("|")
-                idx.toUInt() to tile.decodeTile()
+
+                val (idx, type, value) = string.split("|")
+                val card = value.decodeCard(type[0])
+                    ?: throw GameError.CardDoesNotExist(string)
+
+                idx.toUInt() to card
             }
         )
+
 }
 
+@Serializable
+data class SpectatorDTO(
+    val user: UserDTO,
+){
+
+    fun toSpectator(): Spectator = Spectator(this.user.toUser())
+}
 
 @Serializable
 data class GameDTO(
     val id: Int,
     val players: Array<PlayerDTO>,
-    val spectators: Array<String>,
+    val spectators: Array<SpectatorDTO>,
     val board: Array<String>,
     val tileDeck: Array<String>,
     val turn: String
@@ -84,11 +98,11 @@ data class GameDTO(
                 tile = tile
             )
         }
-        val tileDeck = tileDeck.map{ string ->
+        val tileDeck = tileDeck.associate { string ->
             val (tileString, nr) = string.split("|")
             val tile = tileString.decodeTile()
             tile to nr.toUInt()
-        }.toMap()
+        }
 
         return Game(
             id = id.toUInt(),

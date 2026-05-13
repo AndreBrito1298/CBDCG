@@ -111,7 +111,8 @@ fun AppNavHost(vm: AppViewModel) {
                 }
             }
 
-            if(table == null) return@composable
+            if(table == null || table.participants.firstOrNull{ it.user.id == user.id } == null)
+                return@composable
 
             LaunchedEffect(game) {
                 if (game != null) {
@@ -137,8 +138,8 @@ fun AppNavHost(vm: AppViewModel) {
 
             val user = ui.user ?: return@composable
             val game = ui.game ?: return@composable
-            val player = ui.game?.players?.find { it.user == user.id }
-            val spectator = ui.game?.spectators?.find{ it.user == user.id }
+            val player = ui.game?.players?.find { it.user.id == user.id }
+            val spectator = ui.game?.spectators?.find{ it.user.id == user.id }
 
             if(player == null && spectator == null) return@composable
             else{

@@ -15,20 +15,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import cbdcg.composeapp.generated.resources.Res
 import cbdcg.composeapp.generated.resources.allDrawableResources
-import isel.pt.cbdcg.domain.game.Tile
+import isel.pt.cbdcg.domain.game.board.Tile
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun PlayerHandTile(
+fun PlayerTileCard(
     tile: Tile,
-    index: UInt,
     select: () -> Unit,
     isSelected: Boolean,
     place: () -> Unit,
     rotateLeft: () -> Unit,
     rotateRight: () -> Unit,
 ) {
-    val fileName = tile.codeString()
+    val fileName = tile.toString()
     val resource = Res.allDrawableResources[fileName]
         ?: error("Drawable not found: $fileName")
 
@@ -38,7 +37,7 @@ fun PlayerHandTile(
 
         Image(
             painter = painterResource(resource),
-            contentDescription = "Carta ${index + 1u}",
+            contentDescription = "Card",
             modifier = Modifier.size(128.dp).clickable(onClick = select)
         )
 

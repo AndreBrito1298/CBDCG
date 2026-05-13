@@ -8,8 +8,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
-import isel.pt.cbdcg.domain.game.BoardPosition
-import isel.pt.cbdcg.domain.game.BoardTiles
+import isel.pt.cbdcg.domain.game.board.BoardPosition
+import isel.pt.cbdcg.domain.game.board.BoardTiles
 
 
 @Composable
@@ -45,7 +45,7 @@ fun Board(
                         val adjTiles = boardTile.tile.getAdjacent(gameBoard, boardTile.pos)
                         val blocked = boardTile.tile.getBlocked(adjTiles)
 
-                        val tileCode = boardTile.tile.codeString() +
+                        val tileCode = boardTile.tile.toString() +
                             if(blocked.isNotEmpty()) "_" + blocked.map{ it.name[0] }.joinToString("")
                             else ""
 

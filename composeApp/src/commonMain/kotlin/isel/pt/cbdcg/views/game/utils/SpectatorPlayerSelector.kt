@@ -30,24 +30,23 @@ fun SpectatorPlayerSelector(
         ) {
             if(selectedPlayer == null){
                 players.forEach { player ->
-                    SpectatorPlayerBox(
-                        player = player,
+                    SpectatorPlayerIcons(
+                        characterName = player.currentCharacter,
                         isSelected = false,
-                        onClick = { onSelectPlayer(player.user) }
+                        onClick = { onSelectPlayer(player.user.id) }
                     )
                 }
             }
             else{
-                SpectatorPlayerBox(
-                    player = selectedPlayer,
+                SpectatorPlayerIcons(
+                    characterName = selectedPlayer.currentCharacter,
                     isSelected = true,
-                    onClick = { onSelectPlayer(selectedPlayer.user) }
+                    onClick = { onSelectPlayer(selectedPlayer.user.id) }
                 )
 
-                selectedPlayer.hand.forEach { (index, tile) ->
-                    SpectatorHandTile(
-                        tile = tile,
-                        index = index
+                selectedPlayer.hand.forEach { (_, card) ->
+                    SpectatorCard(
+                        card = card,
                     )
                 }
             }

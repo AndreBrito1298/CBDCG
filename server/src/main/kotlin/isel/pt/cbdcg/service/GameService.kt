@@ -1,12 +1,16 @@
 package isel.pt.cbdcg.service
 
 import isel.pt.cbdcg.domain.Role
-import isel.pt.cbdcg.domain.game.BoardPosition
-import isel.pt.cbdcg.domain.game.Direction
+import isel.pt.cbdcg.domain.game.Card
+import isel.pt.cbdcg.domain.game.CharacterCard
+import isel.pt.cbdcg.domain.game.board.BoardPosition
+import isel.pt.cbdcg.domain.game.board.Direction
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
-import isel.pt.cbdcg.domain.game.Tile
+import isel.pt.cbdcg.domain.game.TileCard
+import isel.pt.cbdcg.domain.game.board.Tile
+import isel.pt.cbdcg.domain.game.character.PlayableCharacterCatalog
 import isel.pt.cbdcg.domain.game.draw
 import isel.pt.cbdcg.domain.verifyToken
 import isel.pt.cbdcg.error.GameError
@@ -47,29 +51,34 @@ class GameService(
             Tile(listOf(Direction.NORTH, Direction.SOUTH)) to 28u,
         )
 
-        val players = table.participants.filter{ it.role == Role.READY }
-            .map{ player ->
+        val characters = PlayableCharacterCatalog.playableCharacters.shuffled()
 
-                val hand = mutableMapOf<UInt, Tile>()
+        val players = table.participants.filter{ it.role == Role.READY }
+            .mapIndexed{ playerIdx, player ->
+
+                val hand = mutableMapOf<UInt, Card>()
 
                 repeat(3){ idx ->
 
                     val drawnTile = startingDeck.draw()
 
-                    hand[idx.toUInt()] = drawnTile
+                    hand[idx.toUInt()] = TileCard(drawnTile)
                     startingDeck[drawnTile] = startingDeck[drawnTile]!! - 1u
                 }
 
-                Player(player.user.id, hand)
+                hand[3u] = CharacterCard(characters[playerIdx * 2])
+                hand[4u] = CharacterCard(characters[playerIdx * 2 + 1])
+
+                Player(player.user, hand)
             }
 
         val spectators = table.participants.filter{ it.role == Role.SPECTATOR }
-            .map{ spectator -> Spectator(spectator.user.id) }
+            .map{ spectator -> Spectator(spectator.user) }
 
         if(players.size < 2)
             throw GameError.MinimumPlayersNeeded()
 
-        val turnOrder = players.map{ it.user }
+        val turnOrder = players.map{ it.user.id }
 
         val game = gameRepo.createGame(players, spectators, turnOrder, startingDeck)
         events.publishGameStarted(table, game)
@@ -86,7 +95,7 @@ class GameService(
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())
 
-        val player = game.players.find{ it.user == user.id }
+        val player = game.players.find{ it.user.id == user.id }
             ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
 
         val newGame = game.placeTile(player, pos, tile, idx)
@@ -111,15 +120,21 @@ class GameService(
 
 
         val newPlayers = game.players.map{ player ->
-            if(player.user == userId) {
+            if(player.user.id == userId) {
 
-                val newHand = player.hand.map{ (index, tile) ->
-                    if(idx == index) index to tile.rotate(right)
-                    else index to tile
+                val newHand = player.hand.map{ (index, card) ->
+                    if(index == idx) {
+                        when(card){
+                            is TileCard -> index to card.copy(tile = card.tile.rotate(right))
+                            else -> index to card
+                        }
+                    } else index to card
                 }.toMap()
 
                 player.copy(hand = newHand)
-            } else player
+            } else {
+                player
+            }
         }
 
         val newGame = game.copy(players = newPlayers)

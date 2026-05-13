@@ -6,8 +6,8 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import isel.pt.cbdcg.domain.game.decodeTile
-import isel.pt.cbdcg.domain.game.toPosition
+import isel.pt.cbdcg.domain.game.board.decodeTile
+import isel.pt.cbdcg.domain.game.board.toPosition
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.PlacePieceDTO
 import isel.pt.cbdcg.dto.RotatePieceDTO

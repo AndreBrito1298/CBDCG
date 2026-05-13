@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.domain.game
+package isel.pt.cbdcg.domain.game.board
 
 import isel.pt.cbdcg.error.GameError
 

@@ -1,5 +1,7 @@
 package isel.pt.cbdcg.domain.game
 
+import isel.pt.cbdcg.domain.game.board.Direction
+import isel.pt.cbdcg.domain.game.board.Tile
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

@@ -1,0 +1,51 @@
+@startuml ApresentacaoLobby
+hide empty members
+skinparam classAttributeIconSize 0
+
+class User {
+  +id: UInt
+}
+
+class AuthUser {
+  +token: String
+}
+
+class Table {
+  +id: UInt
+  --
+  +checkAvailability(): Boolean
+}
+
+class Participant { }
+
+enum Role {
+  PLAYER
+  READY
+  SPECTATOR
+}
+
+class Name <<value>> {
+  +string: String
+}
+
+class Email <<value>> {
+  +string: String
+}
+
+class Password <<value>> {
+  +string: String
+}
+
+User *-- "0..1" AuthUser : auth
+User *-- Name : name
+User *-- Email : email
+User *-- Password : password
+
+Table *-- Name : name
+Table o-- "1" User : owner
+Table *-- "0..*" Participant : participants
+
+Participant o-- User : user
+Participant *-- Role : role
+
+@enduml

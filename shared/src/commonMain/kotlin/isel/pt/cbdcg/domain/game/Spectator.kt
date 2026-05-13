@@ -1,9 +1,14 @@
 package isel.pt.cbdcg.domain.game
 
-data class Spectator(
-    val user: UInt
-) {
-    fun toSpectatorInfo(): String = user.toString()
-}
+import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.dto.SpectatorDTO
+import isel.pt.cbdcg.dto.toUserDTO
 
-fun String.toSpectator(): Spectator = Spectator(this.toUInt())
+data class Spectator(
+    val user: User
+) {
+    fun toSpectatorInfo(): SpectatorDTO =
+        SpectatorDTO(
+        user = user.toUserDTO()
+        )
+}

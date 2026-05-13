@@ -1,0 +1,30 @@
+@startuml DiagramaArquitetura
+title Arquitetura CBDCG
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+
+rectangle "CBDCG" {
+
+  rectangle "Client\ncomposeApp" as Client {
+    rectangle "Desktop" as Desktop
+    rectangle "Browser" as Browser
+    rectangle "Common UI" as CommonUI
+  }
+
+  rectangle "Server\nKtor" as Server
+
+  rectangle "Shared\nDomain + DTOs" as Shared
+}
+
+Desktop --> CommonUI
+Browser --> CommonUI
+
+Client <--> Server : HTTP / WebSocket
+
+Client --> Shared
+Server --> Shared
+
+@enduml

@@ -8,9 +8,9 @@ import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
-import isel.pt.cbdcg.domain.game.BoardPosition
+import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
-import isel.pt.cbdcg.domain.game.Tile
+import isel.pt.cbdcg.domain.game.board.Tile
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

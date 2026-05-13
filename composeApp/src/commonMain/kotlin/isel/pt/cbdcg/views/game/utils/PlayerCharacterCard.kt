@@ -11,26 +11,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import cbdcg.composeapp.generated.resources.Res
 import cbdcg.composeapp.generated.resources.allDrawableResources
-import isel.pt.cbdcg.domain.game.Tile
+import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import org.jetbrains.compose.resources.painterResource
 
+
 @Composable
-fun SpectatorHandTile(
-    tile: Tile,
-    index: UInt,
+fun PlayerCharacterCard(
+    character: PlayableCharacter,
+
 ) {
-    val fileName = tile.codeString()
+
+    val fileName = character.name
     val resource = Res.allDrawableResources[fileName]
         ?: error("Drawable not found: $fileName")
 
     Box(
-        modifier = Modifier
-            .border(1.dp, Color.Black)
-            .padding(8.dp)
-    ) {
+        modifier= Modifier.border(1.dp, Color.Black).padding(8.dp)
+    ){
+
         Image(
             painter = painterResource(resource),
-            contentDescription = "Carta ${index + 1u}",
+            contentDescription = "Card",
             modifier = Modifier.size(128.dp)
         )
     }

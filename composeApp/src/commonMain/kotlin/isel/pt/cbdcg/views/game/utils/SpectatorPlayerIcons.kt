@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.views.game.utils
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -10,11 +11,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import isel.pt.cbdcg.domain.game.Player
+import cbdcg.composeapp.generated.resources.Res
+import cbdcg.composeapp.generated.resources.allDrawableResources
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun SpectatorPlayerBox(
-    player: Player,
+fun SpectatorPlayerIcons(
+    characterName: String?,
     isSelected: Boolean,
     onClick: () -> Unit,
 ){
@@ -29,20 +32,18 @@ fun SpectatorPlayerBox(
             .padding(8.dp),
         contentAlignment = Alignment.Center
     ) {
-        /*
-        val character = "player.character ou algo assim"
-        val characterName = "if(character != null) ou assim, 'character.name' else 'textura para não ter personagem' "
 
-        val resource = Res.allDrawableResources[characterName]
+        val resourceName = characterName ?: "missing_texture"
+
+        val resource = Res.allDrawableResources[resourceName]
             ?: error("Drawable not found: $characterName")
-
 
         Image(
             painter = painterResource(resource),
-            contentDescription = "Personagem $characterName",
+            contentDescription = "Personagem: $characterName",
             modifier = Modifier.size(128.dp)
         )
-        */
+
     }
 }
 

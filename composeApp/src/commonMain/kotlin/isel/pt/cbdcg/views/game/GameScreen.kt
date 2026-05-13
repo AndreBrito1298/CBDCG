@@ -18,10 +18,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import isel.pt.cbdcg.domain.game.BoardPosition
+import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
-import isel.pt.cbdcg.domain.game.Tile
+import isel.pt.cbdcg.domain.game.board.Tile
 import isel.pt.cbdcg.views.game.utils.Board
 import isel.pt.cbdcg.views.game.utils.PlayerHand
 import isel.pt.cbdcg.views.game.utils.ZoomButtons
@@ -37,7 +37,7 @@ fun GameScreen(
     var selection by remember { mutableStateOf<TileSelection>(TileSelection.None) }
     var zoom by remember { mutableStateOf(1f) }
 
-    val myTurn = game.turn.playerTurn.first() == player.user
+    val myTurn = game.turn.playerTurn.first() == player.user.id
     val turnText =  if(myTurn) "It is your turn to play."
                     else "Wait, it is not your turn yet."
 
@@ -61,7 +61,6 @@ fun GameScreen(
         Box(
             modifier = Modifier.fillMaxSize().padding(16.dp)
         ) {
-
             Column(
                 modifier = Modifier.fillMaxSize(),
             ) {
