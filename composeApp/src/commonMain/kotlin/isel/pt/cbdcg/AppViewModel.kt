@@ -8,9 +8,9 @@ import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
-import isel.pt.cbdcg.domain.game.board.Tile
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -275,7 +275,7 @@ class AppViewModel(
             }
         }
     }
-    fun placeTile(tile: Tile, idx: UInt, pos: BoardPosition): Job? {
+    fun placeOnBoard(card: Card, idx: UInt, pos: BoardPosition): Job? {
 
         val user = _ui.value.user ?: return null
         val token = user.auth?.token ?: return null.also {
@@ -288,7 +288,7 @@ class AppViewModel(
 
             _ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val response = clientApi.placeTile(user.id, game.id, token, tile, idx, pos)
+            val response = clientApi.placeOnBoard(user.id, game.id, token, card, idx, pos)
             response.onSuccess { newGame ->
                 _ui.update { it.copy(game = newGame, isLoading = false, errorMessage = null) }
             }
@@ -319,6 +319,29 @@ class AppViewModel(
             }
         }
 
+    }
+    fun nextPhase(): Job? {
+
+        val user = _ui.value.user ?: return null
+        val token = user.auth?.token ?: return null.also {
+            _ui.update { it.copy(errorMessage = "No token found.") }
+        }
+
+        val game = _ui.value.game ?: return null
+
+        return viewModelScope.launch{
+
+            _ui.update { it.copy(isLoading = true, errorMessage = null) }
+
+            val response = clientApi.nextPhase(user.id, game.id, token)
+            response.onSuccess { newGame ->
+                _ui.update { it.copy(game = newGame, isLoading = false, errorMessage = null) }
+            }
+            response.onFailure { error ->
+                _ui.update { it.copy(isLoading = false, errorMessage = error.message ?: "Can't skip Phase.") }
+            }
+
+        }
     }
 
 }

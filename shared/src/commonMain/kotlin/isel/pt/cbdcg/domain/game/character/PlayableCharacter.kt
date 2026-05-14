@@ -5,11 +5,11 @@ data class PlayableCharacter(
     override val stats: Stats,
 ) : Character {
 
-    override fun toString() = "${name}#${stats}"
+    override val string = "P#${name}#${stats}"
 }
 
 fun String.decodeCharacter(): PlayableCharacter {
-    val (name, stats) = this.split("#")
+    val (_, name, stats) = this.split("#")
     val (hp, atk, def, spe) = stats.split("&")
     return PlayableCharacter(
         name = name,

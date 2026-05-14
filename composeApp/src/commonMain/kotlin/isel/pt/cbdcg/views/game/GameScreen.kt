@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,11 +18,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import isel.pt.cbdcg.domain.game.Card
+import isel.pt.cbdcg.domain.game.CardType
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
-import isel.pt.cbdcg.domain.game.board.Tile
+import isel.pt.cbdcg.domain.game.TileCard
+import isel.pt.cbdcg.domain.game.TurnPhase
+import isel.pt.cbdcg.views.game.CardSelection.*
 import isel.pt.cbdcg.views.game.utils.Board
+import isel.pt.cbdcg.views.game.utils.InGameHeader
 import isel.pt.cbdcg.views.game.utils.PlayerHand
 import isel.pt.cbdcg.views.game.utils.ZoomButtons
 
@@ -30,16 +35,27 @@ import isel.pt.cbdcg.views.game.utils.ZoomButtons
 fun GameScreen(
     player: Player,
     game: Game,
-    placeTile: (Tile, UInt, BoardPosition) -> Unit,
-    rotateTile: (UInt, Boolean) -> Unit
+    placeOnBoard: (Card, UInt, BoardPosition) -> Unit,
+    rotateTile: (UInt, Boolean) -> Unit,
+    nextPhase: () -> Unit
 ) {
 
-    var selection by remember { mutableStateOf<TileSelection>(TileSelection.None) }
+    var selection by remember { mutableStateOf<CardSelection>(None) }
     var zoom by remember { mutableStateOf(1f) }
 
-    val myTurn = game.turn.playerTurn.first() == player.user.id
-    val turnText =  if(myTurn) "It is your turn to play."
-                    else "Wait, it is not your turn yet."
+    val currentPlayer = game.players.find {
+        it.user.id == game.turn.playerTurn.first()
+    }
+    val phaseText = when (game.turn.phase) {
+        TurnPhase.CONSTRUCTION -> "Construction"
+        TurnPhase.SUBSTITUTION -> "Substitution"
+        TurnPhase.MOVEMENT -> "Movement"
+    }
+    val nextPhaseText = when (game.turn.phase) {
+        TurnPhase.CONSTRUCTION -> "Next: Substitution"
+        TurnPhase.SUBSTITUTION -> "Next: Movement"
+        TurnPhase.MOVEMENT -> "End Turn"
+    }
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -49,13 +65,25 @@ fun GameScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
-                .height(32.dp),
+                .height(50.dp),
             contentAlignment = Alignment.CenterStart
         ) {
-            Text(
-                text = "Dungeon Turn: ${game.turn.gameTurn} [ $turnText ]",
-                style = MaterialTheme.typography.titleSmall
+            InGameHeader(
+                modifier = Modifier.align(Alignment.CenterStart),
+                dungeonTurn = game.turn.gameTurn.toString(),
+                phase = phaseText,
+                playerName = player.user.name.string,
+                currentPlayerName = currentPlayer?.user?.name?.string ?: "Unknown"
             )
+
+            if (currentPlayer != null && currentPlayer.user.id == player.user.id && game.turn.gameTurn > 0u) {
+                Button(
+                    onClick = nextPhase,
+                    modifier = Modifier.align(Alignment.BottomEnd)
+                ) {
+                    Text(nextPhaseText)
+                }
+            }
         }
 
         Box(
@@ -72,16 +100,21 @@ fun GameScreen(
                         .fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
+
+                    val cardtype = if (selection is PlaceCard) { (selection as PlaceCard).card.type }
+                                   else null
+
                     Board(
                         gameBoard = game.board.tiles,
-                        seeGrid = selection is TileSelection.Placing,
+                        canClickGrid = cardtype != null && cardtype == CardType.TILE,
+                        canClickTiles = cardtype != null && cardtype == CardType.CHARACTER,
                         tileSize = 128.dp * zoom,
-                        placeTile = { pos ->
-                            if (selection is TileSelection.Placing) {
-                                val selected = (selection as TileSelection.Placing)
-                                placeTile(selected.tile, selected.idx, pos)
+                        placeCard = { pos ->
+                            if (selection is PlaceCard) {
+                                val (idx, card) = (selection as PlaceCard)
+                                placeOnBoard(card, idx ,pos)
 
-                                selection = TileSelection.None
+                                selection = None
                             }
                         },
                     )
@@ -99,38 +132,54 @@ fun GameScreen(
                 ) {
                     PlayerHand(
                         hand = player.hand,
-                        selectTile = { idx, tile ->
+                        selectCard = { idx, card ->
                             selection = when (selection) {
-                                is TileSelection.None -> TileSelection.Selected(idx, tile)
-                                is TileSelection.Selected -> {
-                                    if ((selection as TileSelection.Selected).idx == idx)
-                                        TileSelection.None
-                                    else TileSelection.Selected(idx, tile)
+                                is None, is PlaceCard -> Selected(idx, card)
+                                is Selected -> {
+                                    if ((selection as Selected).idx == idx)
+                                        None
+                                    else Selected(idx, card)
                                 }
-
-                                is TileSelection.Placing -> TileSelection.Selected(idx, tile)
                             }
                         },
                         selected = when (selection) {
-                            is TileSelection.None -> null
-                            is TileSelection.Placing -> null
-                            is TileSelection.Selected -> (selection as TileSelection.Selected).idx
+                            is None -> null
+                            is PlaceCard -> null
+                            is Selected -> (selection as Selected).idx
                         },
                         placeSignal = {
-                            if (selection is TileSelection.Selected) {
-                                val (idx, tile) = (selection as TileSelection.Selected)
-                                selection = TileSelection.Placing(idx, tile)
+                            if(selection is Selected){
+                                val (idx, card) = (selection as Selected)
+                                selection = PlaceCard(idx, card)
                             }
                         },
                         rotateLeft = { idx ->
-                            rotateTile(idx, false)
-                            val (idx, tile) = (selection as TileSelection.Selected)
-                            selection = TileSelection.Selected(idx, tile.rotate(false))
+                            if(selection is Selected){
+                                val (selIdx, card) = (selection as Selected)
+                                if(selIdx != idx) return@PlayerHand
+
+                                selection = when(card){
+                                    is TileCard -> {
+                                        rotateTile(idx, false)
+                                        Selected(idx, card.copy(tile = card.tile.rotate(false)))
+                                    }
+                                    else -> selection
+                                }
+                            }
                         },
                         rotateRight = { idx ->
-                            rotateTile(idx, true)
-                            val (idx, tile) = (selection as TileSelection.Selected)
-                            selection = TileSelection.Selected(idx, tile.rotate(true))
+                            if(selection is Selected){
+                                val (selIdx, card) = (selection as Selected)
+                                if(selIdx != idx) return@PlayerHand
+
+                                selection = when(card){
+                                    is TileCard -> {
+                                        rotateTile(idx, true)
+                                        Selected(idx, card.copy(tile = card.tile.rotate(true)))
+                                    }
+                                    else -> selection
+                                }
+                            }
                         }
                     )
                 }
@@ -139,18 +188,16 @@ fun GameScreen(
     }
 }
 
-sealed interface TileSelection {
+sealed interface CardSelection {
 
-    data object None : TileSelection
-
+    data object None : CardSelection
     data class Selected(
         val idx: UInt,
-        val tile: Tile
-    ) : TileSelection
-
-    data class Placing(
+        val card: Card
+    ) : CardSelection
+    data class PlaceCard(
         val idx: UInt,
-        val tile: Tile
-    ) : TileSelection
+        val card: Card
+    ) : CardSelection
 
 }

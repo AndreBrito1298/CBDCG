@@ -7,7 +7,7 @@ import isel.pt.cbdcg.dto.toUserDTO
 data class Spectator(
     val user: User
 ) {
-    fun toSpectatorInfo(): SpectatorDTO =
+    fun toSpectatorDTO(): SpectatorDTO =
         SpectatorDTO(
         user = user.toUserDTO()
         )

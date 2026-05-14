@@ -32,5 +32,5 @@ data class CharacterCard(
     val character: PlayableCharacter
 ) : Card {
     override val type = CardType.CHARACTER
-    override val string = "C|${character}"
+    override val string = "C|${character.string}"
 }

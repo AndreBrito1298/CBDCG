@@ -69,7 +69,7 @@ class GameService(
                 hand[3u] = CharacterCard(characters[playerIdx * 2])
                 hand[4u] = CharacterCard(characters[playerIdx * 2 + 1])
 
-                Player(player.user, hand)
+                Player(player.user, hand, null)
             }
 
         val spectators = table.participants.filter{ it.role == Role.SPECTATOR }
@@ -85,7 +85,6 @@ class GameService(
 
         game
     }
-
     suspend fun placeOnBoard(userId: UInt, gameId: UInt, token: String, card: Card, idx: UInt, pos: BoardPosition): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)
@@ -98,17 +97,18 @@ class GameService(
         val player = game.players.find{ it.user.id == user.id }
             ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
 
-        val newGame = game.placeOnBoard(player, pos, card, idx)
-            .nextTurn()
-            .startTurnDraw()
+        val newGame = if(game.turn.gameTurn == 0u){
+            game.placeOnBoard(player, pos, card, idx).nextTurn()
+        } else {
+            game.placeOnBoard(player, pos, card, idx)
+        }
 
         gameRepo.save(newGame)
-
         events.publishGameUpdated(newGame)
+
         newGame
 
     }
-
     fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)
@@ -139,6 +139,22 @@ class GameService(
 
         val newGame = game.copy(players = newPlayers)
         gameRepo.save(newGame)
+
+        newGame
+    }
+    suspend fun nextPhase(userId: UInt, gameId: UInt, token: String): Result<Game> = runCatching {
+
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
+        token.verifyToken(user)
+
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
+
+        val newGame = game.nextPhase()
+
+        gameRepo.save(newGame)
+        events.publishGameUpdated(newGame)
 
         newGame
     }

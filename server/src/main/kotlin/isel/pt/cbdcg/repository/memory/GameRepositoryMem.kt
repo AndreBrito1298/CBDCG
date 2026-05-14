@@ -6,6 +6,7 @@ import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.board.Tile
 import isel.pt.cbdcg.domain.game.Turn
+import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.repository.GameRepository
 
 object GameRepositoryMem: GameRepository {
@@ -20,7 +21,7 @@ object GameRepositoryMem: GameRepository {
             spectators = spectators,
             board = Board(),
             tileDeck = startingDeck,
-            turn = Turn(0u, turnOrder),
+            turn = Turn(0u, turnOrder, TurnPhase.CONSTRUCTION),
         )
 
         games.add(game)
