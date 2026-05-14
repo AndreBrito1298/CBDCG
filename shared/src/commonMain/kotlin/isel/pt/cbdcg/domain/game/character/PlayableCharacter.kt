@@ -1,7 +1,7 @@
 package isel.pt.cbdcg.domain.game.character
 
 data class PlayableCharacter(
-    val name: String,
+    override val name: String,
     override val stats: Stats,
 ) : Character {
 

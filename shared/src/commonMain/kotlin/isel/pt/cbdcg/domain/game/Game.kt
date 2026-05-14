@@ -44,12 +44,15 @@ data class Game(
     }
 
 
-    fun placeTile(player: Player, position: BoardPosition, tile: Tile, idx: UInt): Game{
+    fun placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: UInt): Game{
 
         if(player.user.id != turn.playerTurn.first())
             throw GameError.NotYourTurn()
 
-        val newBoard = board.place(position, tile)
+        if(turn.gameTurn == 0u && card.type != CardType.TILE)
+            throw GameError.DungeonTurnZeroRule()
+
+        val newBoard = board.place(position, card)
 
         val updatedPlayers = players.map{
             if(it.user == player.user) player.removeFromHand(idx)

@@ -6,11 +6,12 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import isel.pt.cbdcg.domain.game.board.decodeTile
 import isel.pt.cbdcg.domain.game.board.toPosition
+import isel.pt.cbdcg.domain.game.decodeCard
 import isel.pt.cbdcg.dto.CreateGameDTO
-import isel.pt.cbdcg.dto.PlacePieceDTO
+import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RotatePieceDTO
+import isel.pt.cbdcg.error.GameError
 import isel.pt.cbdcg.service.GameService
 
 fun Route.gameWebApi(gameService: GameService) {
@@ -32,13 +33,17 @@ fun Route.gameWebApi(gameService: GameService) {
 
         post("/place"){
 
-            val input = call.receive<PlacePieceDTO>()
+            val input = call.receive<PlaceOnBoardDTO>()
 
-            val result = gameService.placeTile(
+            val (key, value) = input.card.split("|")
+            val card = value.decodeCard(key[0])
+                ?: throw GameError.CardDoesNotExist(input.card)
+
+            val result = gameService.placeOnBoard(
                 userId = input.userId.toUInt(),
                 gameId = input.gameId.toUInt(),
                 token = input.token,
-                tile = input.tile.decodeTile(),
+                card = card,
                 idx = input.idx.toUInt(),
                 pos = input.pos.toPosition()
             ).getOrThrow()

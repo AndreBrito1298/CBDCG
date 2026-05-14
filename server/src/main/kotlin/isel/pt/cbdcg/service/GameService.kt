@@ -86,7 +86,7 @@ class GameService(
         game
     }
 
-    suspend fun placeTile(userId: UInt, gameId: UInt, token: String, tile: Tile, idx: UInt, pos: BoardPosition): Result<Game> = runCatching {
+    suspend fun placeOnBoard(userId: UInt, gameId: UInt, token: String, card: Card, idx: UInt, pos: BoardPosition): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
@@ -98,7 +98,7 @@ class GameService(
         val player = game.players.find{ it.user.id == user.id }
             ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
 
-        val newGame = game.placeTile(player, pos, tile, idx)
+        val newGame = game.placeOnBoard(player, pos, card, idx)
             .nextTurn()
             .startTurnDraw()
 

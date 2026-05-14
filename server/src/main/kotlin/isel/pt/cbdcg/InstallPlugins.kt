@@ -46,8 +46,9 @@ fun Application.installPlugins(httpclient: HttpClient) {
     }
 
     install(CORS) {
-        allowHost("localhost:8080")
-        allowHost("localhost:8081")
+        allowHost("localhost:8081") // Aceita qualquer endereço ou introduzir um token no URL
+
+        // Aceita tudo
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Accept)
         allowMethod(HttpMethod.Get)
@@ -133,7 +134,7 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is UserError.AlreadyLoggedIn -> HttpStatusCode.Conflict
         is UserError.TokenMismatch -> HttpStatusCode.Unauthorized
         is UserError.TokenNotFound -> HttpStatusCode.NotFound
-        is UserError.IdNotFound -> TODO()
+        is UserError.IdNotFound -> HttpStatusCode.NotFound
         is BoardPlacementError.PositionTaken -> HttpStatusCode.Conflict
         is BoardPlacementError.TileConnectionMismatch -> HttpStatusCode.Conflict
         is GameError.InvalidDirection -> HttpStatusCode.BadRequest
@@ -142,6 +143,8 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is GameError.EveryPlayerReady -> HttpStatusCode.Conflict
         is GameError.GameNotFound -> HttpStatusCode.NotFound
         is GameError.PlayerNotFound -> HttpStatusCode.NotFound
+        is GameError.CardDoesNotExist -> HttpStatusCode.NotFound
+        is GameError.DungeonTurnZeroRule -> HttpStatusCode.Conflict
     }
 
     return code to message

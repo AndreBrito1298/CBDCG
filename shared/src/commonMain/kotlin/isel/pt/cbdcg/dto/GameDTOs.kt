@@ -116,7 +116,6 @@ data class GameDTO(
     }
 }
 
-// Game / Board não quer saber de "blocked", tenho de mudar alguma cena aqui? Talvez não.
 
 @Serializable
 data class CreateGameDTO(
@@ -126,11 +125,11 @@ data class CreateGameDTO(
 )
 
 @Serializable
-data class PlacePieceDTO(
+data class PlaceOnBoardDTO(
     val userId: Int,
     val gameId: Int,
     val token: String,
-    val tile: String,
+    val card: String,
     val idx: Int,
     val pos: String
 )

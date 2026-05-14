@@ -1,6 +1,10 @@
 package isel.pt.cbdcg.domain.game.board
 
+import isel.pt.cbdcg.domain.game.Card
+import isel.pt.cbdcg.domain.game.CharacterCard
+import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.error.BoardPlacementError
+import isel.pt.cbdcg.error.BoardPlacementError.*
 
 typealias BoardTiles = List<BoardTile>
 data class Board(
@@ -13,17 +17,35 @@ data class Board(
         val blocked = tile.getBlocked(adjTiles)
 
         if(adjTiles.all{ (dir,_) -> blocked.contains(dir) })
-            throw BoardPlacementError.TileConnectionMismatch()
+            throw TileConnectionMismatch()
     }
 
-    fun place(position: BoardPosition, tile: Tile): Board {
+    fun place(position: BoardPosition, card: Card): Board {
 
-        if(tiles.any{ it.pos == position })
-            throw BoardPlacementError.PositionTaken(position.x, position.y)
+        when(card){
 
-        checkBlocked(position, tile)
+            is TileCard -> {
+                if (tiles.any { it.pos == position })
+                    throw PositionTaken(position.x, position.y)
 
-        return copy(tiles = tiles + BoardTile(position, tile))
+                checkBlocked(position, card.tile)
+
+                return copy(tiles = tiles + BoardTile(position, card.tile))
+            }
+
+            is CharacterCard -> {
+                if(tiles.any{ it.character == card.character })
+                    throw PositionTaken(position.x, position.y)
+
+                val newBoard = tiles.map{ boardTile ->
+                    if(boardTile.pos == position){
+                        boardTile.addCharacter(card.character)
+                    } else boardTile
+                }
+
+                return copy(tiles = newBoard)
+            }
+        }
 
     }
 }

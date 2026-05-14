@@ -95,4 +95,5 @@ sealed class GameError(
     class GameNotFound(id: Int): GameError("No game found with the id '$id'.")
     class PlayerNotFound(email: String, game: Int): GameError("Player with email '$email' was not found in game '$game'.")
     class CardDoesNotExist(string: String) : GameError("The Card '$string' could not be decoded.")
+    class DungeonTurnZeroRule: GameError("You can only place Tiles.")
 }
