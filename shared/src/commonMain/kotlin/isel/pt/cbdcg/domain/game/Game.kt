@@ -34,11 +34,14 @@ data class Game(
         return copy(board = board.applyBoardTileEffect(result))
     }
 
+    private val MAX_TILES_IN_HAND = 3
+
+
     fun toGameDTO(): GameDTO {
 
         val playersDTO = players.map{ it.toPlayerDTO() }
-        val spectatorsDTO = spectators.map{ it.toSpectatorInfo() }
-        val boardDTO = board.tiles.map{ (pos, tile) -> "${pos.coords()}|${tile}" }
+        val spectatorsDTO = spectators.map{ it.toSpectatorDTO() }
+        val boardDTO = board.tiles.map{ it.toBoardTileDTO() }
         val tileDeck = tileDeck.map{ (tile, nr) -> "${tile}|${nr}" }.toTypedArray()
 
         return GameDTO(
@@ -47,7 +50,7 @@ data class Game(
             spectators = spectatorsDTO.toTypedArray(),
             board = boardDTO.toTypedArray(),
             tileDeck = tileDeck,
-            turn = turn.turnString()
+            turn = turn.toString()
         )
     }
 
@@ -60,7 +63,7 @@ data class Game(
         if(turn.gameTurn == 0u && card.type != CardType.TILE)
             throw GameError.DungeonTurnZeroRule()
 
-        val newBoard = board.place(position, card)
+        val newBoard = board.place(position, card, turn.phase)
 
         val updatedPlayers = players.map{
             if(it.user == player.user) player.removeFromHand(idx)
@@ -69,16 +72,43 @@ data class Game(
 
         return copy(board = newBoard, players= updatedPlayers)
     }
+    fun nextPhase(): Game {
+
+        val player = players.find{ it.user.id == turn.playerTurn.first() }
+            ?: throw GameError.NotYourTurn()
+
+        return when(turn.phase){
+            TurnPhase.CONSTRUCTION -> {
+                val nrTiles = player.hand.numTileCards()
+                if(nrTiles > MAX_TILES_IN_HAND)
+                    throw GameError.MustPlaceTile(MAX_TILES_IN_HAND)
+
+                copy(turn = Turn(turn.gameTurn, turn.playerTurn, TurnPhase.SUBSTITUTION))
+            }
+            TurnPhase.SUBSTITUTION -> {
+                player.currentCharacter ?: throw GameError.NoActiveCharacters()
+
+                copy(turn = Turn(turn.gameTurn, turn.playerTurn, TurnPhase.MOVEMENT))
+            }
+            TurnPhase.MOVEMENT -> nextTurn()
+        }
+    }
     fun nextTurn(): Game{
 
-        val list = turn.playerTurn.drop(1)
+        val remainingPlayers = turn.playerTurn.drop(1)
 
         val nextGameTurn =
-            if(turn.gameTurn == 0u && players.any{ it.hand.numTileCards() == 0 }) 0u
-            else turn.gameTurn + 1u
+            if(turn.gameTurn == 0u){
+                val allTilesPlaced = players.all{ it.hand.numTileCards() == 0 }
+                if(allTilesPlaced) 1u else 0u
+            }
+            else{ if (remainingPlayers.isEmpty()) turn.gameTurn + 1u else turn.gameTurn }
 
-        return  if(list.isEmpty()) copy(turn =Turn(nextGameTurn, getTurnOrder()))
-        else copy(turn = Turn(turn.gameTurn, list))
+        val nextPlayerTurn =
+            remainingPlayers.ifEmpty { getTurnOrder() }
+
+        val nextTurn = copy(turn = Turn(gameTurn = nextGameTurn, playerTurn = nextPlayerTurn, phase = TurnPhase.CONSTRUCTION))
+        return nextTurn.startTurnDraw()
     }
     fun startTurnDraw(): Game {
 

@@ -15,9 +15,10 @@ import isel.pt.cbdcg.domain.game.board.BoardTiles
 @Composable
 fun Board(
     gameBoard: BoardTiles,
-    seeGrid: Boolean,
+    canClickGrid: Boolean,
+    canClickTiles: Boolean,
     tileSize: Dp,
-    placeTile: (BoardPosition) -> Unit
+    placeCard: (BoardPosition) -> Unit,
 ) {
 
     val positions = gameBoard.map { it.pos }
@@ -49,9 +50,17 @@ fun Board(
                             if(blocked.isNotEmpty()) "_" + blocked.map{ it.name[0] }.joinToString("")
                             else ""
 
-                        BoardTile(tileCode, position, tileSize)
+                        val character = boardTile.character
+
+                        BoardTile(
+                            tileCode,
+                            character?.name,
+                            position,
+                            tileSize,
+                            canClickTiles && character == null
+                        ) { placeCard(position) }
                     }
-                    else EmptyBoardTile(seeGrid, tileSize){ placeTile(BoardPosition(x,y)) }
+                    else EmptyBoardTile(canClickGrid, tileSize){ placeCard(position) }
                 }
             }
         }

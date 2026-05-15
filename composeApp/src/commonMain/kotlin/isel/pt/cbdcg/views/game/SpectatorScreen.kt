@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,17 +17,30 @@ import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.Game
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import isel.pt.cbdcg.domain.game.Spectator
+import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.views.game.utils.Board
+import isel.pt.cbdcg.views.game.utils.InGameHeader
 import isel.pt.cbdcg.views.game.utils.SpectatorPlayerSelector
 import isel.pt.cbdcg.views.game.utils.ZoomButtons
 
 @Composable
 fun SpectatorScreen(
     game: Game,
+    spectator: Spectator,
 ){
 
     var selectedId by remember(game.id) { mutableStateOf<UInt?>(null) }
     var zoom by remember { mutableStateOf(1f) }
+
+    val currentPlayer = game.players.find {
+        it.user.id == game.turn.playerTurn.first()
+    }
+    val phaseText = when (game.turn.phase) {
+        TurnPhase.CONSTRUCTION -> "Construction"
+        TurnPhase.SUBSTITUTION -> "Substitution"
+        TurnPhase.MOVEMENT -> "Movement"
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -39,12 +50,15 @@ fun SpectatorScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
-                .height(32.dp),
+                .height(50.dp),
             contentAlignment = Alignment.CenterStart
         ){
-            Text(
-                text = "Dungeon Turn: ${game.turn.gameTurn}",
-                style = MaterialTheme.typography.titleSmall
+            InGameHeader(
+                modifier = Modifier.align(Alignment.CenterStart),
+                dungeonTurn = game.turn.gameTurn.toString(),
+                phase = phaseText,
+                playerName = spectator.user.name.string,
+                currentPlayerName = currentPlayer?.user?.name?.string ?: "Unknown"
             )
         }
 
@@ -64,9 +78,10 @@ fun SpectatorScreen(
                 ) {
                     Board(
                         gameBoard = game.board.tiles,
-                        seeGrid = false,
+                        canClickGrid = false,
+                        canClickTiles = false,
                         tileSize = 128.dp * zoom,
-                        placeTile = {},
+                        placeCard = {},
                     )
                     ZoomButtons(
                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),

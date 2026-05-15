@@ -15,12 +15,11 @@ import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CharacterCard
 import isel.pt.cbdcg.domain.game.TileCard
-import isel.pt.cbdcg.domain.game.board.Tile
 
 @Composable
 fun PlayerHand(
     hand: Map<UInt, Card>,
-    selectTile: (UInt, Tile) -> Unit,
+    selectCard: (UInt, Card) -> Unit,
     selected: UInt?,
     placeSignal: () -> Unit,
     rotateLeft: (UInt) -> Unit,
@@ -49,14 +48,17 @@ fun PlayerHand(
             when(card){
                 is TileCard -> PlayerTileCard(
                     tile = card.tile,
-                    select = { selectTile(index, card.tile) },
-                    isSelected = if (selected == null) false else selected == index,
+                    select = { selectCard(index, card) },
+                    isSelected = if(selected == null) false else selected == index,
                     place = placeSignal,
                     rotateLeft = { rotateLeft(index) },
                     rotateRight = { rotateRight(index) }
                 )
                 is CharacterCard -> PlayerCharacterCard(
-                    character = card.character
+                    character = card.character,
+                    select = { selectCard(index, card) },
+                    isSelected = if(selected == null) false else selected == index,
+                    place = placeSignal,
                 )
             }
         }

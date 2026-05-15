@@ -5,16 +5,16 @@ import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.User
-import isel.pt.cbdcg.repository.Repository
+import isel.pt.cbdcg.repository.UserRepository
 import isel.pt.cbdcg.repository.database.Tables.AuthUsers
 import isel.pt.cbdcg.repository.database.Tables.AuthUsersDao
 import isel.pt.cbdcg.repository.database.Tables.Users
 import isel.pt.cbdcg.repository.database.Tables.UsersDao
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
-object UserRepositoryDB: Repository<User> {
+object UserRepositoryDB: UserRepository {
 
     fun loginUser(authenticatedUser: AuthUser) {
         transaction {
@@ -39,17 +39,27 @@ object UserRepositoryDB: Repository<User> {
 
     override fun findById(id: UInt): User? {
         return transaction {
-            val u = UsersDao.findById(id.toInt())?.toUser()
-            println("ff")
-            u
+            val user = UsersDao.findById(id.toInt()) ?: return@transaction null
+            user.toUser()
         }
     }
 
-    fun findByEmail(email: Email): User? {
+    override fun findByEmail(email: Email): User? {
         return transaction {
-            UsersDao.find { Users.email eq email.string }
-                .singleOrNull()
-                ?.toUser()
+            val user = UsersDao.find { Users.email eq email.string }.singleOrNull() ?: return@transaction null
+            user.toUser()
+        }
+    }
+
+    override fun createUser(name: Name, email: Email, password: Password): User {
+        return transaction {
+            val created = UsersDao.new {
+                this.name = name.string
+                this.email = email.string
+                this.password = password.string
+                this.creationDate = 0L
+            }
+            created.toUser()
         }
     }
 
@@ -71,7 +81,7 @@ object UserRepositoryDB: Repository<User> {
         }
     }
 
-    fun findByToken(token: String): User? {
+    override fun findByToken(token: String): User? {
         TODO()
         return transaction {
             UsersDao.find { Users.email eq token }

@@ -41,7 +41,7 @@ class attack(): Effect<Character> {
             val newHp = it.character!!.stats.hp - (origin.stats.atk-origin.stats.def)
             val newStats = it.character.stats.copy(hp = newHp)
             res.add(it.copy(character = it.character.editStats(newStats)))
-       }
+        }
         return EffectResult.Many(res)
     }
 }

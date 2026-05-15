@@ -8,7 +8,6 @@ import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.repository.database.TableRepositoryDB
-import isel.pt.cbdcg.repository.database.Tables.Tables.owner
 import isel.pt.cbdcg.repository.database.UserRepositoryDB
 import org.junit.jupiter.api.BeforeAll
 import kotlin.collections.plus
@@ -21,25 +20,30 @@ import kotlin.test.assertTrue
 
 class TableRepositoryTest {
     private val tableRepo = TableRepositoryDB
+    private val userRepo = UserRepositoryDB
 
-    private val owner = User(0u, Name("Owner"), Email("owner@gmail.com"), Password("testPassword"))
-    private val guest = User(1u, Name("Guest"), Email("guest@gmail.com"), Password("testPassword"))
+    private lateinit var owner: User
+    private lateinit var guest: User
 
     companion object {
-        private val tableRepo = TableRepositoryDB
         private val userRepo = UserRepositoryDB
         @JvmStatic
         @BeforeAll
         fun init(): Unit {
             dbInit()
             userRepo.save(User(0u, Name("Owner"), Email("owner@gmail.com"), Password("testPassword")))
-            userRepo.save(User(1u, Name("Guest"), Email("guest@gmail.com"), Password("testPassword")))
+            userRepo.save(User(0u, Name("Guest"), Email("guest@gmail.com"), Password("testPassword")))
         }
     }
 
     @BeforeTest
     fun clearRepo() {
+        dbInit()
         tableRepo.clear()
+        owner = userRepo.findByEmail(Email("owner@gmail.com"))
+            ?: userRepo.createUser(Name("Owner"), Email("owner@gmail.com"), Password("testPassword"))
+        guest = userRepo.findByEmail(Email("guest@gmail.com"))
+            ?: userRepo.createUser(Name("Guest"), Email("guest@gmail.com"), Password("testPassword"))
     }
 
 

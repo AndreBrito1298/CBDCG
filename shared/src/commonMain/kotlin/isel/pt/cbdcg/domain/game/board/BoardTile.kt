@@ -7,11 +7,15 @@ data class BoardTile(
     val pos: BoardPosition,
     val tile: Tile,
     val character: Character?
-) {
+): Entity {
 
+    fun removeCharacter(): BoardTile = copy(character = null)
     fun addCharacter(character: Character): BoardTile = copy(character = character)
 
-    fun toBoardTileDTO(): BoardTileDTO =
-        BoardTileDTO(pos.coords(), tile.toString(), character?.string ?: "")
+
+        fun toBoardTileDTO(): BoardTileDTO =
+        BoardTileDTO(pos.coords(), tile.toString(), character?.toString() ?: "")
+
+
 
 }
