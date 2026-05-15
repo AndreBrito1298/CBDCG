@@ -32,6 +32,6 @@ class TablesDao(id: EntityID<Int>) : IntEntity(id) {
         id = id.value.toUInt(),
         name = Name(name),
         owner = UsersDao.findById(owner)?.toUser()!!,
-        participants = getAllParticipants(Name(name))
+        participants = getAllParticipants(id.value.toUInt()),
     )
 }

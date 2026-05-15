@@ -29,7 +29,6 @@ import isel.pt.cbdcg.dto.CreateUserDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
-import isel.pt.cbdcg.dto.PlacePieceDTO
 import isel.pt.cbdcg.dto.RoleChangeInput
 import isel.pt.cbdcg.dto.RotatePieceDTO
 import isel.pt.cbdcg.dto.TableOperationInput

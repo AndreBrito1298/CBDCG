@@ -31,8 +31,11 @@ class TableService(
             ?: throw UserError.IdNotFound()
         token.verifyToken(owner)
 
-        val participant = participantRepo.createParticipant(owner, Role.PLAYER)
-        val table = tableRepo.createTable(tableName, owner, participant)
+        val p = Participant(owner, Role.PLAYER)
+
+        val table = tableRepo.createTable(tableName, owner, p)
+        val participant = participantRepo.createParticipant(owner ,table ,Role.PLAYER)
+
 
         val tables = tableRepo.getAllTables()
         events.publishLobbyTables(tables)
@@ -55,7 +58,7 @@ class TableService(
         val role =
             if(table.participants.size < 4) Role.PLAYER
             else Role.SPECTATOR
-        val participant = participantRepo.createParticipant(user, role)
+        val participant = participantRepo.createParticipant(user, table, role)
 
         val newTable = table.copy(participants = table.participants.plus(participant))
         tableRepo.save(newTable)

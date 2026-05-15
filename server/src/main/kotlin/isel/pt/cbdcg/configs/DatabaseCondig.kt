@@ -1,17 +1,35 @@
 package isel.pt.cbdcg.configs
 
-import org.jetbrains.exposed.sql.Table
+import isel.pt.cbdcg.repository.database.Tables.AuthUsers
+import isel.pt.cbdcg.repository.database.Tables.Participants
+import isel.pt.cbdcg.repository.database.Tables.Tables
+import isel.pt.cbdcg.repository.database.Tables.Users
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.util.Collections.list
 
-object BDConfig {
-    const val DB_NAME = "cbdcg"
-    const val DB_URL = "jdbc:postgresql://localhost:5432/$DB_NAME"
-    const val DB_USER = "postgres"
-    const val DB_PASSWORD = ""
-}
+fun dbInit(reset: Boolean = false) {
+    Database.connect(
+        "jdbc:postgresql://localhost:5432/postgres",
+        driver = "org.postgresql.Driver",
+        user = "postgres",
+        password = "password"
+    )
 
-private const val MAX_CONNECTIONS = 100
+    if(reset){
+        transaction {
+            SchemaUtils.drop(Participants)
+            SchemaUtils.drop(AuthUsers)
+            SchemaUtils.drop(Tables)
+            SchemaUtils.drop(Users)
+
+            SchemaUtils.create(Users)
+            SchemaUtils.create(AuthUsers)
+            SchemaUtils.create(Participants)
+            SchemaUtils.create(Tables)
+        }
+    }
+}
 const val MAX_NAME_LENGTH = 20
-private const val MAX_PASSWORD_LENGTH = 20
-const val MAX_EMAIL_LENGTH = 7
 

@@ -2,7 +2,11 @@ package isel.pt.cbdcg.domain.game
 
 import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.board.BoardPosition
+import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.Effect
+import isel.pt.cbdcg.domain.game.board.EffectResult
 import isel.pt.cbdcg.domain.game.board.Tile
+import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.error.GameError
 
@@ -25,6 +29,10 @@ data class Game(
     val tileDeck: TileDeck,
     val turn: Turn
 ){
+    fun applyBoardTileEffect(effect: Effect<BoardTile>, origin: BoardTile, vararg targets: BoardTile): Game {
+        val result = effect.apply(origin, *targets)
+        return copy(board = board.applyBoardTileEffect(result))
+    }
 
     fun toGameDTO(): GameDTO {
 

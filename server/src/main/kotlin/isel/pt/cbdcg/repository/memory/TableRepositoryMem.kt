@@ -46,8 +46,8 @@ object TableRepositoryMem: TableRepository {
         return newTable
     }
 
-    override fun getAllParticipants(tableName: Name): List<Participant> {
-        return tables.find { it.name.string == tableName.string }?.participants ?: listOf()
+    override fun getAllParticipants(tableId: UInt): List<Participant> {
+        return tables.find { it.id == tableId }?.participants ?: listOf()
     }
 
     // Generic Operations

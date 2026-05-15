@@ -49,12 +49,9 @@ fun Route.userWebApi(userService: UserService, httpClient: HttpClient) {
 
          */
 
-
         route("/users") {
-
             post("/create") {
                 val input = call.receive<CreateUserDTO>()
-
                 val result = userService.createUser(
                     name = input.name.toName(),
                     email = input.email.toEmail(),
@@ -66,7 +63,6 @@ fun Route.userWebApi(userService: UserService, httpClient: HttpClient) {
 
             post("/login") {
                 val input = call.receive<LoginInput>()
-
                 val result = userService.login(
                     email = input.email.toEmail(),
                     password = input.password.toPassword(),

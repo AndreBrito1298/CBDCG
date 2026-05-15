@@ -2,7 +2,7 @@ package isel.pt.cbdcg.domain.game.board
 
 data class Tile(
     val connections: List<Direction>,
-){
+) : Entity {
     fun canConnectTo(dir: Direction, tile: Tile): Boolean{
 
         if(!this.connections.contains(dir)) return false

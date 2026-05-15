@@ -34,7 +34,7 @@ class UserServiceTest {
         assertEquals("testEmail@gmail.com", user.email.string)
         assertNotNull(user.auth)
         assertTrue(user.auth!!.token.isNotBlank())
-        assertEquals(user, userRepo.findByToken(user.auth!!.token))
+        assertEquals(user.copy(auth = user.auth?.copy(token = SimpleCrypto.encrypt(user.auth!!.token))), userRepo.findByToken(SimpleCrypto.encrypt(user.auth!!.token)))
     }
 
     @Test
@@ -52,12 +52,16 @@ class UserServiceTest {
 
     @Test
     fun `login succeeds for existing unauthenticated user`() {
-        userRepo.createUser(Name("testName"), Email("testEmail@gmail.com"), Password("testPassword"))
+        userRepo.createUser(
+            Name("testName"),
+            Email("testEmail@gmail.com"),
+            Password(SimpleCrypto.encrypt("testPassword")),
+        )
 
         val logged = userService.login(Email("testEmail@gmail.com"), Password("testPassword")).getOrThrow()
 
         assertNotNull(logged.auth)
-        assertEquals(logged, userRepo.findByToken(logged.auth!!.token))
+        assertEquals(logged.copy(auth = logged.auth?.copy(token = SimpleCrypto.encrypt(logged.auth!!.token))), userRepo.findByToken(SimpleCrypto.encrypt(logged.auth!!.token)))
     }
 
     @Test
@@ -69,7 +73,11 @@ class UserServiceTest {
 
     @Test
     fun `login fails when password is incorrect`() {
-        userRepo.createUser(Name("testName"), Email("testEmail@gmail.com"), Password("testPassword"))
+        userRepo.createUser(
+            Name("testName"),
+            Email("testEmail@gmail.com"),
+            Password(SimpleCrypto.encrypt("testPassword")),
+        )
 
         assertFailsWith<UserError.PasswordMismatch> {
             userService.login(Email("testEmail@gmail.com"), Password("wrongPassword")).getOrThrow()

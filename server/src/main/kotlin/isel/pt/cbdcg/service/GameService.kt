@@ -3,12 +3,14 @@ package isel.pt.cbdcg.service
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CharacterCard
-import isel.pt.cbdcg.domain.game.board.BoardPosition
-import isel.pt.cbdcg.domain.game.board.Direction
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TileCard
+import isel.pt.cbdcg.domain.game.board.BoardPosition
+import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.Direction
+import isel.pt.cbdcg.domain.game.board.Effect
 import isel.pt.cbdcg.domain.game.board.Tile
 import isel.pt.cbdcg.domain.game.character.PlayableCharacterCatalog
 import isel.pt.cbdcg.domain.game.draw
@@ -21,7 +23,6 @@ import isel.pt.cbdcg.repository.TableRepository
 import isel.pt.cbdcg.repository.UserRepository
 import isel.pt.cbdcg.webapi.websocket.EventsPublisher
 
-
 class GameService(
     private val gameRepo: GameRepository,
     private val tableRepo: TableRepository,
@@ -30,7 +31,6 @@ class GameService(
 ) {
 
     suspend fun createGame(tableId: UInt, userId: UInt, token: String): Result<Game> = runCatching {
-
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
         token.verifyToken(user)
@@ -38,10 +38,10 @@ class GameService(
         val table = tableRepo.findById(tableId)
             ?: throw TableError.TableDoesNotExist(tableId.toString())
 
-        if(table.owner.id != userId)
+        if (table.owner.id != userId)
             throw TableError.OwnerOnly()
 
-        if(table.participants.any{ it.role == Role.PLAYER })
+        if (table.participants.any { it.role == Role.PLAYER })
             throw GameError.EveryPlayerReady()
 
         val startingDeck = mutableMapOf(
@@ -53,15 +53,12 @@ class GameService(
 
         val characters = PlayableCharacterCatalog.playableCharacters.shuffled()
 
-        val players = table.participants.filter{ it.role == Role.READY }
-            .mapIndexed{ playerIdx, player ->
-
+        val players = table.participants.filter { it.role == Role.READY }
+            .mapIndexed { playerIdx, player ->
                 val hand = mutableMapOf<UInt, Card>()
 
-                repeat(3){ idx ->
-
+                repeat(3) { idx ->
                     val drawnTile = startingDeck.draw()
-
                     hand[idx.toUInt()] = TileCard(drawnTile)
                     startingDeck[drawnTile] = startingDeck[drawnTile]!! - 1u
                 }
@@ -72,13 +69,13 @@ class GameService(
                 Player(player.user, hand)
             }
 
-        val spectators = table.participants.filter{ it.role == Role.SPECTATOR }
-            .map{ spectator -> Spectator(spectator.user) }
+        val spectators = table.participants.filter { it.role == Role.SPECTATOR }
+            .map { spectator -> Spectator(spectator.user) }
 
-        if(players.size < 2)
+        if (players.size < 2)
             throw GameError.MinimumPlayersNeeded()
 
-        val turnOrder = players.map{ it.user.id }
+        val turnOrder = players.map { it.user.id }
 
         val game = gameRepo.createGame(players, spectators, turnOrder, startingDeck)
         events.publishGameStarted(table, game)
@@ -86,8 +83,14 @@ class GameService(
         game
     }
 
-    suspend fun placeOnBoard(userId: UInt, gameId: UInt, token: String, card: Card, idx: UInt, pos: BoardPosition): Result<Game> = runCatching {
-
+    suspend fun placeOnBoard(
+        userId: UInt,
+        gameId: UInt,
+        token: String,
+        card: Card,
+        idx: UInt,
+        pos: BoardPosition,
+    ): Result<Game> = runCatching {
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
         token.verifyToken(user)
@@ -95,7 +98,7 @@ class GameService(
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())
 
-        val player = game.players.find{ it.user.id == user.id }
+        val player = game.players.find { it.user.id == user.id }
             ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
 
         val newGame = game.placeOnBoard(player, pos, card, idx)
@@ -103,14 +106,11 @@ class GameService(
             .startTurnDraw()
 
         gameRepo.save(newGame)
-
         events.publishGameUpdated(newGame)
         newGame
-
     }
 
     fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> = runCatching {
-
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
         token.verifyToken(user)
@@ -118,13 +118,11 @@ class GameService(
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())
 
-
-        val newPlayers = game.players.map{ player ->
-            if(player.user.id == userId) {
-
-                val newHand = player.hand.map{ (index, card) ->
-                    if(index == idx) {
-                        when(card){
+        val newPlayers = game.players.map { player ->
+            if (player.user.id == userId) {
+                val newHand = player.hand.map { (index, card) ->
+                    if (index == idx) {
+                        when (card) {
                             is TileCard -> index to card.copy(tile = card.tile.rotate(right))
                             else -> index to card
                         }
@@ -140,6 +138,26 @@ class GameService(
         val newGame = game.copy(players = newPlayers)
         gameRepo.save(newGame)
 
+        newGame
+    }
+
+    suspend fun applyBoardTileEffect(
+        userId: UInt,
+        gameId: UInt,
+        token: String,
+        effect: Effect<BoardTile>,
+        origin: BoardTile,
+        vararg targets: BoardTile,
+    ): Result<Game> = runCatching {
+        val user = userRepo.findById(userId) ?: throw UserError.IdNotFound()
+        token.verifyToken(user)
+
+        val game = gameRepo.findById(gameId) ?: throw GameError.GameNotFound(gameId.toInt())
+
+        val newGame = game.applyBoardTileEffect(effect, origin, *targets)
+
+        gameRepo.save(newGame)
+        events.publishGameUpdated(newGame)
         newGame
     }
 }

@@ -6,6 +6,10 @@ data class PlayableCharacter(
 ) : Character {
 
     override fun toString() = "${name}#${stats}"
+
+    override fun editStats(newStats: Stats): Character {
+        return this.copy(stats = newStats)
+    }
 }
 
 fun String.decodeCharacter(): PlayableCharacter {

@@ -22,6 +22,9 @@ dependencies {
     implementation(libs.exposed.dao)
     implementation(libs.exposed.jdbc)
     implementation(libs.h2)
+    implementation("org.postgresql:postgresql:42.7.8")
+    implementation("io.ktor:ktor-server-auth:${libs.versions.ktor.get()}")
+    implementation("io.ktor:ktor-server-auth-jwt:${libs.versions.ktor.get()}")
 
     implementation(libs.ktor.serverAuth)
     implementation(libs.ktor.serverAuthJwt)

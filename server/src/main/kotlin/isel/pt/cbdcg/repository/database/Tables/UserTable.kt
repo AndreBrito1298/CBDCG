@@ -1,7 +1,6 @@
 package isel.pt.cbdcg.repository.database.Tables
 
 import com.android.identity.cbor.Uint
-import isel.pt.cbdcg.configs.MAX_EMAIL_LENGTH
 import isel.pt.cbdcg.configs.MAX_NAME_LENGTH
 import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Email

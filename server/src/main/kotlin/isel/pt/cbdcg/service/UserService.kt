@@ -18,13 +18,15 @@ class UserService(
         if(userRepo.findByEmail(email) != null)
             throw UserError.DuplicateEmail(email.string)
 
-        val user = userRepo.createUser(name, email, password)
-        val token = UUID.randomUUID().toString()
-        val auth = user.copy(auth = AuthUser(token, user.email, user.name))
+        val encryptedPassword = Password(SimpleCrypto.encrypt(password.string))
+        val user = userRepo.createUser(name, email, encryptedPassword)
+        val plainToken = UUID.randomUUID().toString()
+        val encryptedToken = SimpleCrypto.encrypt(plainToken)
+        val auth = user.copy(auth = AuthUser(encryptedToken, user.email, user.name))
 
-        userRepo.save(auth) // userRepo.login(user)
+        userRepo.save(auth)
 
-        auth
+        auth.copy(auth = AuthUser(plainToken, auth.email, auth.name))
     }
 
     fun login(email: Email, password: Password): Result<User> = runCatching {
@@ -34,21 +36,21 @@ class UserService(
 
         if(user.auth != null)
             throw UserError.AlreadyLoggedIn()
-
-        if(user.password.string != password.string)
+        val decryptedPassword = SimpleCrypto.decrypt(password.string)
+        if(password.string != decryptedPassword)
             throw UserError.PasswordMismatch()
 
-        val token = UUID.randomUUID().toString()
-        val auth = user.copy(auth = AuthUser(token, user.email, user.name))
+        val plainToken = UUID.randomUUID().toString()
+        val encryptedToken = SimpleCrypto.encrypt(plainToken)
+        val auth = user.copy(auth = AuthUser(encryptedToken, user.email, user.name))
 
         userRepo.save(auth)
 
-        auth
+        auth.copy(auth = AuthUser(plainToken, auth.email, auth.name))
     }
 
     fun logout(token: String) = runCatching {
-
-        val user = userRepo.findByToken(token)
+        val user = userRepo.findByToken(SimpleCrypto.encrypt(token))
             ?: throw UserError.TokenNotFound()
 
         userRepo.save(user.copy(auth = null))

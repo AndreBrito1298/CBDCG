@@ -1,6 +1,7 @@
 package isel.pt.cbdcg.domain.game
 
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.domain.game.board.Entity
 import isel.pt.cbdcg.dto.PlayerDTO
 import isel.pt.cbdcg.dto.toUserDTO
 import kotlin.collections.plus
@@ -14,7 +15,7 @@ data class Player(
     val user: User,
     val hand: PlayerHand,
     val currentCharacter: String? = null
-) {
+): Entity {
 
     fun addToHand(card: Card): Player {
         val lastKey = this.hand.keys.lastOrNull() ?: 0u

@@ -17,6 +17,7 @@ interface TableRepository: Repository<Table> {
 
     fun updateParticipants(table: Table, participant: Participant): Table
 
-    fun getAllParticipants(tableName: Name): List<Participant>
+   // fun getAllParticipants(tableName: Name): List<Participant>
+   fun getAllParticipants(tableId: UInt): List<Participant>
 
 }

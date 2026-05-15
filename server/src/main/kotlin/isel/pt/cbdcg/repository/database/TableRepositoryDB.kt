@@ -21,10 +21,9 @@ object TableRepositoryDB : TableRepository {
                 this.owner = owner.id.toInt()
                 this.capacity = 1
             }
-
             ParticipantsDao.new(participant.user.id.toInt()) {
-                userEmail = participant.user.email.string
-                lobbyName = createdTable.name
+                userId = owner.id.toInt()
+                lobbyId = createdTable.toTable().id.toInt()
                 role = participant.role.name
             }
         }
@@ -51,12 +50,23 @@ object TableRepositoryDB : TableRepository {
         }
     }
 
-    override fun getAllParticipants(tableName: Name): List<Participant> {
+
+
+    /*
+      override fun getAllParticipants(tableName: Name): List<Participant> {
         return transaction {
             ParticipantsDao.find { Participants.lobbyName eq tableName.string }
                 .map { it.toParticipant() }
         }
     }
+     */
+    override fun getAllParticipants(tableId: UInt): List<Participant> {
+        return transaction {
+            ParticipantsDao.find { Participants.id eq tableId.toInt() }
+                .map { it.toParticipant() }
+        }
+    }
+
 
     override fun save(element: Table) {
         transaction {
@@ -90,7 +100,7 @@ object TableRepositoryDB : TableRepository {
 
     override fun removeParticipant(table: Table, user: User): Table {
         transaction {
-            ParticipantsDao.find { (Participants.lobbyName eq table.name.string) and (Participants.id eq user.id.toInt()) }
+            ParticipantsDao.find { (Participants.lobbyId eq table.id.toInt()) and (Participants.id eq user.id.toInt()) }
                 .forEach { it.delete() }
             TablesDao.findById(table.id.toInt())?.capacity = (table.participants.size - 1)
         }
@@ -100,18 +110,18 @@ object TableRepositoryDB : TableRepository {
     override fun updateParticipants(table: Table, participant: Participant): Table {
         transaction {
             val existing = ParticipantsDao.find {
-                (Participants.lobbyName eq table.name.string) and (Participants.id eq participant.user.id.toInt())
+                (Participants.lobbyId eq table.id.toInt()) and (Participants.id eq participant.user.id.toInt())
             }.singleOrNull()
             if (existing == null) {
                 ParticipantsDao.new(participant.user.id.toInt()) {
-                    userEmail = participant.user.email.string
-                    lobbyName = table.name.string
+                    userId = participant.user.id.toInt()
+                    lobbyId = table.id.toInt()
                     role = participant.role.name
                 }
             } else {
                 existing.role = participant.role.name
             }
-            TablesDao.findById(table.id.toInt())?.capacity = getAllParticipants(table.name).size
+            TablesDao.findById(table.id.toInt())?.capacity = getAllParticipants(table.id).size
         }
         return findById(table.id)!!
     }

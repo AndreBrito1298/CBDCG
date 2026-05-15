@@ -223,7 +223,7 @@ class TableServiceTest {
         tableService.createTable(Name("lobbyOne"), owner.id, owner.auth!!.token).getOrThrow()
         tableService.joinTable(guest.id, 0u, guest.auth!!.token).getOrThrow()
 
-        tableService.changeRole(guest.id, 0u, guest.auth!!.token).getOrThrow()
+        tableService.changeRole(guest.id, 0u, guest.auth!!.token, Role.PLAYER).getOrThrow()
 
         val stored = tableRepo.findByName(Name("lobbyOne"))
         assertNotNull(stored)

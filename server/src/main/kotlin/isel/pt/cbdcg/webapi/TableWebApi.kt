@@ -20,10 +20,8 @@ fun Route.tableWebApi(tableService: TableService) {
     route("/tables") {
 
         get {
-
             val result = tableService.getTables().getOrThrow()
             call.respond(HttpStatusCode.OK, result.map{ it.toTableDTO() })
-
         }
 
         post("/create") {

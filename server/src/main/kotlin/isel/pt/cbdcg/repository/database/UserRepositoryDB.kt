@@ -11,6 +11,7 @@ import isel.pt.cbdcg.repository.database.Tables.AuthUsersDao
 import isel.pt.cbdcg.repository.database.Tables.Users
 import isel.pt.cbdcg.repository.database.Tables.UsersDao
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 object UserRepositoryDB: Repository<User> {
@@ -38,7 +39,9 @@ object UserRepositoryDB: Repository<User> {
 
     override fun findById(id: UInt): User? {
         return transaction {
-            UsersDao.findById(id.toInt())?.toUser()
+            val u = UsersDao.findById(id.toInt())?.toUser()
+            println("ff")
+            u
         }
     }
 
@@ -51,7 +54,7 @@ object UserRepositoryDB: Repository<User> {
     }
 
     override fun save(element: User) {
-        transaction {
+        return transaction {
             val existing = UsersDao.findById(element.id.toInt())
             if (existing == null) {
                 UsersDao.new {
@@ -65,6 +68,15 @@ object UserRepositoryDB: Repository<User> {
                 existing.email = element.email.string
                 existing.password = element.password.string
             }
+        }
+    }
+
+    fun findByToken(token: String): User? {
+        TODO()
+        return transaction {
+            UsersDao.find { Users.email eq token }
+                .singleOrNull()
+                ?.toUser()
         }
     }
 
