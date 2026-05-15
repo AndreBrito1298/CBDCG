@@ -20,15 +20,17 @@ import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
-import isel.pt.cbdcg.domain.game.board.Tile
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.CreateUserDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
+import isel.pt.cbdcg.dto.NextPhaseDTO
+import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RoleChangeInput
 import isel.pt.cbdcg.dto.RotatePieceDTO
 import isel.pt.cbdcg.dto.TableOperationInput
@@ -215,11 +217,11 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = CreateGameDTO(userId.toInt(), token, tableId.toInt())
         ).map{ it.toGame() }
-    suspend fun placeTile(userId: UInt, gameId: UInt, token: String, tile: Tile, idx: UInt, pos: BoardPosition): Result<Game> =
+    suspend fun placeOnBoard(userId: UInt, gameId: UInt, token: String, card: Card, idx: UInt, pos: BoardPosition): Result<Game> =
         fetch<GameDTO>(
             path = "game/place",
             method = HttpMethod.Post,
-            body = PlacePieceDTO(userId.toInt(), gameId.toInt(), token, tile.toString(), idx.toInt(), pos.coords())
+            body = PlaceOnBoardDTO(userId.toInt(), gameId.toInt(), token, card.string, idx.toInt(), pos.coords())
         ).map{ it.toGame() }
     suspend fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> =
         fetch<GameDTO>(
@@ -227,7 +229,12 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = RotatePieceDTO(userId.toInt(), gameId.toInt(), token, idx.toInt(), right)
         ).map{ it.toGame() }
-
+    suspend fun nextPhase(userId: UInt, gameId: UInt, token: String): Result<Game> =
+        fetch<GameDTO>(
+            path = "game/end-turn",
+            method = HttpMethod.Post,
+            body = NextPhaseDTO(userId.toInt(), gameId.toInt(), token)
+        ).map{ it.toGame() }
     private suspend inline fun <reified T> fetch(
         path: String,
         method: HttpMethod,
