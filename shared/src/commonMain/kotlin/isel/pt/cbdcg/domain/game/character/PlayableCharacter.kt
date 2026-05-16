@@ -3,6 +3,7 @@ package isel.pt.cbdcg.domain.game.character
 data class PlayableCharacter(
     override val name: String,
     override val stats: Stats,
+    val activeModifiers: List<Modifier> = listOf(),
 ) : Character {
 
     override fun toString() = "${name}#${stats}"
@@ -10,7 +11,15 @@ data class PlayableCharacter(
     override fun editStats(newStats: Stats): Character {
         return this.copy(stats = newStats)
     }
-    override val string = "P#${name}#${stats}"
+    val string = "P#${name}#${stats}"
+
+    //Lista de modifiers apenas irá manter os ativos, quando o objeto é composto turn é comparada a currTurn e apenas é adicionado ao ativo se esta for menor
+    //Ou seja no objeto presistido apenas são colocados os modifiers que estarão ativos na prox turn
+    //Como em BD players estarão separados dá facilmente para comparar os objetos e aplicar o filtro a todos os modificadores ativos, se facilitar isto pode ser movido
+    //VER se faz sentido mover deve tar no local de mais facil acesso para limpeza dos modificadores que já nao estao ativos
+    fun addModifier(modifier: Modifier):PlayableCharacter {
+        return this.copy(activeModifiers = activeModifiers.toMutableList().apply { add(modifier) })
+    }
 }
 
 fun String.decodeCharacter(): PlayableCharacter {
@@ -18,7 +27,8 @@ fun String.decodeCharacter(): PlayableCharacter {
     val (hp, atk, def, spe) = stats.split("&")
     return PlayableCharacter(
         name = name,
-        stats = Stats(hp.toUInt(), atk.toUInt(), def.toUInt(), spe.toUInt())
+        stats = Stats(hp.toUInt(), atk.toUInt(), def.toUInt(), spe.toUInt()),
+        activeModifiers = listOf(),
     )
 }
 

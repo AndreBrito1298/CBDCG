@@ -14,7 +14,7 @@ data class Board(
         BoardTile(
             BoardPosition(0,0),
             Tile(Direction.entries),
-            null))) {
+            null))): Entity {
     fun applyBoardTileEffect(result: EffectResult<BoardTile>): Board =
         when (result) {
             is EffectResult.One -> replaceBoardTile(result.value)

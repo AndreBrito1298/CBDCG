@@ -16,7 +16,7 @@ data class Player(
     val user: User,
     val hand: PlayerHand,
     val currentCharacter: PlayableCharacter?,
-) {
+):Entity {
     fun addToHand(card: Card): Player {
         val lastKey = this.hand.keys.lastOrNull() ?: 0u
         val updatedHand = this.hand.plus(lastKey + 1u to card)

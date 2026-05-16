@@ -5,6 +5,7 @@ import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.Effect
 import isel.pt.cbdcg.domain.game.board.EffectResult
+import isel.pt.cbdcg.domain.game.board.Entity
 import isel.pt.cbdcg.domain.game.board.Tile
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.dto.GameDTO
@@ -28,7 +29,7 @@ data class Game(
     val board: Board = Board(),
     val tileDeck: TileDeck,
     val turn: Turn
-){
+): Entity{
     fun applyBoardTileEffect(effect: Effect<BoardTile>, origin: BoardTile, vararg targets: BoardTile): Game {
         val result = effect.apply(origin, *targets)
         return copy(board = board.applyBoardTileEffect(result))
