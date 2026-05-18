@@ -16,6 +16,14 @@ data class UserDTO(
     val auth: String
 )
 
+fun UserDTO.toUser(): User = User(
+    id = id.toUInt(),
+    name = Name(name),
+    email = Email(email),
+    password = Password(password),
+    auth = AuthUser(auth)
+)
+
 @Serializable
 data class LogoutInput(
     val token: String,
@@ -32,21 +40,4 @@ data class CreateUserDTO(
     val name: String,
     val email: String,
     val password: String,
-)
-
-
-fun User.toUserDTO(): UserDTO = UserDTO(
-    id = id.toInt(),
-    name = name.string,
-    email = email.string,
-    password = password.string,
-    auth = auth?.token ?: ""
-)
-
-fun UserDTO.toUser(): User = User(
-    id = id.toUInt(),
-    name = Name(name),
-    email = Email(email),
-    password = Password(password),
-    auth = AuthUser(auth, Email(email), Name(name))
 )

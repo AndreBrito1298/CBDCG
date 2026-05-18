@@ -10,6 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTiles
+import isel.pt.cbdcg.domain.game.board.getAdjacent
+import isel.pt.cbdcg.domain.game.board.getBlocked
 
 
 @Composable

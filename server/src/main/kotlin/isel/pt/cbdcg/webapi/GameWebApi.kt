@@ -7,11 +7,12 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import isel.pt.cbdcg.domain.game.board.toPosition
-import isel.pt.cbdcg.domain.game.decodeCard
+import isel.pt.cbdcg.domain.game.toCard
+import isel.pt.cbdcg.domain.game.toGameDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
+import isel.pt.cbdcg.dto.NextPhaseDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RotatePieceDTO
-import isel.pt.cbdcg.error.GameError
 import isel.pt.cbdcg.service.GameService
 
 fun Route.gameWebApi(gameService: GameService) {
@@ -35,9 +36,7 @@ fun Route.gameWebApi(gameService: GameService) {
 
             val input = call.receive<PlaceOnBoardDTO>()
 
-            val (key, value) = input.card.split("|")
-            val card = value.decodeCard(key[0])
-                ?: throw GameError.CardDoesNotExist(input.card)
+            val card = input.card.toCard()
 
             val result = gameService.placeOnBoard(
                 userId = input.userId.toUInt(),
@@ -61,6 +60,19 @@ fun Route.gameWebApi(gameService: GameService) {
                 token = input.token,
                 idx = input.idx.toUInt(),
                 right = input.right
+            ).getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.toGameDTO())
+        }
+
+        post("/end-turn"){
+
+            val input = call.receive<NextPhaseDTO>()
+
+            val result = gameService.nextPhase(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token,
             ).getOrThrow()
 
             call.respond(HttpStatusCode.OK, result.toGameDTO())

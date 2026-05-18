@@ -10,21 +10,18 @@ fun Direction.opposite() = when(this){
     Direction.SOUTH -> Direction.NORTH
     Direction.WEST -> Direction.EAST
 }
-
 fun Direction.rotateRight() = when(this){
     Direction.NORTH -> Direction.EAST
     Direction.EAST -> Direction.SOUTH
     Direction.SOUTH -> Direction.WEST
     Direction.WEST -> Direction.NORTH
 }
-
 fun Direction.rotateLeft() = when(this){
     Direction.NORTH -> Direction.WEST
     Direction.EAST -> Direction.NORTH
     Direction.SOUTH -> Direction.EAST
     Direction.WEST -> Direction.SOUTH
 }
-
 fun Char.toDirection(): Direction = when(this){
     'N' -> Direction.NORTH
     'E' -> Direction.EAST

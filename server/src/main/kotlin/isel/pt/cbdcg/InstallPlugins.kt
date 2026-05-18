@@ -143,8 +143,18 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is GameError.EveryPlayerReady -> HttpStatusCode.Conflict
         is GameError.GameNotFound -> HttpStatusCode.NotFound
         is GameError.PlayerNotFound -> HttpStatusCode.NotFound
-        is GameError.CardDoesNotExist -> HttpStatusCode.NotFound
+        is GameError.InvalidCardType -> HttpStatusCode.BadRequest
         is GameError.DungeonTurnZeroRule -> HttpStatusCode.Conflict
+        is GameError.CharacterPlacementRestriction -> HttpStatusCode.Conflict
+        is GameError.InvalidTurnPhase -> HttpStatusCode.BadRequest
+        is GameError.MustPlaceTile -> HttpStatusCode.Conflict
+        is GameError.NoActiveCharacters -> HttpStatusCode.Conflict
+        is GameError.NoTileFound -> HttpStatusCode.NotFound
+        is GameError.TilePlacementRestriction -> HttpStatusCode.Conflict
+        is GameError.TileOccupied -> HttpStatusCode.Conflict
+        is GameError.InvalidCardFormat -> HttpStatusCode.BadRequest
+        is GameError.InvalidCharacterType -> HttpStatusCode.BadRequest
+        is GameError.CharacterLimitReached -> HttpStatusCode.Conflict
     }
 
     return code to message

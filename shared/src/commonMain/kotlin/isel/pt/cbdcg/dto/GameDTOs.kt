@@ -1,24 +1,38 @@
 package isel.pt.cbdcg.dto
 
-import isel.pt.cbdcg.domain.game.board.Board
-import isel.pt.cbdcg.domain.game.board.BoardTile
-import isel.pt.cbdcg.domain.game.Game
-import isel.pt.cbdcg.domain.game.Player
-import isel.pt.cbdcg.domain.game.Spectator
-import isel.pt.cbdcg.domain.game.board.decodeTile
-import isel.pt.cbdcg.domain.game.board.toPosition
-import isel.pt.cbdcg.domain.game.character.decodeCharacter
-import isel.pt.cbdcg.domain.game.character.toCharacter
-import isel.pt.cbdcg.domain.game.decodeCard
-import isel.pt.cbdcg.domain.game.toTurn
-import isel.pt.cbdcg.error.GameError
 import kotlinx.serialization.Serializable
+
+@Serializable
+data class TileDTO(
+    val connections: Array<String>
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as TileDTO
+
+        if (!connections.contentEquals(other.connections)) return false
+
+        return true
+    }
+    override fun hashCode(): Int {
+        return connections.contentHashCode()
+    }
+}
+
+@Serializable
+data class CardDTO(
+    val type: String,
+    val tile: TileDTO?,
+    val character: CharacterDTO?
+)
 
 @Serializable
 data class PlayerDTO(
     val user: UserDTO,
-    val hand: Array<String>,
-    val currentCharacter: String,
+    val hand: Array<CardDTO>,
+    val currentCharacter: CharacterDTO?,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -38,38 +52,85 @@ data class PlayerDTO(
         result = 31 * result + currentCharacter.hashCode()
         return result
     }
-
-    fun toPlayer(): Player =
-        Player(
-            user = user.toUser(),
-            hand = hand.associate { string ->
-
-                val (idx, type, value) = string.split("|")
-                val card = value.decodeCard(type[0])
-                    ?: throw GameError.CardDoesNotExist(string)
-
-                idx.toUInt() to card
-            },
-            currentCharacter =
-                if(currentCharacter.isNotBlank()) currentCharacter.decodeCharacter()
-                else null
-        )
 }
 
 @Serializable
 data class SpectatorDTO(
     val user: UserDTO,
-){
+)
 
-    fun toSpectator(): Spectator = Spectator(this.user.toUser())
+@Serializable
+data class ModifierDTO(
+    val stats: String,
+    val positive: Boolean,
+    val duration: Int,
+)
+
+@Serializable
+data class CharacterDTO(
+    val type: String,
+    val name: String,
+    val baseStats: String,
+    val activeModifiers: Array<ModifierDTO>
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as CharacterDTO
+
+        if (name != other.name) return false
+        if (baseStats != other.baseStats) return false
+        if (!activeModifiers.contentEquals(other.activeModifiers)) return false
+
+        return true
+    }
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + baseStats.hashCode()
+        result = 31 * result + activeModifiers.contentHashCode()
+        return result
+    }
 }
 
 @Serializable
 data class BoardTileDTO(
     val pos: String,
-    val tile: String,
-    val character: String
+    val tile: TileDTO,
+    val character: CharacterDTO?
 )
+
+@Serializable
+data class TileDeckDTO(
+    val idx: Int,
+    val tile: TileDTO
+)
+
+@Serializable
+data class TurnDTO(
+    val gameTurn: Int,
+    val playerTurn: Array<Int>,
+    val phase: String
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as TurnDTO
+
+        if (gameTurn != other.gameTurn) return false
+        if (!playerTurn.contentEquals(other.playerTurn)) return false
+        if (phase != other.phase) return false
+
+        return true
+    }
+    override fun hashCode(): Int {
+        var result = gameTurn
+        result = 31 * result + playerTurn.contentHashCode()
+        result = 31 * result + phase.hashCode()
+        return result
+    }
+}
 
 @Serializable
 data class GameDTO(
@@ -77,8 +138,8 @@ data class GameDTO(
     val players: Array<PlayerDTO>,
     val spectators: Array<SpectatorDTO>,
     val board: Array<BoardTileDTO>,
-    val tileDeck: Array<String>,
-    val turn: String
+    val tileDeck: Array<TileDeckDTO>,
+    val turn: TurnDTO
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -96,42 +157,7 @@ data class GameDTO(
         result = 31 * result + players.contentHashCode()
         return result
     }
-
-    fun toGame(): Game {
-
-        val players = players.map{ it.toPlayer() }
-        val spectators = spectators.map{ it.toSpectator() }
-        val tiles = board.map{ (posString, tileString, string) ->
-
-            val pos = posString.toPosition()
-            val tile = tileString.decodeTile()
-            val character = if(string.isNotBlank()) string.toCharacter()
-                            else null
-
-            BoardTile(
-                pos = pos,
-                tile = tile,
-                character = character
-            )
-        }
-        val tileDeck = tileDeck.associate { string ->
-            val (tileString, nr) = string.split("|")
-            val tile = tileString.decodeTile()
-            tile to nr.toUInt()
-        }
-
-        return Game(
-            id = id.toUInt(),
-            players = players,
-            spectators = spectators,
-            board = Board(tiles),
-            tileDeck = tileDeck,
-            turn = turn.toTurn()
-        )
-
-    }
 }
-
 
 @Serializable
 data class CreateGameDTO(
@@ -145,7 +171,7 @@ data class PlaceOnBoardDTO(
     val userId: Int,
     val gameId: Int,
     val token: String,
-    val card: String,
+    val card: CardDTO,
     val idx: Int,
     val pos: String
 )

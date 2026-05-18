@@ -27,5 +27,3 @@ value class Password(
 fun String.toPassword(): Password = Password(this)
 
 fun String.isPasswordLengthValid(): Boolean = this.isNotBlank() && this.length >= 5
-
-// encode + decode

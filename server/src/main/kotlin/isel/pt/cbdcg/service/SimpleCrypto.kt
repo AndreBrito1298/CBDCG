@@ -1,5 +1,7 @@
 package isel.pt.cbdcg.service
 
+import isel.pt.cbdcg.domain.AuthUser
+import isel.pt.cbdcg.error.UserError
 import java.util.Base64
 
 private const val CRYPTO_KEY = "CBDCG_SIMPLE_KEY"
@@ -26,5 +28,10 @@ object SimpleCrypto {
             decrypted[index] = (input[index].toInt() xor key[index % key.size].toInt()).toByte()
         }
         return decrypted.toString(Charsets.UTF_8)
+    }
+
+    fun AuthUser?.verifyToken(token: String) {
+        if(this?.token == null) throw UserError.TokenNotFound()
+        else if (this.token != encrypt(token)) throw UserError.TokenMismatch()
     }
 }

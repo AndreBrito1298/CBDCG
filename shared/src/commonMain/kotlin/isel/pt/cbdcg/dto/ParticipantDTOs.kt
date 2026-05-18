@@ -10,11 +10,6 @@ data class ParticipantDTO(
     val role: String,
 )
 
-fun Participant.toParticipantDTO(): ParticipantDTO = ParticipantDTO(
-    user = user.toUserDTO(),
-    role = role.name,
-)
-
 fun ParticipantDTO.toParticipant(): Participant = Participant(
     user = user.toUser(),
     role = Role.valueOf(role),

@@ -1,5 +1,7 @@
 package isel.pt.cbdcg.domain
 
+import isel.pt.cbdcg.dto.ParticipantDTO
+
 /**
  * Class that associates a user with a table.
  * @param user The User participating.
@@ -8,4 +10,9 @@ package isel.pt.cbdcg.domain
 data class Participant(
     val user: User,
     val role: Role,
+)
+
+fun Participant.toParticipantDTO(): ParticipantDTO = ParticipantDTO(
+    user = user.toUserDTO(),
+    role = role.name,
 )

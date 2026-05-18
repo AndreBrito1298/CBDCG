@@ -1,10 +1,6 @@
 package isel.pt.cbdcg.domain.game.board
 
-import isel.pt.cbdcg.domain.game.CardType
-import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
-import isel.pt.cbdcg.domain.game.character.Character
-import kotlin.random.Random
 
 interface Entity
 
@@ -34,7 +30,7 @@ class movement(): Effect<BoardTile> {
 }
 
 
-class swamp(): Effect<Board> {
+class swap(): Effect<Board> {
     override fun apply(
         origin: Board,
         vararg targets: BoardTile?
@@ -52,10 +48,10 @@ class steal(val speed: UInt): Effect<Player> {
         origin: Player,
         vararg targets: BoardTile?
     ): EffectResult<Player> {
-        if(origin.currentCharacter!!.stats.spe<speed && origin.hand.isNotEmpty()){
+        if(origin.currentCharacter!!.baseStats.spe<speed && origin.hand.isNotEmpty()){
             if(speed == 3u){
                 //origin.hand.filter { it.value.type == CardType.Item }
-               // val p = origin.removeFromHand(Random.nextInt(1, origin.hand.size).toUInt())
+                // val p = origin.removeFromHand(Random.nextInt(1, origin.hand.size).toUInt())
                 //return EffectResult.One()
             }
             else if(speed == 4u){
@@ -77,10 +73,10 @@ class attack(
     ): EffectResult.Many<BoardTile> {
         val res = mutableListOf<BoardTile>()
         targets.forEach {
-         //   val evade = Random()
-            val newHp = it!!.character!!.stats.hp+(hpMod?:0u) - (origin.character!!.stats.atk+(attackMod?:0u)-origin.character.stats.def)
-            val newStats = it.character.stats.copy(hp = newHp)
-            res.add(it.copy(character = it.character.editStats(newStats)))
+            //   val evade = Random()
+            val newHp = it!!.character!!.baseStats.hp+(hpMod?:0u) - (origin.character!!.baseStats.atk+(attackMod?:0u)-origin.character.baseStats.def)
+            val newStats = it.character.baseStats.copy(hp = newHp)
+            // res.add(it.copy(character = it.character.editStats(newStats)))
         }
         return EffectResult.Many(res)
     }

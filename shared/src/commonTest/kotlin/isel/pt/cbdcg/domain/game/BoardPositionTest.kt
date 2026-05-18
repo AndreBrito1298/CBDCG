@@ -2,6 +2,7 @@ package isel.pt.cbdcg.domain.game
 
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.Direction
+import isel.pt.cbdcg.domain.game.board.neighbour
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

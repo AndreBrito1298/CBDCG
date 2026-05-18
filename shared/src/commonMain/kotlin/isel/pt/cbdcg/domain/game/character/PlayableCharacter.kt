@@ -1,37 +1,38 @@
 package isel.pt.cbdcg.domain.game.character
 
+import isel.pt.cbdcg.dto.CharacterDTO
+
 data class PlayableCharacter(
     override val name: String,
-    override val stats: Stats,
-    val activeModifiers: List<Modifier> = listOf(),
+    override val baseStats: Stats,
+    override val activeModifiers: List<Modifier> = listOf(),
 ) : Character {
 
-    override fun toString() = "${name}#${stats}"
+    override val type: CharacterType = CharacterType.PLAYABLE
 
-    override fun editStats(newStats: Stats): Character {
-        return this.copy(stats = newStats)
+    override fun addModifier(newModifier: Modifier): Character {
+        return copy(activeModifiers = activeModifiers.plus(newModifier))
     }
-    val string = "P#${name}#${stats}"
+    override fun removeModifier(modifier: Modifier): Character {
+        return copy(activeModifiers = activeModifiers.minus(modifier))
+    }
 
-    //Lista de modifiers apenas irá manter os ativos, quando o objeto é composto turn é comparada a currTurn e apenas é adicionado ao ativo se esta for menor
-    //Ou seja no objeto presistido apenas são colocados os modifiers que estarão ativos na prox turn
-    //Como em BD players estarão separados dá facilmente para comparar os objetos e aplicar o filtro a todos os modificadores ativos, se facilitar isto pode ser movido
-    //VER se faz sentido mover deve tar no local de mais facil acesso para limpeza dos modificadores que já nao estao ativos
-    fun addModifier(modifier: Modifier):PlayableCharacter {
-        return this.copy(activeModifiers = activeModifiers.toMutableList().apply { add(modifier) })
-    }
+    override fun toCharacterDTO(): CharacterDTO =
+        CharacterDTO(
+            type = "P",
+            name = name,
+            baseStats = baseStats.toString(),
+            activeModifiers = activeModifiers.map{ it.toModifierDTO() }.toTypedArray()
+        )
 }
 
-fun String.decodeCharacter(): PlayableCharacter {
-    val (_, name, stats) = this.split("#")
-    val (hp, atk, def, spe) = stats.split("&")
-    return PlayableCharacter(
-        name = name,
-        stats = Stats(hp.toUInt(), atk.toUInt(), def.toUInt(), spe.toUInt()),
-        activeModifiers = listOf(),
+fun CharacterDTO.toPlayableCharacter(): PlayableCharacter =
+    PlayableCharacter(
+        name = this.name,
+        baseStats = this.baseStats.toStats(),
+        activeModifiers = this.activeModifiers.map{ it.toModifier() }
+
     )
-}
-
 object PlayableCharacterCatalog {
     val playableCharacters = listOf(
         PlayableCharacter("trainee", Stats(3u, 2u, 2u, 2u)),

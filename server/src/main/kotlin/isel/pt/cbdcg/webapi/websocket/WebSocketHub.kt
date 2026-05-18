@@ -4,8 +4,9 @@ import io.ktor.server.websocket.DefaultWebSocketServerSession
 import io.ktor.websocket.Frame
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.game.Game
+import isel.pt.cbdcg.domain.game.toGameDTO
+import isel.pt.cbdcg.domain.toTableDTO
 import isel.pt.cbdcg.dto.WsServerMessage
-import isel.pt.cbdcg.dto.toTableDTO
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json

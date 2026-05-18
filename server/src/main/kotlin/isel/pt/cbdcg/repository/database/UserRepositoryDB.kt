@@ -1,5 +1,7 @@
 package isel.pt.cbdcg.repository.database
 
+/*
+
 import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
@@ -103,3 +105,4 @@ object UserRepositoryDB: UserRepository {
         }
     }
 }
+*/

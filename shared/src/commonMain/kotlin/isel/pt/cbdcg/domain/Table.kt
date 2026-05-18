@@ -1,5 +1,7 @@
 package isel.pt.cbdcg.domain
 
+import isel.pt.cbdcg.dto.TableDTO
+
 /**
  * Class that represents a Game Table.
  * @param id Unique identifier of a table.
@@ -12,11 +14,16 @@ data class Table(
     val name: Name,
     val owner: User,
     val participants: List<Participant>
-) {
+)
 
-    /**
-     * Function to check if there are any available 'player' seats in a table.
-     */
-    fun checkAvailability(): Boolean = participants.size < 4
+/**
+ * Function to check if there are any available 'player' seats in a table.
+ */
+fun Table.checkAvailability(): Boolean = participants.size < 4
 
-}
+fun Table.toTableDTO(): TableDTO = TableDTO(
+    id = id.toInt(),
+    name = name.string,
+    owner = owner.toUserDTO(),
+    participants = participants.map{ it.toParticipantDTO() }.toTypedArray()
+)

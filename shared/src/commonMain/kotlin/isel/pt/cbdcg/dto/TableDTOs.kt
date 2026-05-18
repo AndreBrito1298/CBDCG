@@ -25,7 +25,6 @@ data class TableDTO(
 
         return true
     }
-
     override fun hashCode(): Int {
         var result = id.hashCode()
         result = 31 * result + name.hashCode()
@@ -34,6 +33,13 @@ data class TableDTO(
         return result
     }
 }
+
+fun TableDTO.toTable(): Table = Table(
+    id = id.toUInt(),
+    name = Name(name),
+    owner = owner.toUser(),
+    participants = participants.map{ it.toParticipant() }
+)
 
 @Serializable
 data class TableOperationInput(
@@ -55,18 +61,4 @@ data class CreateTableDTO(
     val name: String,
     val userId: Int,
     val token: String,
-)
-
-fun Table.toTableDTO(): TableDTO = TableDTO(
-    id = id.toInt(),
-    name = name.string,
-    owner = owner.toUserDTO(),
-    participants = participants.map{ it.toParticipantDTO() }.toTypedArray()
-)
-
-fun TableDTO.toTable(): Table = Table(
-    id = id.toUInt(),
-    name = Name(name),
-    owner = owner.toUser(),
-    participants = participants.map{ it.toParticipant() }
 )

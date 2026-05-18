@@ -23,6 +23,8 @@ import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
+import isel.pt.cbdcg.domain.game.board.coords
+import isel.pt.cbdcg.domain.game.toGame
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.CreateUserDTO
@@ -221,7 +223,7 @@ class ClientApi(private val client: HttpClient) {
         fetch<GameDTO>(
             path = "game/place",
             method = HttpMethod.Post,
-            body = PlaceOnBoardDTO(userId.toInt(), gameId.toInt(), token, card.string, idx.toInt(), pos.coords())
+            body = PlaceOnBoardDTO(userId.toInt(), gameId.toInt(), token, card.toCardDTO(), idx.toInt(), pos.coords())
         ).map{ it.toGame() }
     suspend fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> =
         fetch<GameDTO>(
@@ -235,6 +237,7 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = NextPhaseDTO(userId.toInt(), gameId.toInt(), token)
         ).map{ it.toGame() }
+
     private suspend inline fun <reified T> fetch(
         path: String,
         method: HttpMethod,

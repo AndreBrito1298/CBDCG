@@ -25,6 +25,7 @@ import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.TurnPhase
+import isel.pt.cbdcg.domain.game.board.rotate
 import isel.pt.cbdcg.views.game.CardSelection.*
 import isel.pt.cbdcg.views.game.utils.Board
 import isel.pt.cbdcg.views.game.utils.InGameHeader

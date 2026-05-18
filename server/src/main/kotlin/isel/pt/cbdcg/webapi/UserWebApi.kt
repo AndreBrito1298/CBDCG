@@ -11,10 +11,10 @@ import io.ktor.server.routing.route
 import isel.pt.cbdcg.domain.toEmail
 import isel.pt.cbdcg.domain.toName
 import isel.pt.cbdcg.domain.toPassword
+import isel.pt.cbdcg.domain.toUserDTO
 import isel.pt.cbdcg.dto.CreateUserDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
-import isel.pt.cbdcg.dto.toUserDTO
 import isel.pt.cbdcg.service.UserService
 
 fun Route.userWebApi(userService: UserService, httpClient: HttpClient) {

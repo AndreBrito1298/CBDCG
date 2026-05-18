@@ -152,13 +152,15 @@ fun AppNavHost(vm: AppViewModel) {
                     GameScreen(
                         player = player,
                         game = game,
-                        placeTile = { tile, idx, pos -> vm.placeTile(tile, idx, pos) },
-                        rotateTile = { idx, flag -> vm.rotateTile(idx, flag) }
+                        placeOnBoard = { card, idx, pos -> vm.placeOnBoard(card, idx, pos) },
+                        rotateTile = { idx, flag -> vm.rotateTile(idx, flag) },
+                        nextPhase = { vm.nextPhase() }
                     )
 
                 if(spectator != null)
                     SpectatorScreen(
-                        game = game
+                        game = game,
+                        spectator = spectator
                     )
             }
         }

@@ -9,10 +9,10 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import isel.pt.cbdcg.domain.toName
 import isel.pt.cbdcg.domain.toRole
+import isel.pt.cbdcg.domain.toTableDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.RoleChangeInput
 import isel.pt.cbdcg.dto.TableOperationInput
-import isel.pt.cbdcg.dto.toTableDTO
 import isel.pt.cbdcg.service.TableService
 
 fun Route.tableWebApi(tableService: TableService) {

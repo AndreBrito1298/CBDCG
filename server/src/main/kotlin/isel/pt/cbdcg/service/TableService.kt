@@ -5,12 +5,12 @@ import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
-import isel.pt.cbdcg.domain.verifyToken
 import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
 import isel.pt.cbdcg.repository.memory.TableRepositoryMem
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
+import isel.pt.cbdcg.service.SimpleCrypto.verifyToken
 import isel.pt.cbdcg.webapi.websocket.EventsPublisher
 import kotlin.collections.plus
 import kotlin.runCatching
@@ -29,13 +29,12 @@ class TableService(
 
         val owner = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        token.verifyToken(owner)
+        owner.auth.verifyToken(token)
 
-        val p = Participant(owner, Role.PLAYER)
+        val participant = Participant(owner, Role.PLAYER)
 
-        val table = tableRepo.createTable(tableName, owner, p)
-        val participant = participantRepo.createParticipant(owner ,table ,Role.PLAYER)
-
+        val table = tableRepo.createTable(tableName, owner, participant)
+        participantRepo.createParticipant(owner ,table ,Role.PLAYER)
 
         val tables = tableRepo.getAllTables()
         events.publishLobbyTables(tables)
@@ -47,7 +46,7 @@ class TableService(
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        token.verifyToken(user)
+        user.auth.verifyToken(token)
 
         val table = tableRepo.findById(tableId)
             ?: throw TableError.TableDoesNotExist(tableId.toString())
@@ -73,7 +72,7 @@ class TableService(
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        token.verifyToken(user)
+        user.auth.verifyToken(token)
 
         val table = tableRepo.findById(tableId)
             ?: throw TableError.TableDoesNotExist(tableId.toString())
@@ -100,7 +99,7 @@ class TableService(
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        token.verifyToken(user)
+        user.auth.verifyToken(token)
 
         val table = tableRepo.findById(tableId)
             ?: throw TableError.TableDoesNotExist(tableId.toString())

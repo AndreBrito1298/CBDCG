@@ -20,13 +20,12 @@ class UserService(
 
         val encryptedPassword = Password(SimpleCrypto.encrypt(password.string))
         val user = userRepo.createUser(name, email, encryptedPassword)
+
         val plainToken = UUID.randomUUID().toString()
         val encryptedToken = SimpleCrypto.encrypt(plainToken)
-        val auth = user.copy(auth = AuthUser(encryptedToken, user.email, user.name))
+        userRepo.save(user.copy(auth = AuthUser(encryptedToken)))
 
-        userRepo.save(auth)
-
-        auth.copy(auth = AuthUser(plainToken, auth.email, auth.name))
+        user.copy(auth = AuthUser(plainToken))
     }
 
     fun login(email: Email, password: Password): Result<User> = runCatching {
@@ -42,11 +41,11 @@ class UserService(
 
         val plainToken = UUID.randomUUID().toString()
         val encryptedToken = SimpleCrypto.encrypt(plainToken)
-        val auth = user.copy(auth = AuthUser(encryptedToken, user.email, user.name))
+        val auth = user.copy(auth = AuthUser(encryptedToken))
 
         userRepo.save(auth)
 
-        auth.copy(auth = AuthUser(plainToken, auth.email, auth.name))
+        auth.copy(auth = AuthUser(plainToken))
     }
 
     fun logout(token: String) = runCatching {

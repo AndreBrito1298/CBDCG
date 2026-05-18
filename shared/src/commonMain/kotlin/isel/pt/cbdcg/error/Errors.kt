@@ -94,7 +94,7 @@ sealed class GameError(
     class InvalidDirection(char: Char): GameError("Something went wrong decoding direction: $char")
     class GameNotFound(id: Int): GameError("No game found with the id '$id'.")
     class PlayerNotFound(email: String, game: Int): GameError("Player with email '$email' was not found in game '$game'.")
-    class CardDoesNotExist(string: String) : GameError("The Card '$string' could not be decoded.")
+    class InvalidCardType(string: String) : GameError("The Card type '$string' does not exist.")
     class DungeonTurnZeroRule: GameError("You can only place Tiles.")
     class InvalidTurnPhase(string: String) : GameError("$string does not correspond to any Turn Phase.")
     class TilePlacementRestriction : GameError("You can only place a Tile during the Construction Phase.")
@@ -103,4 +103,7 @@ sealed class GameError(
     class MustPlaceTile(max: Int) : GameError("You can have a maximum of $max tiles in your hand.")
     class NoActiveCharacters : GameError("You must have at least one active character.")
     class TileOccupied : GameError("This tile is occupied.")
+    class InvalidCharacterType(string: String) : GameError("Character Type $string does not exist.")
+    class InvalidCardFormat(message: String) : GameError("Invalid Card format: $message.")
+    class CharacterLimitReached : GameError("You can only have one character in play.")
 }

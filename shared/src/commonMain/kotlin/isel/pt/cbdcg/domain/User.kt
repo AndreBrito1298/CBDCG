@@ -1,5 +1,7 @@
 package isel.pt.cbdcg.domain
 
+import isel.pt.cbdcg.dto.UserDTO
+
 /**
  * User representation:
  * @property id Unique identifier of the user.
@@ -14,4 +16,12 @@ data class User(
     val email: Email,
     val password: Password,
     val auth: AuthUser? = null
+)
+
+fun User.toUserDTO(): UserDTO = UserDTO(
+    id = id.toInt(),
+    name = name.string,
+    email = email.string,
+    password = password.string,
+    auth = auth?.token ?: ""
 )

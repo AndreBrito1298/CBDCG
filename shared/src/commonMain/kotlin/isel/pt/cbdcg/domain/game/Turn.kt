@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.domain.game
 
+import isel.pt.cbdcg.dto.TurnDTO
 import isel.pt.cbdcg.error.GameError
 
 enum class TurnPhase{
@@ -23,8 +24,16 @@ class Turn(val gameTurn: UInt, val playerTurn: List<UInt>, val phase: TurnPhase)
 
 }
 
-fun String.toTurn(): Turn {
-    val (game, phase, players) = split("|")
-    val list = players.split(",").map{ it.toUInt() }
-    return Turn(game.toUInt(),  list, phase.toTurnPhase())
-}
+fun Turn.toTurnDTO(): TurnDTO =
+    TurnDTO(
+        gameTurn = gameTurn.toInt(),
+        playerTurn = playerTurn.map{ it.toInt() }.toTypedArray(),
+        phase = phase.name
+    )
+
+fun TurnDTO.toTurn(): Turn =
+    Turn(
+        gameTurn = gameTurn.toUInt(),
+        playerTurn = playerTurn.map{ it.toUInt() },
+        phase = phase.toTurnPhase()
+    )
