@@ -5,7 +5,7 @@
 - **Projeto:** `Jogo de Exploração de uma Masmorra à base de Cartas`
 - **Grupo:** `15`
 - **Elementos:** `Gustavo Antunes [50485] | André Brito [50487]`
-- **Orientador(es):** `Paulo Pereira`
+- **Orientador(es):** `Pedro Pereira`
 
 ---
 
