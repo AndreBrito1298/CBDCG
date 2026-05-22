@@ -137,23 +137,20 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is UserError.IdNotFound -> HttpStatusCode.NotFound
         is BoardPlacementError.PositionTaken -> HttpStatusCode.Conflict
         is BoardPlacementError.TileConnectionMismatch -> HttpStatusCode.Conflict
-        is GameError.InvalidDirection -> HttpStatusCode.BadRequest
+        is GameError.InvalidFormat -> HttpStatusCode.BadRequest
         is GameError.MinimumPlayersNeeded -> HttpStatusCode.Conflict
         is GameError.NotYourTurn -> HttpStatusCode.Forbidden
         is GameError.EveryPlayerReady -> HttpStatusCode.Conflict
         is GameError.GameNotFound -> HttpStatusCode.NotFound
         is GameError.PlayerNotFound -> HttpStatusCode.NotFound
-        is GameError.InvalidCardType -> HttpStatusCode.BadRequest
         is GameError.DungeonTurnZeroRule -> HttpStatusCode.Conflict
         is GameError.CharacterPlacementRestriction -> HttpStatusCode.Conflict
-        is GameError.InvalidTurnPhase -> HttpStatusCode.BadRequest
         is GameError.MustPlaceTile -> HttpStatusCode.Conflict
         is GameError.NoActiveCharacters -> HttpStatusCode.Conflict
         is GameError.NoTileFound -> HttpStatusCode.NotFound
         is GameError.TilePlacementRestriction -> HttpStatusCode.Conflict
         is GameError.TileOccupied -> HttpStatusCode.Conflict
         is GameError.InvalidCardFormat -> HttpStatusCode.BadRequest
-        is GameError.InvalidCharacterType -> HttpStatusCode.BadRequest
         is GameError.CharacterLimitReached -> HttpStatusCode.Conflict
     }
 

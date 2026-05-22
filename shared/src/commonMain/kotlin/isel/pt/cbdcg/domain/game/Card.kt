@@ -3,21 +3,25 @@ package isel.pt.cbdcg.domain.game
 import isel.pt.cbdcg.domain.game.board.Tile
 import isel.pt.cbdcg.domain.game.board.toTile
 import isel.pt.cbdcg.domain.game.board.toTileDTO
+import isel.pt.cbdcg.domain.game.character.Item
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
+import isel.pt.cbdcg.domain.game.character.toItem
+import isel.pt.cbdcg.domain.game.character.toItemDTO
 import isel.pt.cbdcg.domain.game.character.toPlayableCharacter
 import isel.pt.cbdcg.dto.CardDTO
 import isel.pt.cbdcg.error.GameError
 
 
 enum class CardType {
-    TILE, CHARACTER
+    TILE, CHARACTER, ITEM
 }
 
 fun String.toCardType(): CardType =
     when(this[0]){
         'T' -> CardType.TILE
         'C' -> CardType.CHARACTER
-        else -> throw GameError.InvalidCardType(this)
+        'I' -> CardType.ITEM
+        else -> throw GameError.InvalidFormat("Card Type", this)
     }
 
 sealed interface Card {
@@ -34,7 +38,8 @@ data class TileCard(
         CardDTO(
             type = "T",
             tile = tile.toTileDTO(),
-            character = null
+            character = null,
+            item = null
         )
 }
 
@@ -46,7 +51,21 @@ data class CharacterCard(
         CardDTO(
             type = "C",
             tile = null,
-            character = character.toCharacterDTO()
+            character = character.toCharacterDTO(),
+            item = null
+        )
+}
+
+data class ItemCard(
+    val item: Item
+) : Card {
+    override val type = CardType.ITEM
+    override fun toCardDTO(): CardDTO =
+        CardDTO(
+            type = "I",
+            tile = null,
+            character = null,
+            item = item.toItemDTO()
         )
 }
 
@@ -56,5 +75,7 @@ fun CardDTO.toCard(): Card =
             TileCard(tile?.toTile() ?: throw GameError.InvalidCardFormat("TileCard does not contain a Tile"))
         CardType.CHARACTER ->
             CharacterCard(character?.toPlayableCharacter() ?: throw GameError.InvalidCardFormat("CharacterCard does not contain a Character"))
+        CardType.ITEM ->
+            ItemCard(item = item?.toItem() ?: throw GameError.InvalidCardFormat("ItemCard does not contain an Item"))
     }
 

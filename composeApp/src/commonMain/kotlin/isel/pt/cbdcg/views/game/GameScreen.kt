@@ -27,10 +27,10 @@ import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.board.rotate
 import isel.pt.cbdcg.views.game.CardSelection.*
-import isel.pt.cbdcg.views.game.utils.Board
+import isel.pt.cbdcg.views.game.utils.board.Board
 import isel.pt.cbdcg.views.game.utils.InGameHeader
-import isel.pt.cbdcg.views.game.utils.PlayerHand
-import isel.pt.cbdcg.views.game.utils.ZoomButtons
+import isel.pt.cbdcg.views.game.utils.players.PlayerHand
+import isel.pt.cbdcg.views.game.utils.board.ZoomButtons
 
 @Composable
 fun GameScreen(

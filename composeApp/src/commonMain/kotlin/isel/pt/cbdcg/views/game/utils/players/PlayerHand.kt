@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views.game.utils
+package isel.pt.cbdcg.views.game.utils.players
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CharacterCard
+import isel.pt.cbdcg.domain.game.ItemCard
 import isel.pt.cbdcg.domain.game.TileCard
 
 @Composable
@@ -59,6 +60,11 @@ fun PlayerHand(
                     select = { selectCard(index, card) },
                     isSelected = if(selected == null) false else selected == index,
                     place = placeSignal,
+                )
+
+                is ItemCard -> PlayerItemCard(
+                    item = card.item,
+                    select = {  }
                 )
             }
         }

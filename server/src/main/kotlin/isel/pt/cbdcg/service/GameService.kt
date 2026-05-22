@@ -4,6 +4,7 @@ import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CharacterCard
 import isel.pt.cbdcg.domain.game.Game
+import isel.pt.cbdcg.domain.game.ItemCard
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TileCard
@@ -14,6 +15,7 @@ import isel.pt.cbdcg.domain.game.board.Direction
 import isel.pt.cbdcg.domain.game.board.Effect
 import isel.pt.cbdcg.domain.game.board.Tile
 import isel.pt.cbdcg.domain.game.board.rotate
+import isel.pt.cbdcg.domain.game.character.ItemCatalog
 import isel.pt.cbdcg.domain.game.character.PlayableCharacterCatalog
 import isel.pt.cbdcg.domain.game.draw
 import isel.pt.cbdcg.domain.game.nextPhase
@@ -51,6 +53,7 @@ class GameService(
         if(table.participants.any{ it.role == Role.PLAYER })
             throw GameError.EveryPlayerReady()
 
+
         val startingDeck = mutableMapOf(
             Tile(Direction.entries) to 12u,
             Tile(listOf(Direction.EAST, Direction.NORTH, Direction.SOUTH)) to 22u,
@@ -59,6 +62,7 @@ class GameService(
         )
 
         val characters = PlayableCharacterCatalog.playableCharacters.shuffled()
+        val itemDeck = ItemCatalog.items.associateWith { 1u }.toMutableMap()
 
         val players = table.participants.filter{ it.role == Role.READY }
             .mapIndexed{ playerIdx, player ->
@@ -68,15 +72,19 @@ class GameService(
                 repeat(3){ idx ->
 
                     val drawnTile = startingDeck.draw()
+                    val drawItem = itemDeck.draw()
 
                     hand[idx.toUInt()] = TileCard(drawnTile)
+                    hand[5u + idx.toUInt()] = ItemCard(drawItem)
+
                     startingDeck[drawnTile] = startingDeck[drawnTile]!! - 1u
+                    itemDeck[drawItem] = 0u
                 }
 
                 hand[3u] = CharacterCard(characters[playerIdx * 2])
                 hand[4u] = CharacterCard(characters[playerIdx * 2 + 1])
 
-                Player(player.user, hand, null)
+                Player(player.user, hand.toList().sortedBy { it.first }.toMap(), null)
             }
 
         val spectators = table.participants.filter{ it.role == Role.SPECTATOR }
@@ -87,7 +95,7 @@ class GameService(
 
         val turnOrder = players.map{ it.user.id }
 
-        val game = gameRepo.createGame(players, spectators, turnOrder, startingDeck)
+        val game = gameRepo.createGame(players, spectators, turnOrder, startingDeck, itemDeck)
         events.publishGameStarted(table, game)
 
         game

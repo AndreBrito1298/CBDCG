@@ -25,7 +25,8 @@ data class TileDTO(
 data class CardDTO(
     val type: String,
     val tile: TileDTO?,
-    val character: CharacterDTO?
+    val character: CharacterDTO?,
+    val item: ItemDTO?
 )
 
 @Serializable
@@ -71,7 +72,9 @@ data class CharacterDTO(
     val type: String,
     val name: String,
     val baseStats: String,
-    val activeModifiers: Array<ModifierDTO>
+    val activeModifiers: Array<ModifierDTO>,
+    val grade: String,
+    val item: Array<ItemDTO>,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -79,19 +82,30 @@ data class CharacterDTO(
 
         other as CharacterDTO
 
+        if (type != other.type) return false
         if (name != other.name) return false
         if (baseStats != other.baseStats) return false
         if (!activeModifiers.contentEquals(other.activeModifiers)) return false
+        if (!item.contentEquals(other.item)) return false
 
         return true
     }
     override fun hashCode(): Int {
-        var result = name.hashCode()
+        var result = type.hashCode()
+        result = 31 * result + name.hashCode()
         result = 31 * result + baseStats.hashCode()
         result = 31 * result + activeModifiers.contentHashCode()
+        result = 31 * result + item.contentHashCode()
         return result
     }
 }
+
+@Serializable
+data class ItemDTO(
+    val name: String,
+    val stats: String,
+    val grade: String
+)
 
 @Serializable
 data class BoardTileDTO(
@@ -104,6 +118,12 @@ data class BoardTileDTO(
 data class TileDeckDTO(
     val idx: Int,
     val tile: TileDTO
+)
+
+@Serializable
+data class ItemDeckDTO(
+    val idx: Int,
+    val item: ItemDTO
 )
 
 @Serializable
@@ -139,6 +159,7 @@ data class GameDTO(
     val spectators: Array<SpectatorDTO>,
     val board: Array<BoardTileDTO>,
     val tileDeck: Array<TileDeckDTO>,
+    val itemDeck: Array<ItemDeckDTO>,
     val turn: TurnDTO
 ) {
     override fun equals(other: Any?): Boolean {
@@ -149,12 +170,22 @@ data class GameDTO(
 
         if (id != other.id) return false
         if (!players.contentEquals(other.players)) return false
+        if (!spectators.contentEquals(other.spectators)) return false
+        if (!board.contentEquals(other.board)) return false
+        if (!tileDeck.contentEquals(other.tileDeck)) return false
+        if (!itemDeck.contentEquals(other.itemDeck)) return false
+        if (turn != other.turn) return false
 
         return true
     }
     override fun hashCode(): Int {
         var result = id
         result = 31 * result + players.contentHashCode()
+        result = 31 * result + spectators.contentHashCode()
+        result = 31 * result + board.contentHashCode()
+        result = 31 * result + tileDeck.contentHashCode()
+        result = 31 * result + itemDeck.contentHashCode()
+        result = 31 * result + turn.hashCode()
         return result
     }
 }

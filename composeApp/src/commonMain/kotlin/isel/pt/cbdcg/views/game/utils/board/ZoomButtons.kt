@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views.game.utils
+package isel.pt.cbdcg.views.game.utils.board
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues

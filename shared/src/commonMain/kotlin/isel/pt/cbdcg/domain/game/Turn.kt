@@ -12,7 +12,7 @@ fun String.toTurnPhase(): TurnPhase =
         'C' -> TurnPhase.CONSTRUCTION
         'S' -> TurnPhase.SUBSTITUTION
         'M' -> TurnPhase.MOVEMENT
-        else -> throw GameError.InvalidTurnPhase(this)
+        else -> throw GameError.InvalidFormat("Turn Phase", this)
     }
 
 class Turn(val gameTurn: UInt, val playerTurn: List<UInt>, val phase: TurnPhase) {

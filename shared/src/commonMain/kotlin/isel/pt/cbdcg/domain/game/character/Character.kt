@@ -10,7 +10,7 @@ fun String.toCharacterType(): CharacterType =
     when(this[0]){
         'P' -> CharacterType.PLAYABLE
         'E' -> CharacterType.ENEMY
-        else -> throw GameError.InvalidCharacterType(this)
+        else -> throw GameError.InvalidFormat("Character", this)
     }
 
 interface Character: Entity {
@@ -18,7 +18,7 @@ interface Character: Entity {
     val name: String
     val baseStats: Stats
     val activeModifiers: List<Modifier>
-
+    val grade: Grade
 
     fun addModifier(newModifier: Modifier): Character
     fun removeModifier(modifier: Modifier): Character

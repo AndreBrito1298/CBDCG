@@ -41,5 +41,5 @@ fun Tile.toTileDTO(): TileDTO =
 
 fun TileDTO.toTile(): Tile =
     Tile(
-        connections = connections.map{ it[0].toDirection() }
+        connections = connections.map{ it.toDirection() }
     )

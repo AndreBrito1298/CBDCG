@@ -22,10 +22,11 @@ fun Direction.rotateLeft() = when(this){
     Direction.SOUTH -> Direction.EAST
     Direction.WEST -> Direction.SOUTH
 }
-fun Char.toDirection(): Direction = when(this){
-    'N' -> Direction.NORTH
-    'E' -> Direction.EAST
-    'S' -> Direction.SOUTH
-    'W' -> Direction.WEST
-    else -> throw GameError.InvalidDirection(this)
-}
+fun String.toDirection(): Direction =
+    when(this[0]){
+        'N' -> Direction.NORTH
+        'E' -> Direction.EAST
+        'S' -> Direction.SOUTH
+        'W' -> Direction.WEST
+        else -> throw GameError.InvalidFormat("Direction", this)
+    }

@@ -6,6 +6,8 @@ data class PlayableCharacter(
     override val name: String,
     override val baseStats: Stats,
     override val activeModifiers: List<Modifier> = listOf(),
+    override val grade: Grade,
+    val items: List<Item> = listOf()
 ) : Character {
 
     override val type: CharacterType = CharacterType.PLAYABLE
@@ -22,7 +24,9 @@ data class PlayableCharacter(
             type = "P",
             name = name,
             baseStats = baseStats.toString(),
-            activeModifiers = activeModifiers.map{ it.toModifierDTO() }.toTypedArray()
+            activeModifiers = activeModifiers.map{ it.toModifierDTO() }.toTypedArray(),
+            grade = grade.code(),
+            item = items.map{ it.toItemDTO() }.toTypedArray()
         )
 }
 
@@ -30,26 +34,26 @@ fun CharacterDTO.toPlayableCharacter(): PlayableCharacter =
     PlayableCharacter(
         name = this.name,
         baseStats = this.baseStats.toStats(),
-        activeModifiers = this.activeModifiers.map{ it.toModifier() }
-
+        activeModifiers = this.activeModifiers.map{ it.toModifier() },
+        grade = grade.toGrade()
     )
 object PlayableCharacterCatalog {
     val playableCharacters = listOf(
-        PlayableCharacter("trainee", Stats(3u, 2u, 2u, 2u)),
-        PlayableCharacter("thief", Stats(2u, 2u, 2u, 3u)),
-        PlayableCharacter("apprentice", Stats(2u, 3u, 2u, 2u)),
-        PlayableCharacter("ninja", Stats(2u, 4u, 1u, 3u)),
-        PlayableCharacter("alchemist", Stats(3u, 3u, 1u, 2u)),
-        PlayableCharacter("strange_alien", Stats(3u, 2u, 2u, 1u)),
-        PlayableCharacter("vampire", Stats(2u, 3u, 2u, 2u)),
-        PlayableCharacter("guardian", Stats(2u, 4u, 1u, 3u)),
-        PlayableCharacter("elf", Stats(2u, 2u, 2u, 3u)),
-        PlayableCharacter("beast_warrior", Stats(2u, 3u, 2u, 2u)),
-        PlayableCharacter("nun", Stats(2u, 4u, 1u, 3u)),
-        PlayableCharacter("druid", Stats(3u, 3u, 1u, 2u)),
-        PlayableCharacter("scrap_robot", Stats(3u, 2u, 2u, 1u)),
-        PlayableCharacter("juggernaut", Stats(2u, 3u, 2u, 2u)),
-        PlayableCharacter("necromancer", Stats(2u, 4u, 1u, 3u)),
-        PlayableCharacter("taoist", Stats(2u, 4u, 1u, 3u)),
+        PlayableCharacter(name = "trainee", baseStats = Stats(3u, 2u, 2u, 2u), grade = Grade.BASIC),
+        PlayableCharacter(name = "thief", baseStats = Stats(2u, 2u, 2u, 3u), grade = Grade.BASIC),
+        PlayableCharacter(name = "apprentice", baseStats = Stats(2u, 3u, 2u, 2u), grade = Grade.BASIC),
+        PlayableCharacter(name = "ninja", baseStats = Stats(2u, 4u, 1u, 3u), grade = Grade.BASIC),
+        PlayableCharacter(name = "alchemist", baseStats = Stats(3u, 3u, 1u, 2u), grade = Grade.BASIC),
+        PlayableCharacter(name = "strange_alien", baseStats = Stats(3u, 2u, 2u, 1u), grade = Grade.BASIC),
+        PlayableCharacter(name = "vampire", baseStats = Stats(2u, 3u, 2u, 2u), grade = Grade.BASIC),
+        PlayableCharacter(name = "guardian", baseStats = Stats(2u, 4u, 1u, 3u), grade = Grade.BASIC),
+        PlayableCharacter(name = "elf", baseStats = Stats(2u, 2u, 2u, 3u), grade = Grade.BASIC),
+        PlayableCharacter(name = "beast_warrior", baseStats = Stats(2u, 3u, 2u, 2u), grade = Grade.BASIC),
+        PlayableCharacter(name = "nun", baseStats = Stats(2u, 4u, 1u, 3u), grade = Grade.BASIC),
+        PlayableCharacter(name = "druid", baseStats = Stats(3u, 3u, 1u, 2u), grade = Grade.BASIC),
+        PlayableCharacter(name = "scrap_robot", baseStats = Stats(3u, 2u, 2u, 1u), grade = Grade.BASIC),
+        PlayableCharacter(name = "juggernaut", baseStats = Stats(2u, 3u, 2u, 2u), grade = Grade.BASIC),
+        PlayableCharacter(name = "necromancer", baseStats = Stats(2u, 4u, 1u, 3u), grade = Grade.BASIC),
+        PlayableCharacter(name = "taoist", baseStats = Stats(2u, 4u, 1u, 3u), grade = Grade.BASIC),
     )
 }

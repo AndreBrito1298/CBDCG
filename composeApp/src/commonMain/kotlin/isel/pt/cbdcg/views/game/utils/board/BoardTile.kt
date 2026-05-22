@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views.game.utils
+package isel.pt.cbdcg.views.game.utils.board
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -72,7 +72,7 @@ fun BoardTile(
             Image(
                 painter = painterResource(characterResource),
                 contentDescription = "Character",
-                modifier = Modifier.size(tileSize / 2)
+                modifier = Modifier.size(tileSize)
             )
         }
     }

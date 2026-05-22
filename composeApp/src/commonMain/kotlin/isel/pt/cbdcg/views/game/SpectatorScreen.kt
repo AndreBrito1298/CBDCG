@@ -19,10 +19,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TurnPhase
-import isel.pt.cbdcg.views.game.utils.Board
+import isel.pt.cbdcg.views.game.utils.board.Board
 import isel.pt.cbdcg.views.game.utils.InGameHeader
-import isel.pt.cbdcg.views.game.utils.SpectatorPlayerSelector
-import isel.pt.cbdcg.views.game.utils.ZoomButtons
+import isel.pt.cbdcg.views.game.utils.spectator.SpectatorPlayerSelector
+import isel.pt.cbdcg.views.game.utils.board.ZoomButtons
 
 @Composable
 fun SpectatorScreen(

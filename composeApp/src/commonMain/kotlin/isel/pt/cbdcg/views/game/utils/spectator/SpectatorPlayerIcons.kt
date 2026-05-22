@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views.game.utils
+package isel.pt.cbdcg.views.game.utils.spectator
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
