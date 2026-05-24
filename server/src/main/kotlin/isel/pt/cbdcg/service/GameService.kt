@@ -51,7 +51,7 @@ class GameService(
             throw TableError.OwnerOnly()
 
         if(table.participants.any{ it.role == Role.PLAYER })
-            throw GameError.EveryPlayerReady()
+            throw TableError.EveryPlayerReady()
 
 
         val startingDeck = mutableMapOf(
@@ -91,7 +91,7 @@ class GameService(
             .map{ spectator -> Spectator(spectator.user) }
 
         if(players.size < 2)
-            throw GameError.MinimumPlayersNeeded()
+            throw TableError.MinimumPlayersNeeded()
 
         val turnOrder = players.map{ it.user.id }
 

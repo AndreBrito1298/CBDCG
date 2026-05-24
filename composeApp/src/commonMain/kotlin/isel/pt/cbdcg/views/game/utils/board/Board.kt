@@ -21,6 +21,7 @@ fun Board(
     gameBoard: BoardTiles,
     canClickGrid: Boolean,
     canPlaceCharacter: Boolean,
+    canEquipItem: Boolean,
     tileSize: Dp,
     placeCard: (BoardPosition) -> Unit,
     seeStats: (Card) -> Unit,
@@ -63,7 +64,8 @@ fun Board(
                             position = position,
                             tileSize = tileSize,
                             placeCharacterFlag = canPlaceCharacter,
-                            placeCharacter = { placeCard(position) },
+                            placeCard = { placeCard(position) },
+                            equipItemFlag = canEquipItem,
                             seeStats = { if(character != null) seeStats(CharacterCard(character)) }
                         )
                     }

@@ -17,7 +17,7 @@ import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
 import io.ktor.util.collections.ConcurrentMap
-import isel.pt.cbdcg.error.BoardPlacementError
+import isel.pt.cbdcg.error.BoardError
 import isel.pt.cbdcg.error.Error
 import isel.pt.cbdcg.error.GameError
 import isel.pt.cbdcg.error.ParticipantError
@@ -27,6 +27,8 @@ import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 import io.ktor.http.HttpHeaders
 import io.ktor.server.plugins.cors.routing.CORS
+import isel.pt.cbdcg.error.CardError
+import isel.pt.cbdcg.error.CharacterError
 
 fun Application.installPlugins(httpclient: HttpClient) {
 
@@ -119,38 +121,50 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
     val message = (message ?: desc)
 
     val code = when (this) {
+
         is UserError.DuplicateEmail -> HttpStatusCode.Conflict
         is UserError.EmailNotFound -> HttpStatusCode.NotFound
         is UserError.PasswordMismatch -> HttpStatusCode.Unauthorized
-        is TableError.DuplicateName -> HttpStatusCode.Conflict
-        is TableError.UserUnavailable -> HttpStatusCode.Conflict
-        is TableError.UserNotFound -> HttpStatusCode.NotFound
-        is TableError.TableDoesNotExist -> HttpStatusCode.NotFound
-        is TableError.OwnerOnly -> HttpStatusCode.Forbidden
-        is ParticipantError.ParticipantEmailNotFound -> HttpStatusCode.NotFound
-        is ParticipantError.ParticipantIdNotFound -> HttpStatusCode.NotFound
-        is ParticipantError.UserNotOnTable -> HttpStatusCode.NotFound
         is UserError.OAuthError -> TODO()
         is UserError.AlreadyLoggedIn -> HttpStatusCode.Conflict
         is UserError.TokenMismatch -> HttpStatusCode.Unauthorized
         is UserError.TokenNotFound -> HttpStatusCode.NotFound
         is UserError.IdNotFound -> HttpStatusCode.NotFound
-        is BoardPlacementError.PositionTaken -> HttpStatusCode.Conflict
-        is BoardPlacementError.TileConnectionMismatch -> HttpStatusCode.Conflict
+
+        is TableError.DuplicateName -> HttpStatusCode.Conflict
+        is TableError.UserUnavailable -> HttpStatusCode.Conflict
+        is TableError.UserNotFound -> HttpStatusCode.NotFound
+        is TableError.TableDoesNotExist -> HttpStatusCode.NotFound
+        is TableError.OwnerOnly -> HttpStatusCode.Forbidden
+        is TableError.MinimumPlayersNeeded -> HttpStatusCode.Conflict
+        is TableError.EveryPlayerReady -> HttpStatusCode.Conflict
+
+        is ParticipantError.ParticipantEmailNotFound -> HttpStatusCode.NotFound
+        is ParticipantError.ParticipantIdNotFound -> HttpStatusCode.NotFound
+        is ParticipantError.UserNotOnTable -> HttpStatusCode.NotFound
+
+        is BoardError.PositionTaken -> HttpStatusCode.Conflict
+        is BoardError.TileConnectionMismatch -> HttpStatusCode.Conflict
+        is BoardError.CharacterLimitReached -> HttpStatusCode.Conflict
+        is BoardError.CharacterPlacementRestriction -> HttpStatusCode.Conflict
+        is BoardError.EmptyTile -> HttpStatusCode.NotFound
+        is BoardError.EquipItemRestriction -> HttpStatusCode.Conflict
+        is BoardError.EquipYourCharacter -> HttpStatusCode.BadRequest
+        is BoardError.TileNotFound -> HttpStatusCode.NotFound
+        is BoardError.TileOccupied -> HttpStatusCode.Conflict
+        is BoardError.TilePlacementRestriction -> HttpStatusCode.Conflict
+
         is GameError.InvalidFormat -> HttpStatusCode.BadRequest
-        is GameError.MinimumPlayersNeeded -> HttpStatusCode.Conflict
         is GameError.NotYourTurn -> HttpStatusCode.Forbidden
-        is GameError.EveryPlayerReady -> HttpStatusCode.Conflict
         is GameError.GameNotFound -> HttpStatusCode.NotFound
         is GameError.PlayerNotFound -> HttpStatusCode.NotFound
         is GameError.DungeonTurnZeroRule -> HttpStatusCode.Conflict
-        is GameError.CharacterPlacementRestriction -> HttpStatusCode.Conflict
         is GameError.MustPlaceTile -> HttpStatusCode.Conflict
         is GameError.NoActiveCharacters -> HttpStatusCode.Conflict
-        is GameError.TilePlacementRestriction -> HttpStatusCode.Conflict
-        is GameError.TileOccupied -> HttpStatusCode.Conflict
-        is GameError.InvalidCardFormat -> HttpStatusCode.BadRequest
-        is GameError.CharacterLimitReached -> HttpStatusCode.Conflict
+
+        is CardError.InvalidCardFormat -> HttpStatusCode.BadRequest
+        
+        is CharacterError.ItemCapacityLimit -> HttpStatusCode.Conflict
     }
 
     return code to message

@@ -73,7 +73,7 @@ data class CharacterDTO(
     val baseStats: String,
     val activeModifiers: Array<ModifierDTO>,
     val grade: String,
-    val item: Array<ItemDTO>,
+    val items: Array<ItemDTO>,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -85,7 +85,7 @@ data class CharacterDTO(
         if (name != other.name) return false
         if (baseStats != other.baseStats) return false
         if (!activeModifiers.contentEquals(other.activeModifiers)) return false
-        if (!item.contentEquals(other.item)) return false
+        if (!items.contentEquals(other.items)) return false
 
         return true
     }
@@ -94,7 +94,7 @@ data class CharacterDTO(
         result = 31 * result + name.hashCode()
         result = 31 * result + baseStats.hashCode()
         result = 31 * result + activeModifiers.contentHashCode()
-        result = 31 * result + item.contentHashCode()
+        result = 31 * result + items.contentHashCode()
         return result
     }
 }

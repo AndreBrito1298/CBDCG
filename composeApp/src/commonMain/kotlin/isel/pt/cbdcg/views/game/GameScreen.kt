@@ -111,6 +111,7 @@ fun GameScreen(
                         gameBoard = game.board.tiles,
                         canClickGrid = cardtype != null && cardtype == CardType.TILE,
                         canPlaceCharacter = cardtype != null && cardtype == CardType.CHARACTER,
+                        canEquipItem = cardtype != null && cardtype == CardType.ITEM,
                         tileSize = 128.dp * zoom,
                         placeCard = { pos ->
                             if (selection is PlaceCard) {

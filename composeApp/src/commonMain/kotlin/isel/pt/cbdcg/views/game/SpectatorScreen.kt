@@ -83,6 +83,7 @@ fun SpectatorScreen(
                         gameBoard = game.board.tiles,
                         canClickGrid = false,
                         canPlaceCharacter = false,
+                        canEquipItem = false,
                         tileSize = 128.dp * zoom,
                         placeCard = {},
                         seeStats = { card ->

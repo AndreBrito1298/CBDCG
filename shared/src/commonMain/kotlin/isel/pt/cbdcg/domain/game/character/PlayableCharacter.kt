@@ -1,13 +1,15 @@
 package isel.pt.cbdcg.domain.game.character
 
 import isel.pt.cbdcg.dto.CharacterDTO
+import isel.pt.cbdcg.error.CharacterError
 
 data class PlayableCharacter(
     override val name: String,
     override val baseStats: Stats,
     override val activeStatModifiers: List<StatModifier> = listOf(),
     override val grade: Grade,
-    val items: List<Item> = listOf()
+    val items: List<Item> = listOf(),
+    val maxItems: Int = 1
 ) : Character {
 
     override val type: CharacterType = CharacterType.PLAYABLE
@@ -26,15 +28,24 @@ data class PlayableCharacter(
             baseStats = baseStats.toString(),
             activeModifiers = activeStatModifiers.map{ it.toModifierDTO() }.toTypedArray(),
             grade = grade.code(),
-            item = items.map{ it.toItemDTO() }.toTypedArray()
+            items = items.map{ it.toItemDTO() }.toTypedArray()
         )
+}
+
+fun PlayableCharacter.equipItem(item: Item): PlayableCharacter {
+
+    if(items.size >= maxItems)
+        throw CharacterError.ItemCapacityLimit(maxItems)
+
+    return copy(items = items + item)
 }
 
 fun CharacterDTO.toPlayableCharacter(): PlayableCharacter =
     PlayableCharacter(
-        name = this.name,
-        baseStats = this.baseStats.toStats(),
-        activeStatModifiers = this.activeModifiers.map{ it.toModifier() },
+        name = name,
+        baseStats = baseStats.toStats(),
+        activeStatModifiers = activeModifiers.map{ it.toModifier() },
+        items = items.map{ it.toItem() },
         grade = grade.toGrade()
     )
 object PlayableCharacterCatalog {
@@ -51,7 +62,7 @@ object PlayableCharacterCatalog {
         PlayableCharacter(name = "beast_warrior", baseStats = Stats(4, 1, 1, 3), grade = Grade.BASIC),
         PlayableCharacter(name = "nun", baseStats = Stats(3, 1, 1, 3), grade = Grade.BASIC),
         PlayableCharacter(name = "druid", baseStats = Stats(2, 3, 2, 1), grade = Grade.BASIC),
-        PlayableCharacter(name = "scrap_robot", baseStats = Stats(1, 2, 3, 3), grade = Grade.BASIC),
+        PlayableCharacter(name = "scrap_robot", baseStats = Stats(1, 2, 3, 3), grade = Grade.BASIC, maxItems = 2),
         PlayableCharacter(name = "juggernaut", baseStats = Stats(3, 3, 1, 2), grade = Grade.BASIC),
         PlayableCharacter(name = "necromancer", baseStats = Stats(3, 2, 1, 3), grade = Grade.BASIC),
         PlayableCharacter(name = "taoist", baseStats = Stats(2, 2, 2, 3), grade = Grade.BASIC),

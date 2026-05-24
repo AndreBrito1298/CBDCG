@@ -64,11 +64,11 @@ fun PlayerHand(
                     place = placeSignal,
                     seeStats = { seeStatsSignal(card) },
                 )
-
                 is ItemCard -> PlayerItemCard(
                     item = card.item,
                     select = { selectCard(index, card) },
                     isSelected = if(selected == null) false else selected == index,
+                    equip = placeSignal,
                     seeStats = { seeStatsSignal(card) },
                 )
             }

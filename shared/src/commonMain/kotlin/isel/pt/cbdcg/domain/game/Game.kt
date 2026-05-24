@@ -8,6 +8,7 @@ import isel.pt.cbdcg.domain.game.board.Effect
 import isel.pt.cbdcg.domain.game.board.Entity
 import isel.pt.cbdcg.domain.game.board.Tile
 import isel.pt.cbdcg.domain.game.board.applyBoardTileEffect
+import isel.pt.cbdcg.domain.game.board.equipItem
 import isel.pt.cbdcg.domain.game.board.placeCharacter
 import isel.pt.cbdcg.domain.game.board.placeTile
 import isel.pt.cbdcg.domain.game.board.toBoardTile
@@ -88,18 +89,8 @@ fun Game.placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: 
 
     val newBoard = when(card.type){
         CardType.TILE -> board.placeTile(position, (card as TileCard).tile, turn.phase)
-        CardType.CHARACTER -> {
-
-            if(player.currentCharacter != null)
-                throw GameError.CharacterLimitReached()
-
-            // Verificação se ele quer trocar de character (place em cima do seu próprio personagem)
-            // A troca pode ser feita por um botão na UI, ou manualmente.
-            // Antes do place, tem de ser removido o character da tile.
-
-            board.placeCharacter(position, (card as CharacterCard).character, turn.phase)
-        }
-        CardType.ITEM -> TODO()
+        CardType.CHARACTER -> board.placeCharacter(position, player, (card as CharacterCard).character, turn.phase)
+        CardType.ITEM -> board.equipItem(position, player, (card as ItemCard).item, turn.phase)
     }
 
     val updatedPlayers = players.map{

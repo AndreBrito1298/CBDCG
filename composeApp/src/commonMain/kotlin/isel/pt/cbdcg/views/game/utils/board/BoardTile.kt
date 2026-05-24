@@ -26,7 +26,8 @@ fun BoardTile(
     position: BoardPosition,
     tileSize: Dp,
     placeCharacterFlag: Boolean,
-    placeCharacter: () -> Unit,
+    equipItemFlag: Boolean,
+    placeCard: () -> Unit,
     seeStats: () -> Unit
 ) {
 
@@ -38,7 +39,7 @@ fun BoardTile(
             .size(tileSize)
             .then(
                 if(placeCharacterFlag)
-                    Modifier.clickable { placeCharacter() }
+                    Modifier.clickable { placeCard() }
                 else Modifier
             ),
         contentAlignment = Alignment.Center
@@ -75,7 +76,11 @@ fun BoardTile(
                 contentDescription = "Character",
                 modifier = Modifier
                     .size(tileSize)
-                    .clickable(enabled = !placeCharacterFlag){ seeStats() }
+                    .then(
+                if(equipItemFlag) Modifier.clickable{ placeCard() }
+                        else if(!equipItemFlag && !placeCharacterFlag) Modifier.clickable { seeStats() }
+                        else Modifier
+                    )
             )
         }
     }

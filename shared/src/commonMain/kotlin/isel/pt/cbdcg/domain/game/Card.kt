@@ -9,6 +9,7 @@ import isel.pt.cbdcg.domain.game.character.toItem
 import isel.pt.cbdcg.domain.game.character.toItemDTO
 import isel.pt.cbdcg.domain.game.character.toPlayableCharacter
 import isel.pt.cbdcg.dto.CardDTO
+import isel.pt.cbdcg.error.CardError
 import isel.pt.cbdcg.error.GameError
 
 
@@ -72,10 +73,10 @@ data class ItemCard(
 fun CardDTO.toCard(): Card =
     when(type.toCardType()) {
         CardType.TILE ->
-            TileCard(tile?.toTile() ?: throw GameError.InvalidCardFormat("TileCard does not contain a Tile"))
+            TileCard(tile?.toTile() ?: throw CardError.InvalidCardFormat("TileCard does not contain a Tile"))
         CardType.CHARACTER ->
-            CharacterCard(character?.toPlayableCharacter() ?: throw GameError.InvalidCardFormat("CharacterCard does not contain a Character"))
+            CharacterCard(character?.toPlayableCharacter() ?: throw CardError.InvalidCardFormat("CharacterCard does not contain a Character"))
         CardType.ITEM ->
-            ItemCard(item = item?.toItem() ?: throw GameError.InvalidCardFormat("ItemCard does not contain an Item"))
+            ItemCard(item = item?.toItem() ?: throw CardError.InvalidCardFormat("ItemCard does not contain an Item"))
     }
 

@@ -18,6 +18,7 @@ fun PlayerItemCard(
     item: Item,
     select: () -> Unit,
     isSelected: Boolean,
+    equip: () -> Unit,
     seeStats: () -> Unit,
 ){
     Box(
@@ -39,6 +40,10 @@ fun PlayerItemCard(
                 onClick = seeStats,
             )
 
+            DropdownMenuItem(
+                text = { Text("Equip") },
+                onClick = equip,
+            )
         }
     }
 }
