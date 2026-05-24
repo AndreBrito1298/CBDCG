@@ -10,8 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import cbdcg.composeapp.generated.resources.Res
-import cbdcg.composeapp.generated.resources.allDrawableResources
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.views.game.utils.ZoomedImage
 
@@ -21,19 +19,15 @@ fun PlayerCharacterCard(
     character: PlayableCharacter,
     select: () -> Unit,
     isSelected: Boolean,
-    place: () -> Unit
+    place: () -> Unit,
+    seeStats: () -> Unit,
 ) {
-
-    val fileName = character.name
-    val resource = Res.allDrawableResources[fileName]
-        ?: error("Drawable not found: $fileName")
-
     Box(
         modifier= Modifier.border(1.dp, Color.Black).padding(8.dp)
     ){
 
         ZoomedImage(
-            resource = resource,
+            fileName = character.name,
             zoom = 2.0f,
             select = select,
             canSelect = true
@@ -48,6 +42,10 @@ fun PlayerCharacterCard(
                 onClick = place
             )
 
+            DropdownMenuItem(
+                text = { Text("See Character Stats") },
+                onClick = seeStats
+            )
         }
     }
 }

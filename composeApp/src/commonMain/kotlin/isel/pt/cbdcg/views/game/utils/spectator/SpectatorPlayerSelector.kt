@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Player
 
 @Composable
@@ -18,6 +19,7 @@ fun SpectatorPlayerSelector(
     players: List<Player>,
     selectedPlayer: Player?,
     onSelectPlayer: (UInt) -> Unit,
+    onSeeStats: (Card) -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxSize()
@@ -34,7 +36,7 @@ fun SpectatorPlayerSelector(
             if(selectedPlayer == null){
                 players.forEach { player ->
                     SpectatorPlayerIcons(
-                        characterName = player.currentCharacter?.name,
+                        characterName = player.currentCharacter,
                         isSelected = false,
                         onClick = { onSelectPlayer(player.user.id) }
                     )
@@ -42,14 +44,14 @@ fun SpectatorPlayerSelector(
             }
             else{
                 SpectatorPlayerIcons(
-                    characterName = selectedPlayer.currentCharacter?.name,
+                    characterName = selectedPlayer.currentCharacter,
                     isSelected = true,
                     onClick = { onSelectPlayer(selectedPlayer.user.id) }
                 )
-
                 selectedPlayer.hand.forEach { (_, card) ->
                     SpectatorCard(
                         card = card,
+                        onSeeStats = { onSeeStats(card) }
                     )
                 }
             }

@@ -16,6 +16,7 @@ import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CharacterCard
 import isel.pt.cbdcg.domain.game.ItemCard
 import isel.pt.cbdcg.domain.game.TileCard
+import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 
 @Composable
 fun PlayerHand(
@@ -23,6 +24,7 @@ fun PlayerHand(
     selectCard: (UInt, Card) -> Unit,
     selected: UInt?,
     placeSignal: () -> Unit,
+    seeStatsSignal: (Card) -> Unit,
     rotateLeft: (UInt) -> Unit,
     rotateRight: (UInt) -> Unit,
 ){
@@ -56,15 +58,18 @@ fun PlayerHand(
                     rotateRight = { rotateRight(index) }
                 )
                 is CharacterCard -> PlayerCharacterCard(
-                    character = card.character,
+                    character = card.character as PlayableCharacter,
                     select = { selectCard(index, card) },
                     isSelected = if(selected == null) false else selected == index,
                     place = placeSignal,
+                    seeStats = { seeStatsSignal(card) },
                 )
 
                 is ItemCard -> PlayerItemCard(
                     item = card.item,
-                    select = {  }
+                    select = { selectCard(index, card) },
+                    isSelected = if(selected == null) false else selected == index,
+                    seeStats = { seeStatsSignal(card) },
                 )
             }
         }

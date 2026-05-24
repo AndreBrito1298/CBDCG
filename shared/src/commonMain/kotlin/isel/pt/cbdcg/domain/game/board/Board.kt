@@ -1,7 +1,7 @@
 package isel.pt.cbdcg.domain.game.board
 
 import isel.pt.cbdcg.domain.game.TurnPhase
-import isel.pt.cbdcg.domain.game.character.PlayableCharacter
+import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.error.BoardPlacementError.*
 import isel.pt.cbdcg.error.GameError
 import kotlin.collections.plus
@@ -37,7 +37,9 @@ fun Board.placeTile(position: BoardPosition, tile: Tile, turnPhase: TurnPhase): 
     return copy(tiles = tiles + BoardTile(position, tile, null))
 }
 
-fun Board.placeCharacter(position: BoardPosition, character: PlayableCharacter, phase: TurnPhase): Board {
+fun Board.placeCharacter(position: BoardPosition, character: Character, turnPhase: TurnPhase): Board {
+    if(turnPhase != TurnPhase.SUBSTITUTION)
+        throw GameError.CharacterPlacementRestriction()
 
     if(tiles.any{ it.pos == position && it.character != null })
         throw GameError.TileOccupied()

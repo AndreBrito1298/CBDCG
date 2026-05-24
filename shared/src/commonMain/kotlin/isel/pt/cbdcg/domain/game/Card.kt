@@ -3,8 +3,8 @@ package isel.pt.cbdcg.domain.game
 import isel.pt.cbdcg.domain.game.board.Tile
 import isel.pt.cbdcg.domain.game.board.toTile
 import isel.pt.cbdcg.domain.game.board.toTileDTO
+import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.Item
-import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.domain.game.character.toItem
 import isel.pt.cbdcg.domain.game.character.toItemDTO
 import isel.pt.cbdcg.domain.game.character.toPlayableCharacter
@@ -44,7 +44,7 @@ data class TileCard(
 }
 
 data class CharacterCard(
-    val character: PlayableCharacter
+    val character: Character
 ) : Card {
     override val type = CardType.CHARACTER
     override fun toCardDTO(): CardDTO =

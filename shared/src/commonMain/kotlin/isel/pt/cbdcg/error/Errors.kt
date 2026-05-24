@@ -97,7 +97,6 @@ sealed class GameError(
     class DungeonTurnZeroRule: GameError("You can only place Tiles.")
     class TilePlacementRestriction : GameError("You can only place a Tile during the Construction Phase.")
     class CharacterPlacementRestriction : GameError("You can only place a Character during the Substitution Phase.")
-    class NoTileFound(x: Int, y: Int) : GameError("There is no Tile in the position ($x,$y).")
     class MustPlaceTile(max: Int) : GameError("You can have a maximum of $max tiles in your hand.")
     class NoActiveCharacters : GameError("You must have at least one active character.")
     class TileOccupied : GameError("This tile is occupied.")

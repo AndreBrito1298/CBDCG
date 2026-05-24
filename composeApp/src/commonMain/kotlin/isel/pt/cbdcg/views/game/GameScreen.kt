@@ -31,6 +31,7 @@ import isel.pt.cbdcg.views.game.utils.board.Board
 import isel.pt.cbdcg.views.game.utils.InGameHeader
 import isel.pt.cbdcg.views.game.utils.players.PlayerHand
 import isel.pt.cbdcg.views.game.utils.board.ZoomButtons
+import isel.pt.cbdcg.views.game.utils.cardInfo.CardStatsDialog
 
 @Composable
 fun GameScreen(
@@ -42,6 +43,7 @@ fun GameScreen(
 ) {
 
     var selection by remember { mutableStateOf<CardSelection>(None) }
+    var statsCard by remember { mutableStateOf<Card?>(null) }
     var zoom by remember { mutableStateOf(1f) }
 
     val currentPlayer = game.players.find {
@@ -108,7 +110,7 @@ fun GameScreen(
                     Board(
                         gameBoard = game.board.tiles,
                         canClickGrid = cardtype != null && cardtype == CardType.TILE,
-                        canClickTiles = cardtype != null && cardtype == CardType.CHARACTER,
+                        canPlaceCharacter = cardtype != null && cardtype == CardType.CHARACTER,
                         tileSize = 128.dp * zoom,
                         placeCard = { pos ->
                             if (selection is PlaceCard) {
@@ -118,6 +120,10 @@ fun GameScreen(
                                 selection = None
                             }
                         },
+                        seeStats = { card ->
+                            statsCard = card
+                            selection = None
+                        }
                     )
                     ZoomButtons(
                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
@@ -134,25 +140,25 @@ fun GameScreen(
                     PlayerHand(
                         hand = player.hand,
                         selectCard = { idx, card ->
-                            selection = when (selection) {
+                            selection = when (val selected = selection) {
                                 is None, is PlaceCard -> Selected(idx, card)
                                 is Selected -> {
-                                    if ((selection as Selected).idx == idx)
-                                        None
+                                    if (selected.idx == idx) None
                                     else Selected(idx, card)
                                 }
                             }
                         },
-                        selected = when (selection) {
-                            is None -> null
-                            is PlaceCard -> null
-                            is Selected -> (selection as Selected).idx
+                        selected = when (val selected = selection) {
+                            is Selected -> selected.idx
+                            else -> null
                         },
                         placeSignal = {
-                            if(selection is Selected){
-                                val (idx, card) = (selection as Selected)
-                                selection = PlaceCard(idx, card)
-                            }
+                            val selected = selection
+                            if(selected is Selected) selection = PlaceCard(selected.idx, selected.card)
+                        },
+                        seeStatsSignal = { card ->
+                            statsCard = card
+                            selection = None
                         },
                         rotateLeft = { idx ->
                             if(selection is Selected){
@@ -187,10 +193,16 @@ fun GameScreen(
             }
         }
     }
+
+    statsCard?.let { card ->
+        CardStatsDialog(
+            card = card,
+            onDismiss = { statsCard = null }
+        )
+    }
 }
 
 sealed interface CardSelection {
-
     data object None : CardSelection
     data class Selected(
         val idx: UInt,
@@ -200,5 +212,4 @@ sealed interface CardSelection {
         val idx: UInt,
         val card: Card
     ) : CardSelection
-
 }

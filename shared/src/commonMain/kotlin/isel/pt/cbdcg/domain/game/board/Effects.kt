@@ -48,17 +48,7 @@ class steal(val speed: UInt): Effect<Player> {
         origin: Player,
         vararg targets: BoardTile?
     ): EffectResult<Player> {
-        if(origin.currentCharacter!!.baseStats.spe<speed && origin.hand.isNotEmpty()){
-            if(speed == 3u){
-                //origin.hand.filter { it.value.type == CardType.Item }
-                // val p = origin.removeFromHand(Random.nextInt(1, origin.hand.size).toUInt())
-                //return EffectResult.One()
-            }
-            else if(speed == 4u){
-                TODO()
-            }
-        }
-        return EffectResult.One(origin)
+        TODO()
     }
 }
 
@@ -74,7 +64,7 @@ class attack(
         val res = mutableListOf<BoardTile>()
         targets.forEach {
             //   val evade = Random()
-            val newHp = it!!.character!!.baseStats.hp+(hpMod?:0u) - (origin.character!!.baseStats.atk+(attackMod?:0u)-origin.character.baseStats.def)
+            val newHp = it!!.character!!.baseStats.hp+(hpMod?.toInt()?:0) - (origin.character!!.baseStats.atk+(attackMod?.toInt()?:0)-origin.character.baseStats.def)
             val newStats = it.character.baseStats.copy(hp = newHp)
             // res.add(it.copy(character = it.character.editStats(newStats)))
         }

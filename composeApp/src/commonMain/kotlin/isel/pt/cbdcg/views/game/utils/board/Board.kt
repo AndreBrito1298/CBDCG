@@ -8,6 +8,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
+import isel.pt.cbdcg.domain.game.Card
+import isel.pt.cbdcg.domain.game.CharacterCard
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTiles
 import isel.pt.cbdcg.domain.game.board.getAdjacent
@@ -18,9 +20,10 @@ import isel.pt.cbdcg.domain.game.board.getBlocked
 fun Board(
     gameBoard: BoardTiles,
     canClickGrid: Boolean,
-    canClickTiles: Boolean,
+    canPlaceCharacter: Boolean,
     tileSize: Dp,
     placeCard: (BoardPosition) -> Unit,
+    seeStats: (Card) -> Unit,
 ) {
 
     val positions = gameBoard.map { it.pos }
@@ -55,12 +58,14 @@ fun Board(
                         val character = boardTile.character
 
                         BoardTile(
-                            tileCode,
-                            character?.name,
-                            position,
-                            tileSize,
-                            canClickTiles && character == null
-                        ) { placeCard(position) }
+                            tileCode = tileCode,
+                            characterName = character?.name,
+                            position = position,
+                            tileSize = tileSize,
+                            placeCharacterFlag = canPlaceCharacter,
+                            placeCharacter = { placeCard(position) },
+                            seeStats = { if(character != null) seeStats(CharacterCard(character)) }
+                        )
                     }
                     else EmptyBoardTile(canClickGrid, tileSize){ placeCard(position) }
                 }

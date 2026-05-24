@@ -33,7 +33,7 @@ data class CardDTO(
 data class PlayerDTO(
     val user: UserDTO,
     val hand: Array<CardDTO>,
-    val currentCharacter: CharacterDTO?,
+    val currentCharacter: String?,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -63,7 +63,6 @@ data class SpectatorDTO(
 @Serializable
 data class ModifierDTO(
     val stats: String,
-    val positive: Boolean,
     val duration: Int,
 )
 

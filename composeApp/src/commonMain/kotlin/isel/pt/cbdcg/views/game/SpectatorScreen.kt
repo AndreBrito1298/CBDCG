@@ -17,12 +17,14 @@ import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.Game
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.views.game.utils.board.Board
 import isel.pt.cbdcg.views.game.utils.InGameHeader
 import isel.pt.cbdcg.views.game.utils.spectator.SpectatorPlayerSelector
 import isel.pt.cbdcg.views.game.utils.board.ZoomButtons
+import isel.pt.cbdcg.views.game.utils.cardInfo.CardStatsDialog
 
 @Composable
 fun SpectatorScreen(
@@ -31,6 +33,7 @@ fun SpectatorScreen(
 ){
 
     var selectedId by remember(game.id) { mutableStateOf<UInt?>(null) }
+    var cardStats by remember { mutableStateOf<Card?>(null) }
     var zoom by remember { mutableStateOf(1f) }
 
     val currentPlayer = game.players.find {
@@ -79,9 +82,12 @@ fun SpectatorScreen(
                     Board(
                         gameBoard = game.board.tiles,
                         canClickGrid = false,
-                        canClickTiles = false,
+                        canPlaceCharacter = false,
                         tileSize = 128.dp * zoom,
                         placeCard = {},
+                        seeStats = { card ->
+                            cardStats = card
+                        }
                     )
                     ZoomButtons(
                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
@@ -102,10 +108,20 @@ fun SpectatorScreen(
                             selectedId =
                                 if (selectedId == playerId) null
                                 else playerId
-                        }
+                        },
+                        onSeeStats = { card ->
+                            cardStats = card
+                        },
                     )
                 }
             }
         }
+    }
+
+    cardStats?.let { card ->
+        CardStatsDialog(
+            card = card,
+            onDismiss = { cardStats = null }
+        )
     }
 }

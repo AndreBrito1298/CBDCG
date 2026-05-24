@@ -10,16 +10,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import org.jetbrains.compose.resources.DrawableResource
+import cbdcg.composeapp.generated.resources.Res
+import cbdcg.composeapp.generated.resources.allDrawableResources
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun ZoomedImage(
-    resource: DrawableResource,
+    fileName: String,
     zoom: Float,
     select: () -> Unit,
     canSelect: Boolean
 ) {
+
+    val resource = Res.allDrawableResources[fileName]
+        ?: Res.allDrawableResources["missing_texture"]
+        ?: error("Drawable not found: $fileName")
 
     Box(
         modifier = Modifier
@@ -30,7 +35,7 @@ fun ZoomedImage(
     ){
         Image(
             painter = painterResource(resource),
-            contentDescription = "Card",
+            contentDescription = fileName,
             modifier = Modifier
                 .size(128.dp)
                 .graphicsLayer {

@@ -2,22 +2,19 @@ package isel.pt.cbdcg.domain.game.character
 
 import isel.pt.cbdcg.dto.ModifierDTO
 
-class Modifier(
+class StatModifier(
     val stats: Stats,
-    val positive: Boolean,
     val duration: UInt,
 )
 
-fun ModifierDTO.toModifier(): Modifier {
+fun ModifierDTO.toModifier(): StatModifier {
     val stats = this.stats.toStats()
-    val positive = this.positive
     val duration = this.duration.toUInt()
 
-    return Modifier(stats, positive, duration)
+    return StatModifier(stats, duration)
 }
-fun Modifier.toModifierDTO(): ModifierDTO =
+fun StatModifier.toModifierDTO(): ModifierDTO =
     ModifierDTO(
         stats = this.stats.toString(),
-        positive = this.positive,
         duration = this.duration.toInt()
     )

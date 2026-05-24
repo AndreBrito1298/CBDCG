@@ -17,11 +17,11 @@ interface Character: Entity {
     val type: CharacterType
     val name: String
     val baseStats: Stats
-    val activeModifiers: List<Modifier>
+    val activeStatModifiers: List<StatModifier>
     val grade: Grade
 
-    fun addModifier(newModifier: Modifier): Character
-    fun removeModifier(modifier: Modifier): Character
+    fun addModifier(newStatModifier: StatModifier): Character
+    fun removeModifier(statModifier: StatModifier): Character
     fun toCharacterDTO(): CharacterDTO
 }
 

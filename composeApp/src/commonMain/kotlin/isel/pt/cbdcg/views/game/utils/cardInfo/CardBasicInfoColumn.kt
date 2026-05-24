@@ -1,0 +1,58 @@
+package isel.pt.cbdcg.views.game.utils.cardInfo
+
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import isel.pt.cbdcg.views.game.utils.ZoomedImage
+
+@Composable
+fun CardBasicInfoColumn(
+    modifier: Modifier,
+    name: String,
+    zoom: Float,
+    grade: String,
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .border(1.dp, Color.Black)
+                    .padding(8.dp)
+            ) {
+                ZoomedImage(
+                    fileName = name,
+                    zoom = zoom,
+                    select = {},
+                    canSelect = false
+                )
+            }
+
+            Text(
+                text = name.replace('_', ' ').uppercase(),
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                text = grade,
+                fontSize = 13.sp
+            )
+        }
+    }
+}

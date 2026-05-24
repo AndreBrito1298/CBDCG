@@ -7,8 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import cbdcg.composeapp.generated.resources.Res
-import cbdcg.composeapp.generated.resources.allDrawableResources
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CharacterCard
 import isel.pt.cbdcg.domain.game.ItemCard
@@ -18,6 +16,7 @@ import isel.pt.cbdcg.views.game.utils.ZoomedImage
 @Composable
 fun SpectatorCard(
     card: Card,
+    onSeeStats: () -> Unit,
 ) {
 
     val (fileName, zoom) =
@@ -27,20 +26,27 @@ fun SpectatorCard(
             is ItemCard -> card.item.name to 1.0f
         }
 
-    val resource = Res.allDrawableResources[fileName]
-        ?: Res.allDrawableResources["missing_texture"]
-        ?: error("Drawable not found: $fileName")
-
     Box(
         modifier = Modifier
             .border(1.dp, Color.Black)
             .padding(8.dp)
     ) {
-        ZoomedImage(
-            resource = resource,
-            zoom = zoom,
-            select = {},
-            canSelect = false
-        )
+        when (card) {
+            is CharacterCard, is ItemCard -> {
+                ZoomedImage(
+                    fileName = fileName,
+                    zoom = zoom,
+                    select = onSeeStats,
+                    canSelect = true
+                )
+            }
+
+            is TileCard -> ZoomedImage(
+                fileName = card.tile.toString(),
+                zoom = zoom,
+                select = {},
+                canSelect = false
+            )
+        }
     }
 }

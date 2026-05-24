@@ -25,8 +25,9 @@ fun BoardTile(
     characterName: String?,
     position: BoardPosition,
     tileSize: Dp,
-    canClickTiles: Boolean,
+    placeCharacterFlag: Boolean,
     placeCharacter: () -> Unit,
+    seeStats: () -> Unit
 ) {
 
     val tileResource = Res.allDrawableResources[tileCode]
@@ -36,7 +37,7 @@ fun BoardTile(
         modifier = Modifier
             .size(tileSize)
             .then(
-                if(canClickTiles)
+                if(placeCharacterFlag)
                     Modifier.clickable { placeCharacter() }
                 else Modifier
             ),
@@ -48,7 +49,7 @@ fun BoardTile(
             modifier = Modifier.fillMaxSize()
         )
 
-        if (canClickTiles) {
+        if (placeCharacterFlag) {
             Box(
                 modifier = Modifier
                     .size(tileSize / 3)
@@ -72,7 +73,9 @@ fun BoardTile(
             Image(
                 painter = painterResource(characterResource),
                 contentDescription = "Character",
-                modifier = Modifier.size(tileSize)
+                modifier = Modifier
+                    .size(tileSize)
+                    .clickable(enabled = !placeCharacterFlag){ seeStats() }
             )
         }
     }

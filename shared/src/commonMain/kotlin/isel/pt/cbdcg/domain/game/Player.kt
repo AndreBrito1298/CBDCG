@@ -2,8 +2,6 @@ package isel.pt.cbdcg.domain.game
 
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.game.board.Entity
-import isel.pt.cbdcg.domain.game.character.PlayableCharacter
-import isel.pt.cbdcg.domain.game.character.toPlayableCharacter
 import isel.pt.cbdcg.domain.toUserDTO
 import isel.pt.cbdcg.dto.PlayerDTO
 import isel.pt.cbdcg.dto.toUser
@@ -19,7 +17,7 @@ fun PlayerHand.numTileCards(): Int =
 data class Player(
     val user: User,
     val hand: PlayerHand,
-    val currentCharacter: PlayableCharacter?,
+    val currentCharacter: String?,
 ) : Entity
 
 
@@ -32,13 +30,14 @@ fun Player.removeFromHand(idx: UInt): Player {
 
     val card = hand.get(idx)
     val updatedCharacter =
-        if(card != null && card.type == CardType.CHARACTER) (card as CharacterCard).character
+        if(card != null && card.type == CardType.CHARACTER) (card as CharacterCard).character.name
         else this.currentCharacter
 
     val updatedHand = hand
         .filterKeys{ it != idx }.values
         .mapIndexed{ newIdx, card -> newIdx.toUInt() to card }
         .toMap()
+
     return copy(hand = updatedHand, currentCharacter = updatedCharacter)
 }
 
@@ -46,7 +45,7 @@ fun Player.toPlayerDTO(): PlayerDTO =
     PlayerDTO(
         user = user.toUserDTO(),
         hand = hand.map{ (_, card) -> card.toCardDTO() }.toTypedArray(),
-        currentCharacter = currentCharacter?.toCharacterDTO()
+        currentCharacter = currentCharacter
     )
 
 fun PlayerDTO.toPlayer(): Player{
@@ -56,6 +55,6 @@ fun PlayerDTO.toPlayer(): Player{
     return Player(
         user = user.toUser(),
         hand = hand,
-        currentCharacter = currentCharacter?.toPlayableCharacter()
+        currentCharacter = currentCharacter
     )
 }
