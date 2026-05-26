@@ -20,7 +20,7 @@ fun PlayerCharacterCard(
     select: () -> Unit,
     isSelected: Boolean,
     place: () -> Unit,
-    seeStats: () -> Unit,
+    inspect: () -> Unit,
 ) {
     Box(
         modifier= Modifier.border(1.dp, Color.Black).padding(8.dp)
@@ -44,7 +44,7 @@ fun PlayerCharacterCard(
 
             DropdownMenuItem(
                 text = { Text("See Character Stats") },
-                onClick = seeStats
+                onClick = inspect
             )
         }
     }

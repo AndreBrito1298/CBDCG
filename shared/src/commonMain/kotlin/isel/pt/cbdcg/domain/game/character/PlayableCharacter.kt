@@ -12,7 +12,7 @@ data class PlayableCharacter(
     val maxItems: Int = 1
 ) : Character {
 
-    override val type: CharacterType = CharacterType.PLAYABLE
+    override val role: CharacterRole = CharacterRole.PLAYABLE
 
     override fun addModifier(newStatModifier: StatModifier): Character {
         return copy(activeStatModifiers = activeStatModifiers.plus(newStatModifier))

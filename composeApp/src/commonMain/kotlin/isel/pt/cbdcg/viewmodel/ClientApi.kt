@@ -1,4 +1,4 @@
-package isel.pt.cbdcg
+package isel.pt.cbdcg.viewmodel
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -14,6 +14,7 @@ import io.ktor.http.isSuccess
 import io.ktor.websocket.Frame
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
+import isel.pt.cbdcg.SERVER_PORT
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
@@ -21,8 +22,8 @@ import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.game.Card
-import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
+import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.coords
 import isel.pt.cbdcg.domain.game.toGame
 import isel.pt.cbdcg.dto.CreateGameDTO
@@ -35,11 +36,11 @@ import isel.pt.cbdcg.dto.NextPhaseDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RoleChangeInput
 import isel.pt.cbdcg.dto.RotatePieceDTO
-import isel.pt.cbdcg.dto.TableOperationInput
 import isel.pt.cbdcg.dto.TableDTO
+import isel.pt.cbdcg.dto.TableOperationInput
+import isel.pt.cbdcg.dto.UserDTO
 import isel.pt.cbdcg.dto.WsClientMessage
 import isel.pt.cbdcg.dto.WsServerMessage
-import isel.pt.cbdcg.dto.UserDTO
 import isel.pt.cbdcg.dto.toTable
 import isel.pt.cbdcg.dto.toUser
 import kotlinx.coroutines.CoroutineScope
@@ -105,7 +106,7 @@ class ClientApi(private val client: HttpClient) {
 
         if (socketSession != null) return
 
-        val session = client.webSocketSession("ws://localhost:$SERVER_PORT/ws")
+        val session = client.webSocketSession("ws://localhost:${SERVER_PORT}/ws")
         socketSession = session
 
         listenJob = CoroutineScope(Dispatchers.Default).launch {
@@ -245,7 +246,7 @@ class ClientApi(private val client: HttpClient) {
         // query: Map<String, String> = emptyMap(),
     ): Result<T> = runCatching {
 
-        val response = client.request("http://localhost:$SERVER_PORT/$path") {
+        val response = client.request("http://localhost:${SERVER_PORT}/$path") {
             this.method = method
             contentType(ContentType.Application.Json)
 

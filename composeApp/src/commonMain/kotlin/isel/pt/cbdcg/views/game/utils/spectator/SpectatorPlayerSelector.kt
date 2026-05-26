@@ -17,8 +17,8 @@ import isel.pt.cbdcg.domain.game.Player
 @Composable
 fun SpectatorPlayerSelector(
     players: List<Player>,
-    selectedPlayer: Player?,
-    onSelectPlayer: (UInt) -> Unit,
+    selected: Player?,
+    select: (Player) -> Unit,
     onSeeStats: (Card) -> Unit,
 ) {
     Column(
@@ -33,22 +33,22 @@ fun SpectatorPlayerSelector(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if(selectedPlayer == null){
+            if(selected == null){
                 players.forEach { player ->
                     SpectatorPlayerIcons(
                         characterName = player.currentCharacter,
                         isSelected = false,
-                        onClick = { onSelectPlayer(player.user.id) }
+                        onClick = { select(player) }
                     )
                 }
             }
             else{
                 SpectatorPlayerIcons(
-                    characterName = selectedPlayer.currentCharacter,
+                    characterName = selected.currentCharacter,
                     isSelected = true,
-                    onClick = { onSelectPlayer(selectedPlayer.user.id) }
+                    onClick = { select(selected) }
                 )
-                selectedPlayer.hand.forEach { (_, card) ->
+                selected.hand.forEach { (_, card) ->
                     SpectatorCard(
                         card = card,
                         onSeeStats = { onSeeStats(card) }

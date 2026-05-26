@@ -5,6 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import io.ktor.client.HttpClient
 import isel.pt.cbdcg.navigation.AppNavHost
+import isel.pt.cbdcg.viewmodel.AppViewModel
+import isel.pt.cbdcg.viewmodel.ClientApi
 
 @Composable
 fun App(client: HttpClient) {

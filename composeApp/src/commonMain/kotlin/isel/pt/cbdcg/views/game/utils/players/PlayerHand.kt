@@ -23,12 +23,11 @@ fun PlayerHand(
     hand: Map<UInt, Card>,
     selectCard: (UInt, Card) -> Unit,
     selected: UInt?,
-    placeSignal: () -> Unit,
-    seeStatsSignal: (Card) -> Unit,
-    rotateLeft: (UInt) -> Unit,
-    rotateRight: (UInt) -> Unit,
+    placeCard: () -> Unit,
+    inspectCard: (Card) -> Unit,
+    rotateLeft: () -> Unit,
+    rotateRight: () -> Unit,
 ){
-
     if (hand.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -36,41 +35,43 @@ fun PlayerHand(
         ) {
             Text("Sem cartas na mão")
         }
-        return
-    }
+    } else {
 
-    Row(
-        modifier = Modifier
-            .fillMaxSize()
-            .horizontalScroll(rememberScrollState())
-            .padding(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        hand.forEach { (index, card) ->
-            when(card){
-                is TileCard -> PlayerTileCard(
-                    tile = card.tile,
-                    select = { selectCard(index, card) },
-                    isSelected = if(selected == null) false else selected == index,
-                    place = placeSignal,
-                    rotateLeft = { rotateLeft(index) },
-                    rotateRight = { rotateRight(index) }
-                )
-                is CharacterCard -> PlayerCharacterCard(
-                    character = card.character as PlayableCharacter,
-                    select = { selectCard(index, card) },
-                    isSelected = if(selected == null) false else selected == index,
-                    place = placeSignal,
-                    seeStats = { seeStatsSignal(card) },
-                )
-                is ItemCard -> PlayerItemCard(
-                    item = card.item,
-                    select = { selectCard(index, card) },
-                    isSelected = if(selected == null) false else selected == index,
-                    equip = placeSignal,
-                    seeStats = { seeStatsSignal(card) },
-                )
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .horizontalScroll(rememberScrollState())
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            hand.forEach { (index, card) ->
+                when (card) {
+                    is TileCard -> PlayerTileCard(
+                        tile = card.tile,
+                        select = { selectCard(index, card) },
+                        isSelected = if (selected == null) false else selected == index,
+                        place = placeCard,
+                        rotateLeft = rotateLeft,
+                        rotateRight = rotateRight,
+                    )
+
+                    is CharacterCard -> PlayerCharacterCard(
+                        character = card.character as PlayableCharacter,
+                        select = { selectCard(index, card) },
+                        isSelected = if (selected == null) false else selected == index,
+                        place = placeCard,
+                        inspect = { inspectCard(card) },
+                    )
+
+                    is ItemCard -> PlayerItemCard(
+                        item = card.item,
+                        select = { selectCard(index, card) },
+                        isSelected = if (selected == null) false else selected == index,
+                        equip = placeCard,
+                        inspect = { inspectCard(card) },
+                    )
+                }
             }
         }
     }

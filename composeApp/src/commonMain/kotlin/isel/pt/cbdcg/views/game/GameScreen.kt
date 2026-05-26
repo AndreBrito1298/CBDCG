@@ -10,23 +10,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.Card
-import isel.pt.cbdcg.domain.game.CardType
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
-import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.TurnPhase
-import isel.pt.cbdcg.domain.game.board.rotate
-import isel.pt.cbdcg.views.game.CardSelection.*
+import isel.pt.cbdcg.viewmodel.GameUI
+import isel.pt.cbdcg.viewmodel.GameUIState
 import isel.pt.cbdcg.views.game.utils.board.Board
 import isel.pt.cbdcg.views.game.utils.InGameHeader
 import isel.pt.cbdcg.views.game.utils.players.PlayerHand
@@ -37,14 +31,15 @@ import isel.pt.cbdcg.views.game.utils.cardInfo.CardStatsDialog
 fun GameScreen(
     player: Player,
     game: Game,
-    placeOnBoard: (Card, UInt, BoardPosition) -> Unit,
-    rotateTile: (UInt, Boolean) -> Unit,
+    gameUI: GameUI,
+    selectCard: (UInt, Card) -> Unit,
+    placeSignal: () -> Unit,
+    placeOnBoard: (BoardPosition) -> Unit,
+    toggleCardStats: (Card?) -> Unit,
+    rotateTile: (Boolean) -> Unit,
+    zoom: (Boolean) -> Unit,
     nextPhase: () -> Unit
 ) {
-
-    var selection by remember { mutableStateOf<CardSelection>(None) }
-    var statsCard by remember { mutableStateOf<Card?>(null) }
-    var zoom by remember { mutableStateOf(1f) }
 
     val currentPlayer = game.players.find {
         it.user.id == game.turn.playerTurn.first()
@@ -104,32 +99,17 @@ fun GameScreen(
                     contentAlignment = Alignment.Center
                 ) {
 
-                    val cardtype = if (selection is PlaceCard) { (selection as PlaceCard).card.type }
-                                   else null
-
                     Board(
+                        gameState = gameUI.state,
                         gameBoard = game.board.tiles,
-                        canClickGrid = cardtype != null && cardtype == CardType.TILE,
-                        canPlaceCharacter = cardtype != null && cardtype == CardType.CHARACTER,
-                        canEquipItem = cardtype != null && cardtype == CardType.ITEM,
-                        tileSize = 128.dp * zoom,
-                        placeCard = { pos ->
-                            if (selection is PlaceCard) {
-                                val (idx, card) = (selection as PlaceCard)
-                                placeOnBoard(card, idx ,pos)
-
-                                selection = None
-                            }
-                        },
-                        seeStats = { card ->
-                            statsCard = card
-                            selection = None
-                        }
+                        tileSize = 128.dp * gameUI.boardZoom,
+                        placeCard = { pos -> placeOnBoard(pos) },
+                        seeStats = { card -> toggleCardStats(card) }
                     )
                     ZoomButtons(
                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                        amplify = { zoom = (zoom + 0.25f).coerceAtMost(2f) },
-                        reduce = { zoom = (zoom - 0.25f).coerceAtLeast(0.5f) },
+                        amplify = { zoom(true) },
+                        reduce = { zoom(false) },
                     )
                 }
 
@@ -140,77 +120,22 @@ fun GameScreen(
                 ) {
                     PlayerHand(
                         hand = player.hand,
-                        selectCard = { idx, card ->
-                            selection = when (val selected = selection) {
-                                is None, is PlaceCard -> Selected(idx, card)
-                                is Selected -> {
-                                    if (selected.idx == idx) None
-                                    else Selected(idx, card)
-                                }
-                            }
-                        },
-                        selected = when (val selected = selection) {
-                            is Selected -> selected.idx
-                            else -> null
-                        },
-                        placeSignal = {
-                            val selected = selection
-                            if(selected is Selected) selection = PlaceCard(selected.idx, selected.card)
-                        },
-                        seeStatsSignal = { card ->
-                            statsCard = card
-                            selection = None
-                        },
-                        rotateLeft = { idx ->
-                            if(selection is Selected){
-                                val (selIdx, card) = (selection as Selected)
-                                if(selIdx != idx) return@PlayerHand
-
-                                selection = when(card){
-                                    is TileCard -> {
-                                        rotateTile(idx, false)
-                                        Selected(idx, card.copy(tile = card.tile.rotate(false)))
-                                    }
-                                    else -> selection
-                                }
-                            }
-                        },
-                        rotateRight = { idx ->
-                            if(selection is Selected){
-                                val (selIdx, card) = (selection as Selected)
-                                if(selIdx != idx) return@PlayerHand
-
-                                selection = when(card){
-                                    is TileCard -> {
-                                        rotateTile(idx, true)
-                                        Selected(idx, card.copy(tile = card.tile.rotate(true)))
-                                    }
-                                    else -> selection
-                                }
-                            }
-                        }
+                        selectCard = { idx, card -> selectCard(idx, card) },
+                        selected = (gameUI.state as? GameUIState.SelectCard)?.idx,
+                        placeCard = placeSignal,
+                        inspectCard = { card -> toggleCardStats(card) },
+                        rotateLeft = { rotateTile(false) },
+                        rotateRight = { rotateTile(true) },
                     )
                 }
             }
         }
     }
 
-    statsCard?.let { card ->
+    if(gameUI.state is GameUIState.InspectCard){
         CardStatsDialog(
-            card = card,
-            onDismiss = { statsCard = null }
+            card = gameUI.state.card,
+            onDismiss = { toggleCardStats(null) }
         )
     }
-}
-
-sealed interface CardSelection {
-    data object None : CardSelection
-    data class Selected(
-        val idx: UInt,
-        val card: Card
-    ) : CardSelection
-    data class PlaceCard(
-        val idx: UInt,
-        val card: Card
-    ) : CardSelection
 }

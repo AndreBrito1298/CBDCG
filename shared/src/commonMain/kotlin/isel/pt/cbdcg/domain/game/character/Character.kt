@@ -4,17 +4,17 @@ import isel.pt.cbdcg.domain.game.board.Entity
 import isel.pt.cbdcg.dto.CharacterDTO
 import isel.pt.cbdcg.error.GameError
 
-enum class CharacterType{ PLAYABLE, ENEMY }
+enum class CharacterRole{ PLAYABLE, ENEMY }
 
-fun String.toCharacterType(): CharacterType =
+fun String.toCharacterType(): CharacterRole =
     when(this[0]){
-        'P' -> CharacterType.PLAYABLE
-        'E' -> CharacterType.ENEMY
+        'P' -> CharacterRole.PLAYABLE
+        'E' -> CharacterRole.ENEMY
         else -> throw GameError.InvalidFormat("Character", this)
     }
 
 interface Character: Entity {
-    val type: CharacterType
+    val role: CharacterRole
     val name: String
     val baseStats: Stats
     val activeStatModifiers: List<StatModifier>
@@ -27,6 +27,6 @@ interface Character: Entity {
 
 fun CharacterDTO.toCharacter(): Character =
     when(this.type.toCharacterType()){
-        CharacterType.PLAYABLE -> this.toPlayableCharacter()
-        CharacterType.ENEMY -> TODO()
+        CharacterRole.PLAYABLE -> this.toPlayableCharacter()
+        CharacterRole.ENEMY -> TODO()
     }

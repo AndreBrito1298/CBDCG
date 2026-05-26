@@ -19,7 +19,7 @@ fun PlayerItemCard(
     select: () -> Unit,
     isSelected: Boolean,
     equip: () -> Unit,
-    seeStats: () -> Unit,
+    inspect: () -> Unit,
 ){
     Box(
         modifier= Modifier.border(1.dp, Color.Black).padding(8.dp)
@@ -37,7 +37,7 @@ fun PlayerItemCard(
         ){
             DropdownMenuItem(
                 text = { Text("See Item Stats") },
-                onClick = seeStats,
+                onClick = inspect,
             )
 
             DropdownMenuItem(

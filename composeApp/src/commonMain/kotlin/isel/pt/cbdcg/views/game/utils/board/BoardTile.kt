@@ -16,30 +16,34 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cbdcg.composeapp.generated.resources.Res
 import cbdcg.composeapp.generated.resources.allDrawableResources
+import isel.pt.cbdcg.domain.game.CardType
 import isel.pt.cbdcg.domain.game.board.BoardPosition
+import isel.pt.cbdcg.viewmodel.GameUIState
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun BoardTile(
-    tileCode: String,
+    gameState: GameUIState,
+    tileName: String,
     characterName: String?,
     position: BoardPosition,
     tileSize: Dp,
-    placeCharacterFlag: Boolean,
-    equipItemFlag: Boolean,
-    placeCard: () -> Unit,
-    seeStats: () -> Unit
+    onClick: () -> Unit,
 ) {
 
-    val tileResource = Res.allDrawableResources[tileCode]
-        ?: error("Drawable not found: $tileCode")
+    val tileResource = Res.allDrawableResources[tileName]
+        ?: error("Drawable not found: $tileName")
+
+    val cardType = (gameState as? GameUIState.PlacingCard)?.card?.type
+    val canPlaceTile = (gameState as? GameUIState.PlacingCard)?.card?.type == CardType.TILE
+    val canPlaceCharacter = (gameState as? GameUIState.PlacingCard)?.card?.type == CardType.CHARACTER
 
     Box(
         modifier = Modifier
             .size(tileSize)
             .then(
-                if(placeCharacterFlag)
-                    Modifier.clickable { placeCard() }
+                if(canPlaceTile || canPlaceCharacter)
+                    Modifier.clickable{ onClick() }
                 else Modifier
             ),
         contentAlignment = Alignment.Center
@@ -50,7 +54,7 @@ fun BoardTile(
             modifier = Modifier.fillMaxSize()
         )
 
-        if (placeCharacterFlag) {
+        if (cardType != null && cardType == CardType.CHARACTER) {
             Box(
                 modifier = Modifier
                     .size(tileSize / 3)
@@ -76,11 +80,7 @@ fun BoardTile(
                 contentDescription = "Character",
                 modifier = Modifier
                     .size(tileSize)
-                    .then(
-                if(equipItemFlag) Modifier.clickable{ placeCard() }
-                        else if(!equipItemFlag && !placeCharacterFlag) Modifier.clickable { seeStats() }
-                        else Modifier
-                    )
+                    .clickable{ onClick() }
             )
         }
     }

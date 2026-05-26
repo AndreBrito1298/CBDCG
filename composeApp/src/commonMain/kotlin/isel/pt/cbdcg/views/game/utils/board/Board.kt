@@ -9,19 +9,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import isel.pt.cbdcg.domain.game.Card
+import isel.pt.cbdcg.domain.game.CardType
 import isel.pt.cbdcg.domain.game.CharacterCard
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTiles
 import isel.pt.cbdcg.domain.game.board.getAdjacent
 import isel.pt.cbdcg.domain.game.board.getBlocked
+import isel.pt.cbdcg.viewmodel.GameUIState
 
 
 @Composable
 fun Board(
+    gameState: GameUIState,
     gameBoard: BoardTiles,
-    canClickGrid: Boolean,
-    canPlaceCharacter: Boolean,
-    canEquipItem: Boolean,
     tileSize: Dp,
     placeCard: (BoardPosition) -> Unit,
     seeStats: (Card) -> Unit,
@@ -59,17 +59,23 @@ fun Board(
                         val character = boardTile.character
 
                         BoardTile(
-                            tileCode = tileCode,
+                            gameState = gameState,
+                            tileName = tileCode,
                             characterName = character?.name,
                             position = position,
                             tileSize = tileSize,
-                            placeCharacterFlag = canPlaceCharacter,
-                            placeCard = { placeCard(position) },
-                            equipItemFlag = canEquipItem,
-                            seeStats = { if(character != null) seeStats(CharacterCard(character)) }
+                            onClick = {
+                                if(gameState is GameUIState.PlacingCard)
+                                    placeCard(position)
+                                else if(character != null)
+                                    seeStats(CharacterCard(character))
+                            }
                         )
                     }
-                    else EmptyBoardTile(canClickGrid, tileSize){ placeCard(position) }
+                    else EmptyBoardTile(
+                        seeGrid = gameState is GameUIState.PlacingCard && gameState.card.type == CardType.TILE,
+                        tileSize = tileSize
+                    ){ placeCard(position) }
                 }
             }
         }

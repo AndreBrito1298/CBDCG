@@ -4,7 +4,8 @@ import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import isel.pt.cbdcg.AppViewModel
+import isel.pt.cbdcg.viewmodel.AppViewModel
+import isel.pt.cbdcg.viewmodel.SessionState
 import isel.pt.cbdcg.views.game.GameScreen
 import isel.pt.cbdcg.views.game.SpectatorScreen
 import isel.pt.cbdcg.views.lobby.SearchTablesScreen
@@ -14,6 +15,12 @@ import isel.pt.cbdcg.views.startMenu.MenuScreen
 import isel.pt.cbdcg.views.startMenu.LoginScreen
 import isel.pt.cbdcg.views.utils.DisplayError
 
+private enum class AppDestination {
+    Menu,
+    Lobby,
+    Table,
+    Game
+}
 
 @Composable
 fun AppNavHost(vm: AppViewModel) {
@@ -21,11 +28,49 @@ fun AppNavHost(vm: AppViewModel) {
     val nav = rememberNavController()
     val ui by vm.ui.collectAsState()
 
+    val destination = when (ui.session) {
+        SessionState.SignedOut -> AppDestination.Menu
+        is SessionState.InLobby -> AppDestination.Lobby
+        is SessionState.InTable -> AppDestination.Table
+        is SessionState.InGame -> AppDestination.Game
+    }
+
+    LaunchedEffect(destination) {
+
+        when(destination){
+
+            AppDestination.Game -> {
+                nav.navigate(GameRoute) {
+                    popUpTo(SearchTablesRoute) { inclusive = false }
+                    launchSingleTop = true
+                }
+            }
+            AppDestination.Lobby -> {
+                nav.navigate(SearchTablesRoute) {
+                    popUpTo(MenuRoute) { inclusive = false } // Ignore Login/Creation menu
+                    launchSingleTop = true
+                }
+            }
+            AppDestination.Table -> {
+                nav.navigate(WaitingTableRoute) {
+                    launchSingleTop = true
+                }
+            }
+            AppDestination.Menu -> {
+                nav.navigate(MenuRoute) {
+                    popUpTo(0)
+                    launchSingleTop = true
+                }
+            }
+
+        }
+    }
+
+    // Available Routes
     NavHost(
         navController = nav,
         startDestination = MenuRoute
     ){
-
         composable<MenuRoute> {
             MenuScreen(
                 loginNav = { nav.navigate(LoginRoute) },
@@ -34,14 +79,12 @@ fun AppNavHost(vm: AppViewModel) {
         }
 
         composable<LoginRoute> {
-
             LoginScreen(
-                mainMenuNav = { vm.stopObserving { nav.navigateUp() } },
+                mainMenuNav = vm::stopObserving,
                 login = { email, password ->
                     vm.login(
                         email = email,
                         password = password,
-                        onSuccess = { nav.navigate(SearchTablesRoute){ popUpTo(MenuRoute) { inclusive = false } } }
                     )
                 }
             )
@@ -49,13 +92,12 @@ fun AppNavHost(vm: AppViewModel) {
 
         composable<CreateUserRoute> {
             CreateUserScreen(
-                mainMenuNav = { vm.stopObserving { nav.navigateUp() } },
+                mainMenuNav = vm::stopObserving,
                 create = { name, email, password ->
                     vm.createUser(
                         name = name,
                         email = email,
                         password = password,
-                        onSuccess = { nav.navigate(SearchTablesRoute){ popUpTo(MenuRoute) { inclusive = false } } }
                     )
                 }
             )
@@ -63,7 +105,7 @@ fun AppNavHost(vm: AppViewModel) {
 
         composable<SearchTablesRoute> {
 
-            val user = ui.user ?: return@composable
+            val session = ui.session as? SessionState.InLobby ?: return@composable
 
             LaunchedEffect(Unit) {
                 vm.getTables()
@@ -71,98 +113,71 @@ fun AppNavHost(vm: AppViewModel) {
             }
 
             SearchTablesScreen(
-                user = user,
-                tables = ui.tables,
-                joinTable = { table ->
-                    vm.joinTable(
-                        table = table,
-                        onSuccess = { nav.navigate(WaitingTableRoute) }
-                    )
-                },
-                createTable = { name ->
-                    vm.createTable(
-                        tableName = name,
-                        onSuccess = { nav.navigate(WaitingTableRoute) }
-                    )
-                },
-                logout = {
-                    vm.logout(
-                        onSuccess = {
-                            nav.popBackStack(MenuRoute, inclusive = false)
-                        }
-                    )
-                }
+                user = session.user,
+                tables = session.tables,
+                joinTable = { table -> vm.joinTable(table = table) },
+                createTable = { name -> vm.createTable(tableName = name) },
+                logout = vm::logout
             )
         }
 
         composable<WaitingTableRoute> {
 
-            val user = ui.user ?: return@composable
-            val table = ui.currentTable
-            val game = ui.game
-
-            // If the table was deleted
-            LaunchedEffect(table) {
-                if (table == null) {
-                    nav.navigate(SearchTablesRoute) {
-                        popUpTo(WaitingTableRoute) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                }
-            }
-
-            if(table == null || table.participants.firstOrNull{ it.user.id == user.id } == null)
-                return@composable
-
-            LaunchedEffect(game) {
-                if (game != null) {
-                    nav.navigate(GameRoute)
-                }
-            }
+            val session = ui.session as? SessionState.InTable ?: return@composable
 
             LaunchedEffect(Unit) {
-                vm.observeTable(table.name.string)
+                vm.observeTable(session.table.name.string)
             }
 
             WaitingTableScreen(
-                user = user,
-                table = table,
+                user = session.user,
+                table = session.table,
                 changeRole = { role -> vm.changeRole(role) },
-                leaveTable = { vm.leaveTable { nav.popBackStack() } },
-                createGame = { vm.createGame { nav.navigate(GameRoute) } }
+                leaveTable = vm::leaveTable,
+                createGame = vm::createGame
             )
 
         }
 
         composable<GameRoute> {
 
-            val user = ui.user ?: return@composable
-            val game = ui.game ?: return@composable
-            val player = ui.game?.players?.find { it.user.id == user.id }
-            val spectator = ui.game?.spectators?.find{ it.user.id == user.id }
+            val session = ui.session as? SessionState.InGame ?: return@composable
+
+            val player = session.game.players.find{ it.user.id == session.user.id }
+            val spectator = session.game.spectators.find{ it.user.id == session.user.id }
 
             if(player == null && spectator == null) return@composable
-            else{
 
-                LaunchedEffect(Unit) {
-                    vm.observeGame(game.id)
-                }
-
-                if(player != null)
-                    GameScreen(
-                        player = player,
-                        game = game,
-                        placeOnBoard = { card, idx, pos -> vm.placeOnBoard(card, idx, pos) },
-                        rotateTile = { idx, flag -> vm.rotateTile(idx, flag) },
-                        nextPhase = { vm.nextPhase() }
-                    )
-
-                if(spectator != null)
-                    SpectatorScreen(
-                        game = game,
-                        spectator = spectator
-                    )
+            LaunchedEffect(Unit) {
+                vm.observeGame(session.game.id)
             }
+
+            if(player != null){
+                GameScreen(
+                    player = player,
+                    game = session.game,
+                    gameUI = ui.gameUI,
+                    selectCard = { idx, card -> vm.selectCard(idx, card) },
+                    placeSignal = vm::placeSignal,
+                    placeOnBoard = { pos -> vm.placeOnBoard(pos) },
+                    toggleCardStats = { card -> vm.inspectCard(card) },
+                    rotateTile = { flag -> vm.rotateTile(flag) },
+                    zoom = { option -> vm.zoom(option) },
+                    nextPhase = vm::nextPhase,
+                )
+            }
+
+            if(spectator != null){
+                SpectatorScreen(
+                    spectator = spectator,
+                    game = session.game,
+                    gameUI = ui.gameUI,
+                    togglePlayerHand = { player -> vm.inspectPlayerHand(player) },
+                    toggleCardStats = { card -> vm.inspectCard(card) },
+                    zoom = { option -> vm.zoom(option) }
+                )
+            }
+
         }
     }
 

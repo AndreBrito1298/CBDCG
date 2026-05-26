@@ -8,18 +8,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.Game
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import isel.pt.cbdcg.domain.game.Card
+import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TurnPhase
+import isel.pt.cbdcg.viewmodel.GameUI
+import isel.pt.cbdcg.viewmodel.GameUIState
 import isel.pt.cbdcg.views.game.utils.board.Board
 import isel.pt.cbdcg.views.game.utils.InGameHeader
 import isel.pt.cbdcg.views.game.utils.spectator.SpectatorPlayerSelector
@@ -28,14 +27,13 @@ import isel.pt.cbdcg.views.game.utils.cardInfo.CardStatsDialog
 
 @Composable
 fun SpectatorScreen(
-    game: Game,
     spectator: Spectator,
+    game: Game,
+    gameUI: GameUI,
+    togglePlayerHand: (Player) -> Unit,
+    toggleCardStats: (Card?) -> Unit,
+    zoom: (Boolean) -> Unit,
 ){
-
-    var selectedId by remember(game.id) { mutableStateOf<UInt?>(null) }
-    var cardStats by remember { mutableStateOf<Card?>(null) }
-    var zoom by remember { mutableStateOf(1f) }
-
     val currentPlayer = game.players.find {
         it.user.id == game.turn.playerTurn.first()
     }
@@ -80,20 +78,16 @@ fun SpectatorScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Board(
+                        gameState = gameUI.state,
                         gameBoard = game.board.tiles,
-                        canClickGrid = false,
-                        canPlaceCharacter = false,
-                        canEquipItem = false,
-                        tileSize = 128.dp * zoom,
+                        tileSize = 128.dp * gameUI. boardZoom,
                         placeCard = {},
-                        seeStats = { card ->
-                            cardStats = card
-                        }
+                        seeStats = { card -> toggleCardStats(card) }
                     )
                     ZoomButtons(
                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                        amplify = { zoom = (zoom + 0.25f).coerceAtMost(2f) },
-                        reduce = { zoom = (zoom - 0.25f).coerceAtLeast(0.5f) },
+                        amplify = { zoom(true) },
+                        reduce = { zoom(false) },
                     )
                 }
 
@@ -102,27 +96,28 @@ fun SpectatorScreen(
                         .weight(1f)
                         .fillMaxWidth()
                 ) {
+
+                    val selected =
+                        if(gameUI.state is GameUIState.InspectCard)
+                            (gameUI.state.previous as? GameUIState.InspectPlayer)?.player
+                        else
+                            (gameUI.state as? GameUIState.InspectPlayer)?.player
+
                     SpectatorPlayerSelector(
                         players = game.players,
-                        selectedPlayer = game.players.find { it.user.id == selectedId },
-                        onSelectPlayer = { playerId ->
-                            selectedId =
-                                if (selectedId == playerId) null
-                                else playerId
-                        },
-                        onSeeStats = { card ->
-                            cardStats = card
-                        },
+                        selected = selected,
+                        select = { player -> togglePlayerHand(player) },
+                        onSeeStats = { card -> toggleCardStats(card) }
                     )
                 }
             }
         }
     }
 
-    cardStats?.let { card ->
+    if(gameUI.state is GameUIState.InspectCard){
         CardStatsDialog(
-            card = card,
-            onDismiss = { cardStats = null }
+            card = gameUI.state.card,
+            onDismiss = { toggleCardStats(null) }
         )
     }
 }
