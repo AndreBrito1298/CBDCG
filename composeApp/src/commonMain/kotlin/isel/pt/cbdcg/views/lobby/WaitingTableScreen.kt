@@ -40,7 +40,7 @@ fun WaitingTableScreen(
         .filter { it.role == Role.SPECTATOR }
         .map { it.user to null }
 
-    val participant = participants.first{ it.user.id == user.id }
+    val participant = participants.firstOrNull{ it.user.id == user.id } ?: return
     val startFlag = participant.user.id == table.owner.id && players.all{ it.second }
 
     Column(

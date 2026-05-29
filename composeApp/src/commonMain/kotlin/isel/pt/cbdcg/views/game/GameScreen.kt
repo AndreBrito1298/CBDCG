@@ -19,6 +19,7 @@ import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.TurnPhase
+import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.viewmodel.GameUI
 import isel.pt.cbdcg.viewmodel.GameUIState
 import isel.pt.cbdcg.views.game.utils.board.Board
@@ -35,7 +36,10 @@ fun GameScreen(
     selectCard: (UInt, Card) -> Unit,
     placeSignal: () -> Unit,
     placeOnBoard: (BoardPosition) -> Unit,
+    selectBoardCharacter: (BoardTile) -> Unit,
     toggleCardStats: (Card?) -> Unit,
+    moveSignal: () -> Unit,
+    moveCharacter: (BoardTile) -> Unit,
     rotateTile: (Boolean) -> Unit,
     zoom: (Boolean) -> Unit,
     nextPhase: () -> Unit
@@ -100,11 +104,15 @@ fun GameScreen(
                 ) {
 
                     Board(
+                        player = player,
                         gameState = gameUI.state,
                         gameBoard = game.board.tiles,
                         tileSize = 128.dp * gameUI.boardZoom,
                         placeCard = { pos -> placeOnBoard(pos) },
-                        seeStats = { card -> toggleCardStats(card) }
+                        selectBoardCharacter = { tile -> selectBoardCharacter(tile) },
+                        inspectCharacter = { card -> toggleCardStats(card) },
+                        moveSignal = moveSignal,
+                        moveCharacter = { pos -> moveCharacter(pos) }
                     )
                     ZoomButtons(
                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),

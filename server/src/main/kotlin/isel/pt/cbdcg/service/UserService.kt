@@ -35,7 +35,7 @@ class UserService(
 
         if(user.auth != null)
             throw UserError.AlreadyLoggedIn()
-        val decryptedPassword = SimpleCrypto.decrypt(password.string)
+        val decryptedPassword = SimpleCrypto.decrypt(user.password.string)
         if(password.string != decryptedPassword)
             throw UserError.PasswordMismatch()
 

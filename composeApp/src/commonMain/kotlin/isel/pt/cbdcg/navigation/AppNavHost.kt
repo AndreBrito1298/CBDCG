@@ -80,7 +80,7 @@ fun AppNavHost(vm: AppViewModel) {
 
         composable<LoginRoute> {
             LoginScreen(
-                mainMenuNav = vm::stopObserving,
+                mainMenuNav = { nav.navigate(MenuRoute) },
                 login = { email, password ->
                     vm.login(
                         email = email,
@@ -92,7 +92,7 @@ fun AppNavHost(vm: AppViewModel) {
 
         composable<CreateUserRoute> {
             CreateUserScreen(
-                mainMenuNav = vm::stopObserving,
+                mainMenuNav = { nav.navigate(MenuRoute) },
                 create = { name, email, password ->
                     vm.createUser(
                         name = name,
@@ -160,7 +160,10 @@ fun AppNavHost(vm: AppViewModel) {
                     selectCard = { idx, card -> vm.selectCard(idx, card) },
                     placeSignal = vm::placeSignal,
                     placeOnBoard = { pos -> vm.placeOnBoard(pos) },
+                    selectBoardCharacter = { tile -> vm.selectBoardCharacter(tile) },
                     toggleCardStats = { card -> vm.inspectCard(card) },
+                    moveSignal = vm::moveSignal,
+                    moveCharacter = { tile -> vm.moveCharacter(tile) },
                     rotateTile = { flag -> vm.rotateTile(flag) },
                     zoom = { option -> vm.zoom(option) },
                     nextPhase = vm::nextPhase,
@@ -173,6 +176,7 @@ fun AppNavHost(vm: AppViewModel) {
                     game = session.game,
                     gameUI = ui.gameUI,
                     togglePlayerHand = { player -> vm.inspectPlayerHand(player) },
+                    selectBoardCharacter = { tile -> vm.selectBoardCharacter(tile) },
                     toggleCardStats = { card -> vm.inspectCard(card) },
                     zoom = { option -> vm.zoom(option) }
                 )

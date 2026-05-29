@@ -12,7 +12,10 @@ import isel.pt.cbdcg.domain.game.CardType
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.board.BoardPosition
+import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.findPath
 import isel.pt.cbdcg.domain.game.board.rotate
+import isel.pt.cbdcg.views.game.utils.cardInfo.adjustStats
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -58,10 +61,10 @@ class AppViewModel(
             clientApi.currentTable.collect { table ->
                 _ui.update { ui ->
                     when (val session = ui.session) {
-                        is SessionState.InTable if table != null ->
+                        is SessionState.InTable if table != null && table.participants.any { it.user.id == session.user.id } ->
                             ui.copy(session = session.copy(table = table))
 
-                        is SessionState.InTable if table == null ->
+                        is SessionState.InTable ->
                             ui.copy(session = SessionState.InLobby(session.user))
 
                         else -> ui
@@ -90,7 +93,7 @@ class AppViewModel(
     }
 
     fun dismissError() {
-        _ui.update { it.copy(errorMessage = null) }
+        _ui.update { it.copy(errorMessage = null, gameUI = it.gameUI.copy(state= GameUIState.Idle)) }
     }
 
     // Websocket-related operations
@@ -528,7 +531,7 @@ class AppViewModel(
                         isLoading = false,
                         errorMessage = null,
                         session = session.copy(game = newGame),
-                        gameUI = it.gameUI.copy(state = GameUIState.Idle)
+                        gameUI = it.gameUI.copy(state = GameUIState.Idle, movementUsed = 0)
                     )
                 }
             }
@@ -543,9 +546,6 @@ class AppViewModel(
 
         }
     }
-
-    // GameUI State
-
     fun selectCard(idx: UInt, card: Card): Job? {
 
         val session = ui.value.session
@@ -591,12 +591,18 @@ class AppViewModel(
         val gameUI = ui.value.gameUI
         if(session !is SessionState.InGame) return null
 
+        val previous = (gameUI.state as? GameUIState.InspectCard)?.previous
+        val nextState =
+            if(card == null) {
+                if (previous is GameUIState.InspectPlayer) previous
+                else GameUIState.Idle
+            } else GameUIState.InspectCard(card, gameUI.state)
+
         return viewModelScope.launch{
             _ui.update {
                 it.copy(
                     errorMessage = null,
-                    gameUI = if(card != null) gameUI.copy(state = GameUIState.InspectCard(card, gameUI.state))
-                             else gameUI.copy(state = (gameUI.state as GameUIState.InspectCard).previous)
+                    gameUI = gameUI.copy(state = nextState)
                 )
             }
         }
@@ -636,6 +642,115 @@ class AppViewModel(
                     gameUI = gameUI.copy(state =
                         if(selected) GameUIState.Idle
                         else GameUIState.InspectPlayer(player))
+                )
+            }
+        }
+    }
+    fun selectBoardCharacter(tile: BoardTile): Job? {
+
+        val session = ui.value.session
+        val gameUI = ui.value.gameUI
+        if(session !is SessionState.InGame) return null
+
+        val nextState = if(gameUI.state is GameUIState.SelectBoardCharacter || tile.character == null) GameUIState.Idle
+                        else GameUIState.SelectBoardCharacter(tile)
+
+        return viewModelScope.launch{
+            _ui.update{
+                it.copy(gameUI = gameUI.copy(state = nextState))
+            }
+        }
+    }
+    fun moveSignal(): Job? {
+
+        val session = ui.value.session
+        val gameUI = ui.value.gameUI
+        if(session !is SessionState.InGame) return null
+        if(gameUI.state !is GameUIState.SelectBoardCharacter) return null
+
+        return viewModelScope.launch {
+            _ui.update {
+                it.copy(
+                    errorMessage = null,
+                    gameUI = gameUI.copy(
+                        state = GameUIState.MovingCharacter(
+                            from = gameUI.state.position,
+                            path = emptyList()
+                        )
+                    )
+                )
+            }
+        }
+    }
+    fun moveCharacter(to: BoardTile): Job? {
+
+        val session = ui.value.session
+        val gameUI = ui.value.gameUI
+        if(session !is SessionState.InGame) return null
+        if(gameUI.state !is GameUIState.MovingCharacter) return null
+
+        if(gameUI.state.path.lastOrNull() == to) {
+
+            val user = session.user
+            val game = session.game
+            val token = user.auth?.token ?: return null.also {
+                _ui.update { it.copy(errorMessage = "No token found.") }
+            }
+
+            return viewModelScope.launch{
+
+                val response = clientApi.moveCharacter(
+                    user.id,
+                    game.id,
+                    token,
+                    gameUI.state.path.first(),
+                    gameUI.state.path.last(),
+                )
+
+                response.onSuccess { newGame ->
+                    _ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = session.copy(game = newGame),
+                            gameUI = it.gameUI.copy(
+                                state = GameUIState.Idle,
+                                movementUsed = gameUI.movementUsed + gameUI.state.path.size - 1
+                            )
+                        )
+                    }
+                }
+                response.onFailure { error ->
+                    _ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Couldn't move character."
+                        )
+                    }
+                }
+
+            }
+        }
+
+        val characterSpe = gameUI.state.from.character?.adjustStats()?.spe ?: 0
+        val remainingMovement = characterSpe - gameUI.movementUsed
+        if(remainingMovement <= 0) return null.also {
+            _ui.update { it.copy(errorMessage = "This character cannot move this turn anymore.") }
+        }
+
+        val path = session.game.board.findPath(
+            from = gameUI.state.from,
+            to = to,
+            maxDistance = remainingMovement
+        )
+
+        return viewModelScope.launch {
+            _ui.update {
+                it.copy(
+                    errorMessage = null,
+                    gameUI = gameUI.copy(
+                        state = gameUI.state.copy(path = path)
+                    )
                 )
             }
         }

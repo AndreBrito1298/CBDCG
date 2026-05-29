@@ -17,6 +17,7 @@ import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TurnPhase
+import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.viewmodel.GameUI
 import isel.pt.cbdcg.viewmodel.GameUIState
 import isel.pt.cbdcg.views.game.utils.board.Board
@@ -31,6 +32,7 @@ fun SpectatorScreen(
     game: Game,
     gameUI: GameUI,
     togglePlayerHand: (Player) -> Unit,
+    selectBoardCharacter: (BoardTile) -> Unit,
     toggleCardStats: (Card?) -> Unit,
     zoom: (Boolean) -> Unit,
 ){
@@ -80,9 +82,13 @@ fun SpectatorScreen(
                     Board(
                         gameState = gameUI.state,
                         gameBoard = game.board.tiles,
-                        tileSize = 128.dp * gameUI. boardZoom,
+                        tileSize = 128.dp * gameUI.boardZoom,
                         placeCard = {},
-                        seeStats = { card -> toggleCardStats(card) }
+                        player = null,
+                        selectBoardCharacter = { tile -> selectBoardCharacter(tile) },
+                        inspectCharacter = { card -> toggleCardStats(card) },
+                        moveSignal = {},
+                        moveCharacter = {}
                     )
                     ZoomButtons(
                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),

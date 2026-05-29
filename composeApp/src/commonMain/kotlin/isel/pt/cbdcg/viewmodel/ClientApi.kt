@@ -24,7 +24,8 @@ import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.board.BoardPosition
-import isel.pt.cbdcg.domain.game.board.coords
+import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.toGame
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
@@ -32,6 +33,7 @@ import isel.pt.cbdcg.dto.CreateUserDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
+import isel.pt.cbdcg.dto.MoveCharacterDTO
 import isel.pt.cbdcg.dto.NextPhaseDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RoleChangeInput
@@ -224,7 +226,7 @@ class ClientApi(private val client: HttpClient) {
         fetch<GameDTO>(
             path = "game/place",
             method = HttpMethod.Post,
-            body = PlaceOnBoardDTO(userId.toInt(), gameId.toInt(), token, card.toCardDTO(), idx.toInt(), pos.coords())
+            body = PlaceOnBoardDTO(userId.toInt(), gameId.toInt(), token, card.toCardDTO(), idx.toInt(), pos.toString())
         ).map{ it.toGame() }
     suspend fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> =
         fetch<GameDTO>(
@@ -238,26 +240,22 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = NextPhaseDTO(userId.toInt(), gameId.toInt(), token)
         ).map{ it.toGame() }
+    suspend fun moveCharacter(userId: UInt, gameId: UInt, token: String, origin: BoardTile, target: BoardTile): Result<Game> =
+        fetch<GameDTO>(
+            path = "game/move",
+            method = HttpMethod.Post,
+            body = MoveCharacterDTO(userId.toInt(), gameId.toInt(), token, origin.toBoardTileDTO(), target.toBoardTileDTO())
+        ).map{ it.toGame() }
 
     private suspend inline fun <reified T> fetch(
         path: String,
         method: HttpMethod,
         body: Any? = null,
-        // query: Map<String, String> = emptyMap(),
     ): Result<T> = runCatching {
 
         val response = client.request("http://localhost:${SERVER_PORT}/$path") {
             this.method = method
             contentType(ContentType.Application.Json)
-
-            /*
-            if(query.isNotEmpty()) {
-                url{
-                    query.forEach{ (key, value) -> parameters.append(key, value) }
-                }
-            }
-            */
-
             if(body != null) setBody(body)
 
         }

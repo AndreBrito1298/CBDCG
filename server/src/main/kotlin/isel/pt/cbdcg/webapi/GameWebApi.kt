@@ -6,10 +6,12 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
+import isel.pt.cbdcg.domain.game.board.toBoardTile
 import isel.pt.cbdcg.domain.game.board.toPosition
 import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.domain.game.toGameDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
+import isel.pt.cbdcg.dto.MoveCharacterDTO
 import isel.pt.cbdcg.dto.NextPhaseDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RotatePieceDTO
@@ -76,6 +78,32 @@ fun Route.gameWebApi(gameService: GameService) {
             ).getOrThrow()
 
             call.respond(HttpStatusCode.OK, result.toGameDTO())
+        }
+
+        post("/move"){
+
+            val input = call.receive<MoveCharacterDTO>()
+
+            /*
+            val result = gameService.applyBoardTileEffect(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token,
+                effect = CharacterMovement(),
+                origin = input.origin.toBoardTile(),
+                targets = arrayOf(input.target.toBoardTile())
+            ).getOrThrow()
+            */
+            val result = gameService.moveCharacter(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token,
+                from = input.origin.toBoardTile(),
+                to = input.target.toBoardTile(),
+            ).getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.toGameDTO())
+
         }
     }
 }

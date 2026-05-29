@@ -9,12 +9,19 @@ data class BoardTile(
     val tile: Tile,
     val character: Character?
 ): Entity
-fun BoardTile.removeCharacter(): BoardTile = copy(character = null)
-fun BoardTile.addCharacter(character: Character): BoardTile = copy(character = character)
+
+fun BoardTile.directionTo(other: BoardTile): Direction? =
+    when {
+        other.pos.x == pos.x + 1 && other.pos.y == pos.y -> Direction.EAST
+        other.pos.x == pos.x - 1 && other.pos.y == pos.y -> Direction.WEST
+        other.pos.x == pos.x && other.pos.y == pos.y + 1 -> Direction.NORTH
+        other.pos.x == pos.x && other.pos.y == pos.y - 1 -> Direction.SOUTH
+        else -> null
+    }
 
 
 fun BoardTile.toBoardTileDTO(): BoardTileDTO =
-    BoardTileDTO(pos.coords(), tile.toTileDTO(), character?.toCharacterDTO())
+    BoardTileDTO(pos.toString(), tile.toTileDTO(), character?.toCharacterDTO())
 
 fun BoardTileDTO.toBoardTile(): BoardTile =
     BoardTile(

@@ -1,6 +1,7 @@
 package isel.pt.cbdcg.domain.game.board
 
 import isel.pt.cbdcg.domain.game.Player
+import isel.pt.cbdcg.error.BoardError
 
 interface Entity
 
@@ -13,19 +14,21 @@ fun interface Effect<T : Entity> {
     fun apply(origin: T, vararg targets: BoardTile?): EffectResult<T>
 }
 
-class movement(): Effect<BoardTile> {
+class CharacterMovement: Effect<BoardTile> {
     override fun apply(
         origin: BoardTile,
         vararg targets: BoardTile?
     ): EffectResult.Many<BoardTile> {
-        val from = origin.removeCharacter()
-        if(origin.character != null && targets.isNotEmpty()) {
-            val to = targets.first()!!.addCharacter(origin.character)
-            return EffectResult.Many(listOf(from, to))
-        }
-        else{
-            TODO()
-        }
+
+        val newStartingTile = origin.copy(character = null)
+
+        val endTile = targets.first() ?: throw BoardError.NoTargetFound()
+        if(endTile.character != null) throw BoardError.TileOccupied()
+
+        val newEndingTile = targets.first()?.copy(character = origin.character)
+            ?: throw BoardError.NoTargetFound()
+
+        return EffectResult.Many(listOf(newStartingTile, newEndingTile))
     }
 }
 

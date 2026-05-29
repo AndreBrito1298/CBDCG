@@ -221,3 +221,12 @@ data class NextPhaseDTO(
     val gameId: Int,
     val token: String
 )
+
+@Serializable
+data class MoveCharacterDTO(
+    val userId: Int,
+    val gameId: Int,
+    val token: String,
+    val origin: BoardTileDTO,
+    val target: BoardTileDTO,
+)

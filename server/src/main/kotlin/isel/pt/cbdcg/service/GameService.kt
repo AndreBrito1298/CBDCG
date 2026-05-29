@@ -8,9 +8,11 @@ import isel.pt.cbdcg.domain.game.ItemCard
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TileCard
+import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.applyBoardTileEffect
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.CharacterMovement
 import isel.pt.cbdcg.domain.game.board.Direction
 import isel.pt.cbdcg.domain.game.board.Effect
 import isel.pt.cbdcg.domain.game.board.Tile
@@ -125,7 +127,6 @@ class GameService(
         newGame
 
     }
-
     fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)
@@ -134,7 +135,6 @@ class GameService(
 
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())
-
 
         val newPlayers = game.players.map{ player ->
             if(player.user.id == userId) {
@@ -175,7 +175,24 @@ class GameService(
 
         newGame
     }
+    suspend fun moveCharacter(userId: UInt, gameId: UInt, token: String, from: BoardTile, to: BoardTile): Result<Game> = runCatching{
 
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
+        user.auth.verifyToken(token)
+
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
+
+        if(game.turn.phase != TurnPhase.MOVEMENT)
+            throw GameError.CharacterMovementRestriction()
+
+        val newGame = game.applyBoardTileEffect(CharacterMovement(), from, to)
+
+        gameRepo.save(newGame)
+        events.publishGameUpdated(newGame)
+        newGame
+    }
     suspend fun applyBoardTileEffect(
         userId: UInt,
         gameId: UInt,
@@ -184,10 +201,13 @@ class GameService(
         origin: BoardTile,
         vararg targets: BoardTile,
     ): Result<Game> = runCatching {
-        val user = userRepo.findById(userId) ?: throw UserError.IdNotFound()
+
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
         user.auth.verifyToken(token)
 
-        val game = gameRepo.findById(gameId) ?: throw GameError.GameNotFound(gameId.toInt())
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
 
         val newGame = game.applyBoardTileEffect(effect, origin, *targets)
 

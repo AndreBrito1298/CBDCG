@@ -60,6 +60,7 @@ sealed class BoardError(
     class EquipYourCharacter : BoardError("You can only equip your current Character.")
     class TileOccupied : BoardError("This tile is occupied.")
     class CharacterLimitReached : BoardError("You can only have one character in play.")
+    class NoTargetFound : BoardError("No available target found.")
 }
 
 sealed class GameError(
@@ -72,6 +73,7 @@ sealed class GameError(
     class DungeonTurnZeroRule: GameError("You can only place Tiles.")
     class MustPlaceTile(max: Int) : GameError("You can have a maximum of $max tiles in your hand.")
     class NoActiveCharacters : GameError("You must have at least one active character.")
+    class CharacterMovementRestriction : GameError("You can only move your character during the Movement Phase.")
 }
 
 sealed class CharacterError(

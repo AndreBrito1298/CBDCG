@@ -11,6 +11,77 @@ import kotlin.collections.plus
 
 typealias BoardTiles = List<BoardTile>
 
+fun Board.connectedNeighbours(boardTile: BoardTile): List<BoardTile> =
+    boardTile.tile.connections.mapNotNull { dir ->
+        val nextPos = boardTile.pos.neighbour(dir)
+        val nextTile = tiles.find { it.pos == nextPos } ?: return@mapNotNull null
+
+        if (boardTile.tile.canConnectTo(dir, nextTile.tile)) nextTile
+        else null
+    }
+
+fun Board.connectionDistancesFrom(target: BoardTile): Map<BoardTile, Int> {
+    val distances = mutableMapOf<BoardTile, Int>()
+    val queue = ArrayDeque<BoardTile>()
+
+    distances[target] = 0
+    queue.add(target)
+
+    while (queue.isNotEmpty()) {
+        val current = queue.removeFirst()
+        val currentDistance = distances.getValue(current)
+
+        for (next in connectedNeighbours(current)) {
+            if (next in distances) continue
+
+            distances[next] = currentDistance + 1
+            queue.add(next)
+        }
+    }
+
+    return distances
+}
+
+// Algorítmo BFS - o algoritmo usado pode ser mudado no futuro
+fun Board.findPath(from: BoardTile, to: BoardTile, maxDistance: Int): List<BoardTile> {
+    val distancesToTarget = connectionDistancesFrom(to)
+
+    val queue = ArrayDeque(listOf(listOf(from)))
+    val visited = mutableSetOf(from)
+
+    var bestPath = listOf(from)
+
+    while (queue.isNotEmpty()) {
+        val path = queue.removeFirst()
+        val current = path.last()
+
+        if (current == to) return path
+
+        val currentDistance = distancesToTarget[current]
+        val bestDistance = distancesToTarget[bestPath.last()]
+
+        if (
+            currentDistance != null &&
+            (bestDistance == null || currentDistance < bestDistance)
+        ) {
+            bestPath = path
+        }
+
+        if (path.size - 1 >= maxDistance) continue
+        if (current != from && current.character != null) continue
+
+        for (next in connectedNeighbours(current)) {
+            if (next in visited) continue
+
+            visited.add(next)
+            queue.add(path + next)
+        }
+    }
+
+    return bestPath
+}
+
+
 data class Board(
     val tiles: BoardTiles = listOf(
         BoardTile(
@@ -50,9 +121,8 @@ fun Board.placeCharacter(position: BoardPosition, player: Player, character: Cha
         throw BoardError.TileOccupied()
 
     val newBoard = tiles.map{ boardTile ->
-        if(boardTile.pos == position){
-            boardTile.addCharacter(character)
-        } else boardTile
+        if(boardTile.pos == position)boardTile.copy(character = character)
+        else boardTile
     }
 
     return copy(tiles = newBoard)

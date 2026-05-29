@@ -11,23 +11,41 @@ import androidx.compose.ui.unit.Dp
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CardType
 import isel.pt.cbdcg.domain.game.CharacterCard
+import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.board.BoardPosition
+import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.BoardTiles
 import isel.pt.cbdcg.domain.game.board.getAdjacent
 import isel.pt.cbdcg.domain.game.board.getBlocked
 import isel.pt.cbdcg.viewmodel.GameUIState
 
+data class BoardTileDrawConditions(
+    val placingTile: Boolean,
+    val placingCharacter: Boolean,
+    val equippingItem: Boolean,
+    val characterIsSelected: Boolean,
+    val characterCanMove: Boolean,
+    val characterIsMoving: Boolean,
+)
 
 @Composable
 fun Board(
+    player: Player?,
     gameState: GameUIState,
     gameBoard: BoardTiles,
     tileSize: Dp,
     placeCard: (BoardPosition) -> Unit,
-    seeStats: (Card) -> Unit,
+    selectBoardCharacter: (BoardTile) -> Unit,
+    inspectCharacter: (Card) -> Unit,
+    moveSignal: () -> Unit,
+    moveCharacter: (BoardTile) -> Unit,
 ) {
 
     val positions = gameBoard.map { it.pos }
+
+    val selectedCharacter = (gameState as? GameUIState.SelectBoardCharacter)?.position?.character
+    val (isTileCard, isCharacterCard, isItemCard) =
+        CardType.entries.map{ type -> (gameState as? GameUIState.PlacingCard)?.card?.type == type }
 
     val minX = positions.minOf { it.x } - 1
     val maxX = positions.maxOf { it.x } + 1
@@ -51,25 +69,35 @@ fun Board(
 
                         val adjTiles = boardTile.tile.getAdjacent(gameBoard, boardTile.pos)
                         val blocked = boardTile.tile.getBlocked(adjTiles)
-
-                        val tileCode = boardTile.tile.toString() +
+                        val tileName = boardTile.tile.toString() +
                             if(blocked.isNotEmpty()) "_" + blocked.map{ it.name[0] }.joinToString("")
                             else ""
 
                         val character = boardTile.character
+                        val tilePath =
+                            if(gameState is GameUIState.MovingCharacter && boardTile in gameState.path)
+                                pathSegmentFor(gameState.path, boardTile)
+                            else null
+
+                        val drawConditions = BoardTileDrawConditions(
+                            placingTile = isTileCard,
+                            placingCharacter = isCharacterCard,
+                            equippingItem = isItemCard,
+                            characterIsSelected = selectedCharacter == character && character != null,
+                            characterCanMove = selectedCharacter == character && character != null && character.name == player?.currentCharacter,
+                            characterIsMoving = gameState is GameUIState.MovingCharacter,
+                        )
 
                         BoardTile(
-                            gameState = gameState,
-                            tileName = tileCode,
+                            conditions = drawConditions,
+                            tileName = tileName,
                             characterName = character?.name,
-                            position = position,
                             tileSize = tileSize,
-                            onClick = {
-                                if(gameState is GameUIState.PlacingCard)
-                                    placeCard(position)
-                                else if(character != null)
-                                    seeStats(CharacterCard(character))
-                            }
+                            tilePath = tilePath,
+                            onClick = { if(!drawConditions.characterIsMoving) placeCard(position) else moveCharacter(boardTile) },
+                            selectCharacter = { selectBoardCharacter(boardTile) },
+                            inspectCharacter = { if(character != null) inspectCharacter(CharacterCard(character)) },
+                            moveSignal = moveSignal,
                         )
                     }
                     else EmptyBoardTile(
@@ -79,7 +107,5 @@ fun Board(
                 }
             }
         }
-
     }
-
 }

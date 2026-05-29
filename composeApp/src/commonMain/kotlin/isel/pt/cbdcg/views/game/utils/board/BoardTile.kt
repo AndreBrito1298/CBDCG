@@ -16,33 +16,29 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cbdcg.composeapp.generated.resources.Res
 import cbdcg.composeapp.generated.resources.allDrawableResources
-import isel.pt.cbdcg.domain.game.CardType
-import isel.pt.cbdcg.domain.game.board.BoardPosition
-import isel.pt.cbdcg.viewmodel.GameUIState
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun BoardTile(
-    gameState: GameUIState,
+    conditions: BoardTileDrawConditions,
     tileName: String,
     characterName: String?,
-    position: BoardPosition,
     tileSize: Dp,
+    tilePath: TilePathSegment?,
     onClick: () -> Unit,
+    selectCharacter: () -> Unit,
+    inspectCharacter: () -> Unit,
+    moveSignal: () -> Unit,
 ) {
 
     val tileResource = Res.allDrawableResources[tileName]
         ?: error("Drawable not found: $tileName")
 
-    val cardType = (gameState as? GameUIState.PlacingCard)?.card?.type
-    val canPlaceTile = (gameState as? GameUIState.PlacingCard)?.card?.type == CardType.TILE
-    val canPlaceCharacter = (gameState as? GameUIState.PlacingCard)?.card?.type == CardType.CHARACTER
-
     Box(
         modifier = Modifier
             .size(tileSize)
             .then(
-                if(canPlaceTile || canPlaceCharacter)
+                if(conditions.placingTile || conditions.placingCharacter || conditions.characterIsMoving)
                     Modifier.clickable{ onClick() }
                 else Modifier
             ),
@@ -50,11 +46,18 @@ fun BoardTile(
     ){
         Image(
             painter = painterResource(tileResource),
-            contentDescription = "Tile ${position.x}, ${position.y}",
+            contentDescription = tileName,
             modifier = Modifier.fillMaxSize()
         )
 
-        if (cardType != null && cardType == CardType.CHARACTER) {
+        if(tilePath != null) {
+            MovementPathOverlay(
+                segment = tilePath,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        if (conditions.placingCharacter) {
             Box(
                 modifier = Modifier
                     .size(tileSize / 3)
@@ -71,16 +74,13 @@ fun BoardTile(
         }
 
         if(characterName != null){
-
-            val characterResource = Res.allDrawableResources[characterName]
-                ?: error("Drawable not found: $characterName")
-
-            Image(
-                painter = painterResource(characterResource),
-                contentDescription = "Character",
-                modifier = Modifier
-                    .size(tileSize)
-                    .clickable{ onClick() }
+            BoardCharacter(
+                conditions = conditions,
+                characterName = characterName,
+                tileSize = tileSize,
+                onClick = { if(conditions.equippingItem || conditions.characterIsMoving) onClick() else selectCharacter()  },
+                inspect = inspectCharacter,
+                moveSignal = moveSignal,
             )
         }
     }
