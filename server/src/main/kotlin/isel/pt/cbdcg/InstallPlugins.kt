@@ -154,6 +154,7 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is BoardError.TileOccupied -> HttpStatusCode.Conflict
         is BoardError.TilePlacementRestriction -> HttpStatusCode.Conflict
         is BoardError.NoTargetFound -> HttpStatusCode.NotFound
+        is BoardError.EffectInCooldown -> HttpStatusCode.Conflict
 
         is GameError.InvalidFormat -> HttpStatusCode.BadRequest
         is GameError.NotYourTurn -> HttpStatusCode.Forbidden
@@ -163,6 +164,7 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is GameError.MustPlaceTile -> HttpStatusCode.Conflict
         is GameError.NoActiveCharacters -> HttpStatusCode.Conflict
         is GameError.CharacterMovementRestriction -> HttpStatusCode.Conflict
+        is GameError.EmptyDeck -> HttpStatusCode.Conflict
 
         is CardError.InvalidCardFormat -> HttpStatusCode.BadRequest
         

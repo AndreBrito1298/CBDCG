@@ -2,6 +2,7 @@ package isel.pt.cbdcg.domain.game
 
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.game.board.Entity
+import isel.pt.cbdcg.domain.game.character.Grade
 import isel.pt.cbdcg.domain.toUserDTO
 import isel.pt.cbdcg.dto.PlayerDTO
 import isel.pt.cbdcg.dto.toUser
@@ -13,6 +14,9 @@ typealias PlayerHand = Map<UInt, Card>
 
 fun PlayerHand.numTileCards(): Int =
     this.values.filter{ it.type == CardType.TILE }.size
+
+fun PlayerHand.containsAllKeys(): Boolean =
+    this.values.filter{ card -> card is ItemCard && card.item.grade == Grade.KEY }.size == 5
 
 data class Player(
     val user: User,

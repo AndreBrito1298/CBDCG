@@ -90,8 +90,8 @@ fun Board(
 
                         BoardTile(
                             conditions = drawConditions,
+                            boardTile = boardTile,
                             tileName = tileName,
-                            characterName = character?.name,
                             tileSize = tileSize,
                             tilePath = tilePath,
                             onClick = { if(!drawConditions.characterIsMoving) placeCard(position) else moveCharacter(boardTile) },

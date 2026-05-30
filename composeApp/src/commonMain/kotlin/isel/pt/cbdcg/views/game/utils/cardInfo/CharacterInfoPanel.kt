@@ -34,9 +34,9 @@ fun CharacterInfoPanel(
         ) {
             CardBasicInfoColumn(
                 modifier = Modifier.width(180.dp),
-                name = character.name,
+                mainText = character.name,
                 zoom = 3.0f,
-                grade = character.grade.name,
+                subText = character.grade.name,
             )
             CharacterItemAndConditionColumn(
                 modifier = Modifier.width(180.dp),

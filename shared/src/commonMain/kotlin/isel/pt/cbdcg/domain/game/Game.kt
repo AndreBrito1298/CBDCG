@@ -11,6 +11,7 @@ import isel.pt.cbdcg.domain.game.board.applyBoardTileEffect
 import isel.pt.cbdcg.domain.game.board.equipItem
 import isel.pt.cbdcg.domain.game.board.placeCharacter
 import isel.pt.cbdcg.domain.game.board.placeTile
+import isel.pt.cbdcg.domain.game.board.reduceCooldown
 import isel.pt.cbdcg.domain.game.board.toBoardTile
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.board.toTile
@@ -21,6 +22,7 @@ import isel.pt.cbdcg.domain.game.character.toItemDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.ItemDeckDTO
 import isel.pt.cbdcg.dto.TileDeckDTO
+import isel.pt.cbdcg.error.BoardError
 import isel.pt.cbdcg.error.GameError
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -79,7 +81,7 @@ fun Game.applyBoardTileEffect(effect: Effect<BoardTile>, origin: BoardTile, vara
     val result = effect.apply(origin, *targets)
     return copy(board = board.applyBoardTileEffect(result))
 }
-fun Game.placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: UInt): Game{
+fun Game.placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: UInt): Game {
 
     if(player.user.id != turn.playerTurn.first())
         throw GameError.NotYourTurn()
@@ -99,6 +101,32 @@ fun Game.placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: 
     }
 
     return copy(board = newBoard, players= updatedPlayers)
+}
+fun Game.drawItem(player: Player, boardTile: BoardTile): Game {
+
+    if(player.user.id != turn.playerTurn.first())
+        throw GameError.NotYourTurn()
+
+    if(boardTile.cooldown != 0u)
+        throw BoardError.EffectInCooldown(boardTile.tile.specialEffect.type.name, boardTile.cooldown.toInt())
+
+    val newBoard = board.tiles.map{
+        if(it == boardTile) boardTile.copy(cooldown = boardTile.tile.specialEffect.maxCooldown)
+        else it
+    }
+
+    val item = itemDeck.draw()
+
+    val updatedPlayers = players.map{
+        if(it == player) player.addToHand(ItemCard(item))
+        else it
+    }
+
+    return copy(
+        players = updatedPlayers,
+        board = board.copy(tiles = newBoard),
+        itemDeck = itemDeck.remove(item),
+    )
 }
 fun Game.nextPhase(): Game {
 
@@ -123,6 +151,8 @@ fun Game.nextPhase(): Game {
 }
 fun Game.nextTurn(): Game{
 
+    val winner = players.firstOrNull{ player -> player.hand.containsAllKeys() }
+
     val remainingPlayers = turn.playerTurn.drop(1)
 
     val nextGameTurn =
@@ -132,28 +162,32 @@ fun Game.nextTurn(): Game{
         }
         else{ if (remainingPlayers.isEmpty()) turn.gameTurn + 1u else turn.gameTurn }
 
-    val nextPlayerTurn =
-        remainingPlayers.ifEmpty { getTurnOrder() }
+    val nextPlayerTurn = remainingPlayers.ifEmpty{ getTurnOrder() }
+    val newBoard = if(remainingPlayers.isEmpty() && turn.gameTurn != 0u){ board.reduceCooldown() } else board
 
-    val nextTurn = copy(turn = Turn(gameTurn = nextGameTurn, playerTurn = nextPlayerTurn, phase = TurnPhase.CONSTRUCTION))
+    val nextTurn = copy(
+        board = newBoard,
+        turn = Turn(gameTurn = nextGameTurn, playerTurn = nextPlayerTurn, phase = TurnPhase.CONSTRUCTION)
+    )
     return nextTurn.startTurnDraw()
 }
 fun Game.startTurnDraw(): Game {
 
-    if(turn.gameTurn == 0u || tileDeck.values.all{ it == 0u }) return this
+    if (turn.gameTurn == 0u || tileDeck.values.all { it == 0u }) return this
 
     val nextPlayer = turn.playerTurn.first()
 
     val drawnTile = tileDeck.draw()
     val updatedDeck = tileDeck.remove(drawnTile)
 
-    val updatedPlayers = players.map{ player ->
-        if(player.user.id == nextPlayer) player.addToHand(TileCard(drawnTile))
+    val updatedPlayers = players.map { player ->
+        if (player.user.id == nextPlayer) player.addToHand(TileCard(drawnTile))
         else player
     }
 
     return copy(players = updatedPlayers, tileDeck = updatedDeck)
 }
+
 private fun Game.getTurnOrder(): List<UInt>{
 
     return players.map{ it.user.id }

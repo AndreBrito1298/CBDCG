@@ -20,6 +20,7 @@ import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.TileEffect
 import isel.pt.cbdcg.viewmodel.GameUI
 import isel.pt.cbdcg.viewmodel.GameUIState
 import isel.pt.cbdcg.views.game.utils.board.Board
@@ -27,6 +28,8 @@ import isel.pt.cbdcg.views.game.utils.InGameHeader
 import isel.pt.cbdcg.views.game.utils.players.PlayerHand
 import isel.pt.cbdcg.views.game.utils.board.ZoomButtons
 import isel.pt.cbdcg.views.game.utils.cardInfo.CardStatsDialog
+import isel.pt.cbdcg.views.game.utils.cardInfo.TileEffectDialog
+import isel.pt.cbdcg.views.game.utils.cardInfo.adjustStats
 
 @Composable
 fun GameScreen(
@@ -38,6 +41,7 @@ fun GameScreen(
     placeOnBoard: (BoardPosition) -> Unit,
     selectBoardCharacter: (BoardTile) -> Unit,
     toggleCardStats: (Card?) -> Unit,
+    onEffectInfoClick: (TileEffect?) -> Unit,
     moveSignal: () -> Unit,
     moveCharacter: (BoardTile) -> Unit,
     rotateTile: (Boolean) -> Unit,
@@ -70,15 +74,24 @@ fun GameScreen(
                 .height(50.dp),
             contentAlignment = Alignment.CenterStart
         ) {
+
+            val playing = currentPlayer != null && currentPlayer.user.id == player.user.id
+            val playingCharacter =
+                if(playing) game.board.tiles.firstOrNull{ it.character?.name == player.currentCharacter }?.character
+                else null
+
             InGameHeader(
                 modifier = Modifier.align(Alignment.CenterStart),
                 dungeonTurn = game.turn.gameTurn.toString(),
                 phase = phaseText,
                 playerName = player.user.name.string,
-                currentPlayerName = currentPlayer?.user?.name?.string ?: "Unknown"
+                currentPlayerName = currentPlayer?.user?.name?.string ?: "Unknown",
+                remainingMoves =
+                    if(playingCharacter!= null) "${playingCharacter.adjustStats().spe - gameUI.movementUsed}"
+                    else null
             )
 
-            if (currentPlayer != null && currentPlayer.user.id == player.user.id && game.turn.gameTurn > 0u) {
+            if (playing && game.turn.gameTurn > 0u) {
                 Button(
                     onClick = nextPhase,
                     modifier = Modifier.align(Alignment.BottomEnd)
@@ -144,6 +157,14 @@ fun GameScreen(
         CardStatsDialog(
             card = gameUI.state.card,
             onDismiss = { toggleCardStats(null) }
+        )
+    }
+
+    if(gameUI.state is GameUIState.InspectTileEffect){
+        TileEffectDialog(
+            effect = gameUI.state.boardTile.tile.specialEffect,
+            confirm = { onEffectInfoClick(gameUI.state.boardTile.tile.specialEffect) },
+            dismiss = { onEffectInfoClick(null) }
         )
     }
 }

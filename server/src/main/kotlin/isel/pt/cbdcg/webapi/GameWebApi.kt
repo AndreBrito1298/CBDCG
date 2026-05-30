@@ -11,6 +11,7 @@ import isel.pt.cbdcg.domain.game.board.toPosition
 import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.domain.game.toGameDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
+import isel.pt.cbdcg.dto.DrawItemDTO
 import isel.pt.cbdcg.dto.MoveCharacterDTO
 import isel.pt.cbdcg.dto.NextPhaseDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
@@ -103,7 +104,20 @@ fun Route.gameWebApi(gameService: GameService) {
             ).getOrThrow()
 
             call.respond(HttpStatusCode.OK, result.toGameDTO())
+        }
 
+        post("/draw-item"){
+
+            val input = call.receive<DrawItemDTO>()
+
+            val result = gameService.drawItem(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token,
+                trigger = input.origin.toBoardTile(),
+            ).getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.toGameDTO())
         }
     }
 }

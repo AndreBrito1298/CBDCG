@@ -10,6 +10,7 @@ import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.applyBoardTileEffect
+import isel.pt.cbdcg.domain.game.applyRandomSpecialEffects
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.CharacterMovement
@@ -20,6 +21,7 @@ import isel.pt.cbdcg.domain.game.board.rotate
 import isel.pt.cbdcg.domain.game.character.ItemCatalog
 import isel.pt.cbdcg.domain.game.character.PlayableCharacterCatalog
 import isel.pt.cbdcg.domain.game.draw
+import isel.pt.cbdcg.domain.game.drawItem
 import isel.pt.cbdcg.domain.game.nextPhase
 import isel.pt.cbdcg.domain.game.nextTurn
 import isel.pt.cbdcg.domain.game.placeOnBoard
@@ -57,11 +59,11 @@ class GameService(
 
 
         val startingDeck = mutableMapOf(
-            Tile(Direction.entries) to 12u,
-            Tile(listOf(Direction.EAST, Direction.NORTH, Direction.SOUTH)) to 22u,
-            Tile(listOf(Direction.EAST, Direction.NORTH)) to 28u,
-            Tile(listOf(Direction.NORTH, Direction.SOUTH)) to 28u,
-        )
+            Tile(Direction.entries) to 13u,
+            Tile(listOf(Direction.EAST, Direction.NORTH, Direction.SOUTH)) to 24u,
+            Tile(listOf(Direction.EAST, Direction.NORTH)) to 31u,
+            Tile(listOf(Direction.NORTH, Direction.SOUTH)) to 31u,
+        ).applyRandomSpecialEffects().toMutableMap()
 
         val characters = PlayableCharacterCatalog.playableCharacters.shuffled()
         val itemDeck = ItemCatalog.items.associateWith { 1u }.toMutableMap()
@@ -175,6 +177,8 @@ class GameService(
 
         newGame
     }
+
+    // Effects to be implemented
     suspend fun moveCharacter(userId: UInt, gameId: UInt, token: String, from: BoardTile, to: BoardTile): Result<Game> = runCatching{
 
         val user = userRepo.findById(userId)
@@ -193,6 +197,26 @@ class GameService(
         events.publishGameUpdated(newGame)
         newGame
     }
+    suspend fun drawItem(userId: UInt, gameId: UInt, token: String, trigger: BoardTile): Result<Game> = runCatching{
+
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
+        user.auth.verifyToken(token)
+
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
+
+        val player = game.players.find{ it.user.id == user.id }
+            ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
+
+        val newGame = game.drawItem(player, trigger)
+
+        gameRepo.save(newGame)
+        events.publishGameUpdated(newGame)
+        newGame
+    }
+
+
     suspend fun applyBoardTileEffect(
         userId: UInt,
         gameId: UInt,

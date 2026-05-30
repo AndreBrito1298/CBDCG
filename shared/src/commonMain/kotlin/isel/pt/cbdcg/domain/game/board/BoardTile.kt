@@ -7,6 +7,7 @@ import isel.pt.cbdcg.dto.BoardTileDTO
 data class BoardTile(
     val pos: BoardPosition,
     val tile: Tile,
+    val cooldown: UInt,
     val character: Character?
 ): Entity
 
@@ -21,11 +22,17 @@ fun BoardTile.directionTo(other: BoardTile): Direction? =
 
 
 fun BoardTile.toBoardTileDTO(): BoardTileDTO =
-    BoardTileDTO(pos.toString(), tile.toTileDTO(), character?.toCharacterDTO())
+    BoardTileDTO(
+        pos.toString(),
+        tile.toTileDTO(),
+        cooldown.toInt(),
+        character?.toCharacterDTO()
+    )
 
 fun BoardTileDTO.toBoardTile(): BoardTile =
     BoardTile(
         pos = pos.toPosition(),
         tile = tile.toTile(),
+        cooldown = cooldown.toUInt(),
         character = character?.toCharacter()
     )

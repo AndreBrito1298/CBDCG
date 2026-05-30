@@ -13,6 +13,8 @@ import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.TileEffect
+import isel.pt.cbdcg.domain.game.board.TileEffectTypes
 import isel.pt.cbdcg.domain.game.board.findPath
 import isel.pt.cbdcg.domain.game.board.rotate
 import isel.pt.cbdcg.views.game.utils.cardInfo.adjustStats
@@ -76,9 +78,7 @@ class AppViewModel(
         viewModelScope.launch {
             clientApi.game.collect { game ->
                 _ui.update { ui ->
-                    val session = ui.session
-
-                    when (session) {
+                    when (val session = ui.session) {
                         is SessionState.InGame if game != null ->
                             ui.copy(session = session.copy(game = game))
 
@@ -699,6 +699,8 @@ class AppViewModel(
 
             return viewModelScope.launch{
 
+                _ui.update { it.copy(isLoading = true, errorMessage = null) }
+
                 val response = clientApi.moveCharacter(
                     user.id,
                     game.id,
@@ -708,13 +710,25 @@ class AppViewModel(
                 )
 
                 response.onSuccess { newGame ->
+
+                    val character = newGame.players.firstOrNull{ player -> player.user.id == user.id }?.currentCharacter
+                    val boardTile = newGame.board.tiles.firstOrNull{ boardTile ->
+                        boardTile.character?.name == character
+                    }
+                    val specialEffect = boardTile?.tile?.specialEffect?.type
+
+                    val nextState =
+                        if(specialEffect != null && specialEffect != TileEffectTypes.None && specialEffect != TileEffectTypes.Start)
+                            GameUIState.InspectTileEffect(boardTile)
+                        else GameUIState.Idle
+
                     _ui.update {
                         it.copy(
                             isLoading = false,
                             errorMessage = null,
                             session = session.copy(game = newGame),
                             gameUI = it.gameUI.copy(
-                                state = GameUIState.Idle,
+                                state = nextState,
                                 movementUsed = gameUI.movementUsed + gameUI.state.path.size - 1
                             )
                         )
@@ -752,6 +766,60 @@ class AppViewModel(
                         state = gameUI.state.copy(path = path)
                     )
                 )
+            }
+        }
+    }
+    fun drawItem(effect: TileEffect?): Job? {
+
+        val session = ui.value.session
+        val gameUI = ui.value.gameUI
+        if(session !is SessionState.InGame) return null
+        if(gameUI.state !is GameUIState.InspectTileEffect) return null
+
+        if(effect == null) {
+            return viewModelScope.launch{
+                _ui.update{
+                    it.copy(gameUI = gameUI.copy(state = GameUIState.Idle))
+                }
+            }
+        } else {
+
+            val user = session.user
+            val game = session.game
+            val token = user.auth?.token ?: return null.also {
+                _ui.update { it.copy(errorMessage = "No token found.") }
+            }
+
+            return viewModelScope.launch{
+
+                _ui.update { it.copy(isLoading = true, errorMessage = null) }
+
+                val response = clientApi.drawItem(
+                    user.id,
+                    game.id,
+                    token,
+                    gameUI.state.boardTile
+                )
+
+                response.onSuccess { newGame ->
+                    _ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = session.copy(game = newGame),
+                            gameUI = it.gameUI.copy(state = GameUIState.Idle)
+                        )
+                    }
+                }
+                response.onFailure { error ->
+                    _ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Couldn't draw Item."
+                        )
+                    }
+                }
+
             }
         }
     }

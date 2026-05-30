@@ -40,4 +40,8 @@ sealed interface GameUIState {
         val from: BoardTile,
         val path: List<BoardTile> = emptyList()
     ) : GameUIState
+
+    data class InspectTileEffect(
+        val boardTile: BoardTile
+    ) : GameUIState
 }
