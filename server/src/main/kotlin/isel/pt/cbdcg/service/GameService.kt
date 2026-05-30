@@ -9,6 +9,7 @@ import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.TurnPhase
+import isel.pt.cbdcg.domain.game.applyRandomSpecialEffects
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.CharacterMovement
@@ -17,12 +18,13 @@ import isel.pt.cbdcg.domain.game.board.Updater
 import isel.pt.cbdcg.domain.game.board.UpdaterName
 import isel.pt.cbdcg.domain.game.board.Entity
 import isel.pt.cbdcg.domain.game.board.Tile
-import isel.pt.cbdcg.domain.game.board.applyBoardTileUpdater
+// import isel.pt.cbdcg.domain.game.board.applyBoardTileUpdater
 import isel.pt.cbdcg.domain.game.board.rotate
 import isel.pt.cbdcg.domain.game.character.ItemCatalog
 import isel.pt.cbdcg.domain.game.character.PlayableCharacterCatalog
 import isel.pt.cbdcg.domain.game.draw
 import isel.pt.cbdcg.domain.game.drawItem
+import isel.pt.cbdcg.domain.game.moveCharacter
 import isel.pt.cbdcg.domain.game.nextPhase
 import isel.pt.cbdcg.domain.game.nextTurn
 import isel.pt.cbdcg.domain.game.placeOnBoard
@@ -200,7 +202,7 @@ class GameService(
         if(game.turn.phase != TurnPhase.MOVEMENT)
             throw GameError.CharacterMovementRestriction()
 
-        val newGame = game.applyBoardTileEffect(CharacterMovement(), from, to)
+        val newGame = game.moveCharacter(from, to)
 
         gameRepo.save(newGame)
         events.publishGameUpdated(newGame)
@@ -226,6 +228,7 @@ class GameService(
     }
 
 
+    /*
     suspend fun applyBoardTileEffect(
         userId: UInt,
         gameId: UInt,
@@ -248,4 +251,5 @@ class GameService(
         events.publishGameUpdated(newGame)
         newGame
     }
+    */
 }

@@ -259,7 +259,6 @@ data class BoardTileEffectDTO(
 
         return true
     }
-
     override fun hashCode(): Int {
         var result = userId
         result = 31 * result + gameId
@@ -271,6 +270,18 @@ data class BoardTileEffectDTO(
     }
 }
 
+
+
+// Will be changed
+
+@Serializable
+data class MoveCharacterDTO(
+    val userId: Int,
+    val gameId: Int,
+    val token: String,
+    val origin: BoardTileDTO,
+    val target: BoardTileDTO
+)
 
 @Serializable
 data class DrawItemDTO(

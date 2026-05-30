@@ -91,11 +91,11 @@ object AllTileEffects{
             type = TileEffectTypes.Chest,
             maxCooldown = 2u,
             info = "Draw one ITEM card from the Item Deck.\nCooldown: 2 Dungeon Turns\nRestriction: ---"
-        ) to 29u,
+        ) to 6u,
         TileEffect(
             type = TileEffectTypes.BigChest,
             maxCooldown = 2u,
             info = "Draw two ITEMS cards from the Item Deck.\nCooldown: 3 Dungeon Turns\nRestriction: ---"
-        ) to 1u
+        ) to 3u
     )
 }

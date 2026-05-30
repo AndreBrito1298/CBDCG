@@ -165,6 +165,7 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is GameError.NoActiveCharacters -> HttpStatusCode.Conflict
         is GameError.CharacterMovementRestriction -> HttpStatusCode.Conflict
         is GameError.EmptyDeck -> HttpStatusCode.Conflict
+        is GameError.EffectNotFound -> HttpStatusCode.NotFound
 
         is CardError.InvalidCardFormat -> HttpStatusCode.BadRequest
         

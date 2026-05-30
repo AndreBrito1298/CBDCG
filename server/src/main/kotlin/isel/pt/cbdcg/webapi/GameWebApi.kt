@@ -12,7 +12,7 @@ import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.domain.game.toGameDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.DrawItemDTO
-import isel.pt.cbdcg.dto.BoardTileEffectDTO
+import isel.pt.cbdcg.dto.MoveCharacterDTO
 import isel.pt.cbdcg.dto.NextPhaseDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RotatePieceDTO
@@ -81,32 +81,7 @@ fun Route.gameWebApi(gameService: GameService) {
             call.respond(HttpStatusCode.OK, result.toGameDTO())
         }
 
-        post("/move"){
-
-            val input = call.receive<MoveCharacterDTO>()
-
-            /*
-            val result = gameService.applyBoardTileEffect(
-                userId = input.userId.toUInt(),
-                gameId = input.gameId.toUInt(),
-                token = input.token,
-                effect = CharacterMovement(),
-                origin = input.origin.toBoardTile(),
-                targets = arrayOf(input.target.toBoardTile())
-            ).getOrThrow()
-            */
-            val result = gameService.moveCharacter(
-                userId = input.userId.toUInt(),
-                gameId = input.gameId.toUInt(),
-                token = input.token,
-                from = input.origin.toBoardTile(),
-                to = input.target.toBoardTile(),
-            ).getOrThrow()
-
-            call.respond(HttpStatusCode.OK, result.toGameDTO())
-
-        }
-
+        /*
         post("/applyBoardEffect") {
             val input = call.receive<BoardTileEffectDTO>()
             val result = gameService.applyBoardTileEffect(
@@ -119,6 +94,25 @@ fun Route.gameWebApi(gameService: GameService) {
             ).getOrThrow()
 
             call.respond(HttpStatusCode.OK, result.toGameDTO())
+        }
+        */
+
+        // Will be changed
+
+        post("/move"){
+
+            val input = call.receive<MoveCharacterDTO>()
+
+            val result = gameService.moveCharacter(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token,
+                from = input.origin.toBoardTile(),
+                to = input.target.toBoardTile(),
+            ).getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.toGameDTO())
+
         }
 
         post("/draw-item"){

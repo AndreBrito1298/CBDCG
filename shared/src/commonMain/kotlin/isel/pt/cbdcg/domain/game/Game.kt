@@ -96,6 +96,22 @@ fun Game.placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: 
 
     return copy(board = newBoard, players= updatedPlayers)
 }
+
+fun Game.moveCharacter(from: BoardTile, to: BoardTile) : Game {
+
+    if(this.turn.phase != TurnPhase.MOVEMENT) throw GameError.CharacterMovementRestriction()
+    if(to.character != null) throw BoardError.TileOccupied()
+
+    val newBoard = board.tiles.map{ boardTile ->
+        when (boardTile.pos) {
+            from.pos -> boardTile.copy(character = null)
+            to.pos -> boardTile.copy(character = from.character)
+            else -> boardTile
+        }
+    }
+
+    return copy(board = board.copy(tiles = newBoard))
+}
 fun Game.drawItem(player: Player, boardTile: BoardTile): Game {
 
     if(player.user.id != turn.playerTurn.first())
