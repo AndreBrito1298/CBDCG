@@ -9,14 +9,15 @@ import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.TurnPhase
-import isel.pt.cbdcg.domain.game.applyBoardTileEffect
-import isel.pt.cbdcg.domain.game.applyRandomSpecialEffects
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.CharacterMovement
 import isel.pt.cbdcg.domain.game.board.Direction
-import isel.pt.cbdcg.domain.game.board.Effect
+import isel.pt.cbdcg.domain.game.board.Updater
+import isel.pt.cbdcg.domain.game.board.UpdaterName
+import isel.pt.cbdcg.domain.game.board.Entity
 import isel.pt.cbdcg.domain.game.board.Tile
+import isel.pt.cbdcg.domain.game.board.applyBoardTileUpdater
 import isel.pt.cbdcg.domain.game.board.rotate
 import isel.pt.cbdcg.domain.game.character.ItemCatalog
 import isel.pt.cbdcg.domain.game.character.PlayableCharacterCatalog
@@ -41,6 +42,14 @@ class GameService(
     private val userRepo: UserRepository,
     private val events: EventsPublisher,
 ) {
+
+    private val boardTileUpdater: Map<UpdaterName, Updater<BoardTile>> = mapOf(
+        UpdaterName.MOVEMENT to CharacterMovement(),
+    )
+
+    private val boardEntityUpdater: Map<UpdaterName, Updater<Entity>> = mapOf(
+
+    )
 
     suspend fun createGame(tableId: UInt, userId: UInt, token: String): Result<Game> = runCatching {
 
@@ -221,7 +230,7 @@ class GameService(
         userId: UInt,
         gameId: UInt,
         token: String,
-        effect: Effect<BoardTile>,
+        updaterName: UpdaterName,
         origin: BoardTile,
         vararg targets: BoardTile,
     ): Result<Game> = runCatching {
@@ -233,8 +242,8 @@ class GameService(
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())
 
-        val newGame = game.applyBoardTileEffect(effect, origin, *targets)
-
+        if(boardTileUpdater[updaterName] == null) throw GameError.EffectNotFound(updaterName.name)
+        val newGame = game.applyBoardTileUpdater(boardTileUpdater[updaterName]!!, origin, *targets)
         gameRepo.save(newGame)
         events.publishGameUpdated(newGame)
         newGame
