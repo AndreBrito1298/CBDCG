@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.dto
 
+import isel.pt.cbdcg.domain.game.board.UpdaterName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -223,10 +224,37 @@ data class NextPhaseDTO(
 )
 
 @Serializable
-data class MoveCharacterDTO(
+data class BoardTileEffectDTO(
     val userId: Int,
     val gameId: Int,
     val token: String,
+    val updaterName: UpdaterName,
     val origin: BoardTileDTO,
-    val target: BoardTileDTO,
-)
+    val target: Array<BoardTileDTO>,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as BoardTileEffectDTO
+
+        if (userId != other.userId) return false
+        if (gameId != other.gameId) return false
+        if (token != other.token) return false
+        if (updaterName != other.updaterName) return false
+        if (origin != other.origin) return false
+        if (!target.contentEquals(other.target)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = userId
+        result = 31 * result + gameId
+        result = 31 * result + token.hashCode()
+        result = 31 * result + updaterName.hashCode()
+        result = 31 * result + origin.hashCode()
+        result = 31 * result + target.contentHashCode()
+        return result
+    }
+}

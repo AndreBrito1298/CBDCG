@@ -3,11 +3,8 @@ package isel.pt.cbdcg.domain.game
 import isel.pt.cbdcg.MAX_TILES_IN_HAND
 import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.board.BoardPosition
-import isel.pt.cbdcg.domain.game.board.BoardTile
-import isel.pt.cbdcg.domain.game.board.Effect
 import isel.pt.cbdcg.domain.game.board.Entity
 import isel.pt.cbdcg.domain.game.board.Tile
-import isel.pt.cbdcg.domain.game.board.applyBoardTileEffect
 import isel.pt.cbdcg.domain.game.board.equipItem
 import isel.pt.cbdcg.domain.game.board.placeCharacter
 import isel.pt.cbdcg.domain.game.board.placeTile
@@ -75,10 +72,6 @@ fun GameDTO.toGame(): Game {
 
 }
 
-fun Game.applyBoardTileEffect(effect: Effect<BoardTile>, origin: BoardTile, vararg targets: BoardTile): Game {
-    val result = effect.apply(origin, *targets)
-    return copy(board = board.applyBoardTileEffect(result))
-}
 fun Game.placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: UInt): Game{
 
     if(player.user.id != turn.playerTurn.first())

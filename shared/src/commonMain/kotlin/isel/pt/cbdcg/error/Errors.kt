@@ -74,6 +74,8 @@ sealed class GameError(
     class MustPlaceTile(max: Int) : GameError("You can have a maximum of $max tiles in your hand.")
     class NoActiveCharacters : GameError("You must have at least one active character.")
     class CharacterMovementRestriction : GameError("You can only move your character during the Movement Phase.")
+
+    class EffectNotFound(effect: String) : GameError("Effect '$effect' not found.")
 }
 
 sealed class CharacterError(
