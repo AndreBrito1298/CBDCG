@@ -4,28 +4,49 @@ skinparam classAttributeIconSize 0
 
 class Game {
   +id: UInt
+  +winner: Player?
   --
-  +placeTile(player: Player, position: BoardPosition, tile: Tile, idx: UInt): Game
+  +placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: UInt): Game
+  +nextPhase(): Game
   +nextTurn(): Game
+  +checkWinner(): Game
   +startTurnDraw(): Game
+  +moveCharacter(from: BoardTile, to: BoardTile): Game
+  +drawItem(player: Player, boardTile: BoardTile): Game
 }
 
 class Player {
-  +hand: Map<UInt, Tile>
+  +user: User
+  +hand: Map<UInt, Card>
+  +currentCharacter: String?
   --
-  +addToHand(card: Tile): Player
+  +addToHand(card: Card): Player
   +removeFromHand(idx: UInt): Player
 }
 
-class Spectator { }
+class Card {  }
+
+enum CardType {
+  TILE
+  CHARACTER
+  ITEM
+}
 
 class Board {
   --
   +checkBlocked(position: BoardPosition, tile: Tile)
-  +place(position: BoardPosition, tile: Tile): Board
+  +placeTile(position: BoardPosition, tile: Tile, turnPhase: TurnPhase): Board
+  +placeCharacter(position: BoardPosition, player: Player, character: Character, turnPhase: TurnPhase): Board
+  +equipItem(position: BoardPosition, player: Player, item: Item, turnPhase: TurnPhase): Board
+  +reduceCooldown(): Board
 }
 
-class BoardTile { }
+class BoardTile {
+  +pos: BoardPosition
+  +tile: Tile
+  +cooldown: UInt
+  +character: Character?
+}
 
 class BoardPosition {
   +x: Int
@@ -58,6 +79,12 @@ class Turn {
   +turnString(): String
 }
 
+enum TurnPhase {
+  CONSTRUCTION
+  SUBSTITUTION
+  MOVEMENT
+}
+
 class User {
   +id: UInt
 }
@@ -70,25 +97,37 @@ class TileDeck <<typealias>> {
   Map<Tile, UInt>
 }
 
+class ItemDeck <<typealias>> {
+  Map<Item, UInt>
+}
+
 Game *-- "2..*" Player : players
 Game *-- "0..*" Spectator : spectators
 Game *-- Board : board
 Game *-- TileDeck : tileDeck
+Game *-- ItemDeck : itemDeck
 Game *-- Turn : turn
+Game o-- "0..1" Player : winner
 
 Player o-- User : user
-Player *-- "0..*" Tile : hand
-
-Spectator o-- User : user
+Player *-- "0..*" Card : hand
 
 Board *-- BoardTiles : tiles
 BoardTiles *-- "0..*" BoardTile
 
 BoardTile *-- BoardPosition : pos
 BoardTile *-- Tile : tile
+BoardTile o-- "0..1" Character : character
 
 Tile *-- "1..*" Direction : connections
 
 TileDeck *-- "0..*" Tile : copies
+ItemDeck *-- "0..*" Item : copies
+
+Turn *-- TurnPhase : phase
+
+Card *-- CardType : type
+
+class Spectator { }
 
 @enduml

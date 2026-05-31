@@ -25,7 +25,6 @@ import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
-import isel.pt.cbdcg.domain.game.board.UpdaterName
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.toGame
 import isel.pt.cbdcg.dto.CreateGameDTO
@@ -33,9 +32,10 @@ import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.CreateUserDTO
 import isel.pt.cbdcg.dto.DrawItemDTO
 import isel.pt.cbdcg.dto.GameDTO
+import isel.pt.cbdcg.dto.LeaveGameDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
-import isel.pt.cbdcg.dto.BoardTileEffectDTO
+import isel.pt.cbdcg.dto.MoveCharacterDTO
 import isel.pt.cbdcg.dto.NextPhaseDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RoleChangeInput
@@ -193,32 +193,32 @@ class ClientApi(private val client: HttpClient) {
         ).map { it.map{ tableOutput -> tableOutput.toTable() } }
 
 
-    suspend fun createTable(tableName: Name, id: UInt, token: String): Result<Table> =
+    suspend fun createTable(tableName: Name, id: UInt): Result<Table> =
         fetch<TableDTO>(
             path = "tables/create",
             method = HttpMethod.Post,
             body = CreateTableDTO(tableName.string, id.toInt())
         ).map{ it.toTable() }
-    suspend fun joinTable(userId: UInt, tableId: UInt, token: String): Result<Table> =
+    suspend fun joinTable(userId: UInt, tableId: UInt): Result<Table> =
         fetch<TableDTO>(
             path = "tables/join",
             method = HttpMethod.Post,
             body = TableOperationInput(tableId.toInt(), userId.toInt())
         ).map{ it.toTable() }
-    suspend fun leaveTable(userId: UInt, tableId: UInt, token: String): Result<Unit> =
+    suspend fun leaveTable(userId: UInt, tableId: UInt): Result<Unit> =
         fetch<Unit>(
             path = "tables/leave",
             method = HttpMethod.Post,
             body = TableOperationInput(tableId.toInt(), userId.toInt())
         )
-    suspend fun changeRole(userId: UInt, tableId: UInt, token: String, role: Role): Result<Unit> =
+    suspend fun changeRole(userId: UInt, tableId: UInt, role: Role): Result<Unit> =
         fetch<Unit>(
             path = "tables/change-role",
             method = HttpMethod.Post,
             body = RoleChangeInput(tableId.toInt(), userId.toInt(), role.toString())
         )
 
-    suspend fun createGame(tableId: UInt, userId: UInt, token: String): Result<Game> =
+    suspend fun createGame(tableId: UInt, userId: UInt): Result<Game> =
         fetch<GameDTO>(
             path = "game/create",
             method = HttpMethod.Post,
@@ -244,9 +244,9 @@ class ClientApi(private val client: HttpClient) {
         ).map{ it.toGame() }
     suspend fun moveCharacter(userId: UInt, gameId: UInt, token: String, origin: BoardTile, target: BoardTile): Result<Game> =
         fetch<GameDTO>(
-            path = "game/applyBoardEffect",
+            path = "game/move",
             method = HttpMethod.Post,
-            body = BoardTileEffectDTO(userId.toInt(), gameId.toInt(), token, UpdaterName.MOVEMENT,origin.toBoardTileDTO(), arrayOf(target.toBoardTileDTO()))
+            body = MoveCharacterDTO(userId.toInt(), gameId.toInt(), token, origin.toBoardTileDTO(), target.toBoardTileDTO())
         ).map{ it.toGame() }
     suspend fun drawItem(userId: UInt, gameId: UInt, token: String, boardTile: BoardTile): Result<Game> =
         fetch<GameDTO>(
@@ -254,6 +254,12 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = DrawItemDTO(userId.toInt(), gameId.toInt(), token, boardTile.toBoardTileDTO())
         ).map{ it.toGame() }
+    suspend fun leaveGame(userId: UInt, gameId: UInt, token: String): Result<Unit> =
+        fetch<Unit>(
+            path = "game/leave",
+            method = HttpMethod.Post,
+            body = LeaveGameDTO(userId.toInt(), gameId.toInt(), token)
+        )
 
     private suspend inline fun <reified T> fetch(
         path: String,

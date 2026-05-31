@@ -12,6 +12,7 @@ import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.domain.game.toGameDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.DrawItemDTO
+import isel.pt.cbdcg.dto.LeaveGameDTO
 import isel.pt.cbdcg.dto.MoveCharacterDTO
 import isel.pt.cbdcg.dto.NextPhaseDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
@@ -126,6 +127,20 @@ fun Route.gameWebApi(gameService: GameService) {
             ).getOrThrow()
 
             call.respond(HttpStatusCode.OK, result.toGameDTO())
+        }
+
+        post("/leave"){
+
+            val input = call.receive<LeaveGameDTO>()
+
+            gameService.leaveGame(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token
+            ).getOrThrow()
+
+            call.response.status(HttpStatusCode.OK)
+
         }
     }
 }

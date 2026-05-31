@@ -19,7 +19,7 @@ rectangle "SearchTablesScreen" as SearchTables
 
 rectangle "WaitingTableScreen\n> Join Players\n> Join Spectators\n> Ready / Not Ready\n> Start Game" as WaitingTable
 
-rectangle "GameScreen\n> Board\n> Player Hand\n> Place Tile\n> Rotate Tile\n> Zoom In / Zoom Out" as Game
+rectangle "GameScreen\n> Board\n> Player Hand\n> Place Card\n> Move Character\n> Rotate Tile\n> Zoom In / Zoom Out\n> Game Over Dialog" as Game
 
 rectangle "SpectatorScreen\n> Board\n> Player Selector\n> Spectator Hand View\n> Zoom In / Zoom Out" as Spectator
 

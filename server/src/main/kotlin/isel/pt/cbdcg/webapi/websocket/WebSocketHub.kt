@@ -31,6 +31,8 @@ class WebSocketHub(
         mutex.withLock {
             // Stop listening to updates in any 'table'
             tableSessions.values.forEach{ it.remove(session) }
+            // Stop listening to updates in any 'game'
+            gameSessions.values.forEach{ it.remove(session) }
             lobbySessions.add(session)
         }
     }

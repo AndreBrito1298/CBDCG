@@ -44,4 +44,8 @@ sealed interface GameUIState {
     data class InspectTileEffect(
         val boardTile: BoardTile
     ) : GameUIState
+
+    data class GameOver(
+        val winner: Player
+    ) : GameUIState
 }

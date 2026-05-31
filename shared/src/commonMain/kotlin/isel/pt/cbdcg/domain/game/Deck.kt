@@ -7,6 +7,14 @@ import isel.pt.cbdcg.error.GameError
 
 typealias Deck<T> = Map<T, UInt>
 
+fun <T> Deck<T>.add(cards: List<T>): Deck<T> {
+    val updatedDeck = this.toMutableMap()
+    cards.forEach { card ->
+        updatedDeck[card] = (updatedDeck[card] ?: 0u) + 1u
+    }
+    return updatedDeck
+}
+
 fun Deck<Tile>.applyRandomSpecialEffects(): Deck<Tile> {
     val tiles = this.flatMap{ (tile, copies) -> List(copies.toInt()){ tile } }.toMutableList()
 

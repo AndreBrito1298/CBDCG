@@ -79,8 +79,16 @@ class AppViewModel(
             clientApi.game.collect { game ->
                 _ui.update { ui ->
                     when (val session = ui.session) {
-                        is SessionState.InGame if game != null ->
-                            ui.copy(session = session.copy(game = game))
+                        is SessionState.InGame if game != null -> {
+
+                            val nextUI = ui.copy(session = session.copy(game = game))
+
+                            val winner = game.winner
+                            if (winner != null) {
+                                nextUI.copy(gameUI = nextUI.gameUI.copy(state = GameUIState.GameOver(winner)))
+                            } else nextUI
+
+                        }
 
                         is SessionState.InTable if game != null ->
                             ui.copy(session = SessionState.InGame(session.user, game))
@@ -249,15 +257,12 @@ class AppViewModel(
         if(session !is SessionState.InLobby) return null
 
         val user = session.user
-        val token = user.auth?.token ?: return null.also {
-            _ui.update { it.copy(errorMessage = "No token found.") }
-        }
 
         return viewModelScope.launch{
 
             _ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val response = clientApi.joinTable(user.id, table.id, token)
+            val response = clientApi.joinTable(user.id, table.id)
 
             response.onSuccess { table ->
                 _ui.update {
@@ -284,9 +289,6 @@ class AppViewModel(
         if(session !is SessionState.InLobby) return null
 
         val user = session.user
-        val token = user.auth?.token ?: return null.also {
-            _ui.update { it.copy(errorMessage = "No token found.") }
-        }
 
         return viewModelScope.launch{
 
@@ -295,7 +297,7 @@ class AppViewModel(
             val name = Name(tableName)
             val id = user.id
 
-            val response = clientApi.createTable(name, id, token)
+            val response = clientApi.createTable(name, id)
 
             response.onSuccess { table ->
                 _ui.update {
@@ -323,15 +325,12 @@ class AppViewModel(
 
         val user = session.user
         val table = session.table
-        val token = user.auth?.token ?: return null.also {
-            _ui.update { it.copy(errorMessage = "No token found.") }
-        }
 
         return viewModelScope.launch{
 
             _ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val response = clientApi.changeRole(user.id, table.id, token, role)
+            val response = clientApi.changeRole(user.id, table.id, role)
 
             response.onSuccess {
                 _ui.update{
@@ -359,15 +358,12 @@ class AppViewModel(
 
         val user = session.user
         val table = session.table
-        val token = user.auth?.token ?: return null.also {
-            _ui.update { it.copy(errorMessage = "No token found.") }
-        }
 
         return viewModelScope.launch{
 
             _ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val response = clientApi.leaveTable(user.id, table.id, token)
+            val response = clientApi.leaveTable(user.id, table.id)
 
             response.onSuccess {
                 _ui.update {
@@ -398,22 +394,20 @@ class AppViewModel(
 
         val user = session.user
         val table = session.table
-        val token = user.auth?.token ?: return null.also {
-            _ui.update { it.copy(errorMessage = "No token found.") }
-        }
 
         return viewModelScope.launch{
 
             _ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val response = clientApi.createGame(table.id, user.id, token)
+            val response = clientApi.createGame(table.id, user.id)
 
             response.onSuccess { game ->
                 _ui.update {
                     it.copy(
                         isLoading = false,
                         errorMessage = null,
-                        session = SessionState.InGame(session.user, game)
+                        session = SessionState.InGame(session.user, game),
+                        gameUI = it.gameUI.copy(state = GameUIState.Idle)
                     )
                 }
             }
@@ -716,9 +710,11 @@ class AppViewModel(
                         boardTile.character?.name == character
                     }
                     val specialEffect = boardTile?.tile?.specialEffect?.type
+                    val winner = newGame.winner
 
                     val nextState =
-                        if(specialEffect != null && specialEffect != TileEffectTypes.None && specialEffect != TileEffectTypes.Start)
+                        if (winner != null) GameUIState.GameOver(winner)
+                        else if(specialEffect != null && specialEffect != TileEffectTypes.None && specialEffect != TileEffectTypes.Start)
                             GameUIState.InspectTileEffect(boardTile)
                         else GameUIState.Idle
 
@@ -821,6 +817,55 @@ class AppViewModel(
                 }
 
             }
+        }
+    }
+    fun leaveGame(): Job? {
+
+        val session = ui.value.session
+        if(session !is SessionState.InGame) return null
+
+        /*
+
+
+        val user = session.user
+        val game = session.game
+        val token = user.auth?.token ?: return null.also {
+            _ui.update { it.copy(errorMessage = "No token found.") }
+        }
+
+        */
+
+        return viewModelScope.launch{
+
+            _ui.update{
+                it.copy(errorMessage = null, session = SessionState.InLobby(session.user, emptyList()))
+            }
+
+            /* Isto é mais para "expulsar" do que para "sair"
+
+            _ui.update { it.copy(isLoading = true, errorMessage = null) }
+
+            val response = clientApi.leaveGame(user.id, game.id, token)
+
+            response.onSuccess {
+                _ui.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = null,
+                        session = SessionState.InLobby(session.user, emptyList())
+                    )
+                }
+            }
+            response.onFailure { error ->
+                _ui.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = error.message ?: "Leave Game Failed."
+                    )
+                }
+            }
+
+            */
         }
     }
 }

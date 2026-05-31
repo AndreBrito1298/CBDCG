@@ -23,6 +23,7 @@ import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.TileEffect
 import isel.pt.cbdcg.viewmodel.GameUI
 import isel.pt.cbdcg.viewmodel.GameUIState
+import isel.pt.cbdcg.views.game.utils.GameOverDialog
 import isel.pt.cbdcg.views.game.utils.board.Board
 import isel.pt.cbdcg.views.game.utils.InGameHeader
 import isel.pt.cbdcg.views.game.utils.players.PlayerHand
@@ -46,7 +47,8 @@ fun GameScreen(
     moveCharacter: (BoardTile) -> Unit,
     rotateTile: (Boolean) -> Unit,
     zoom: (Boolean) -> Unit,
-    nextPhase: () -> Unit
+    nextPhase: () -> Unit,
+    leaveGame: () -> Unit,
 ) {
 
     val currentPlayer = game.players.find {
@@ -163,8 +165,15 @@ fun GameScreen(
     if(gameUI.state is GameUIState.InspectTileEffect){
         TileEffectDialog(
             effect = gameUI.state.boardTile.tile.specialEffect,
-            confirm = { onEffectInfoClick(gameUI.state.boardTile.tile.specialEffect) },
-            dismiss = { onEffectInfoClick(null) }
+            onConfirm = { onEffectInfoClick(gameUI.state.boardTile.tile.specialEffect) },
+            onDismiss = { onEffectInfoClick(null) }
+        )
+    }
+
+    if(gameUI.state is GameUIState.GameOver){
+        GameOverDialog(
+            winner = gameUI.state.winner,
+            onDismiss = leaveGame
         )
     }
 }

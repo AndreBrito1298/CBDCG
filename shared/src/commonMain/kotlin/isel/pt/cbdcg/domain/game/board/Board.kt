@@ -115,7 +115,7 @@ fun Board.placeTile(position: BoardPosition, tile: Tile, turnPhase: TurnPhase): 
 
     checkBlocked(position, tile)
 
-    return copy(tiles = tiles + BoardTile(position, tile, null))
+    return copy(tiles = tiles + BoardTile(position, tile, 0u, null))
 }
 fun Board.placeCharacter(position: BoardPosition, player: Player, character: Character, turnPhase: TurnPhase): Board {
     if(turnPhase != TurnPhase.SUBSTITUTION)

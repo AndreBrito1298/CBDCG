@@ -17,7 +17,6 @@ import isel.pt.cbdcg.domain.game.board.CharacterMovement
 import isel.pt.cbdcg.domain.game.board.Direction
 import isel.pt.cbdcg.domain.game.board.Updater
 import isel.pt.cbdcg.domain.game.board.UpdaterName
-import isel.pt.cbdcg.domain.game.board.Entity
 import isel.pt.cbdcg.domain.game.board.Tile
 // import isel.pt.cbdcg.domain.game.board.applyBoardTileUpdater
 import isel.pt.cbdcg.domain.game.board.rotate
@@ -25,6 +24,7 @@ import isel.pt.cbdcg.domain.game.character.ItemCatalog
 import isel.pt.cbdcg.domain.game.character.PlayableCharacterCatalog
 import isel.pt.cbdcg.domain.game.draw
 import isel.pt.cbdcg.domain.game.drawItem
+import isel.pt.cbdcg.domain.game.leaveGame
 import isel.pt.cbdcg.domain.game.moveCharacter
 import isel.pt.cbdcg.domain.game.nextPhase
 import isel.pt.cbdcg.domain.game.nextTurn
@@ -72,7 +72,9 @@ class GameService(
         ).applyRandomSpecialEffects().toMutableMap()
 
         val characters = PlayableCharacterCatalog.playableCharacters.shuffled()
-        val itemDeck = ItemCatalog.items.associateWith { 1u }.toMutableMap()
+        val allItems = ItemCatalog.items.associateWith { 1u }
+        // val itemDeck = allItems.filter{ it.key.grade != Grade.KEY }.toMutableMap()
+        val itemDeck = allItems.toMutableMap() // Isto é temporário, enquanto não está mais nada implementado
 
         val players = table.participants.filter{ it.role == Role.READY }
             .mapIndexed{ playerIdx, player ->
@@ -188,12 +190,29 @@ class GameService(
         newGame
     }
 
+    suspend fun leaveGame(userId: UInt, gameId: UInt, token: String): Result<Unit> = runCatching {
+
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
+        token.verifyToken(user, gameId, this.userRepo)
+
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
+
+        val player = game.players.find{ it.user.id == user.id }
+            ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
+
+        val newGame = game.leaveGame(player)
+        events.publishGameUpdated(newGame)
+
+    }
+
     // Effects to be implemented
     suspend fun moveCharacter(userId: UInt, gameId: UInt, token: String, from: BoardTile, to: BoardTile): Result<Game> = runCatching{
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        user.auth.verifyToken(token)
+        token.verifyToken(user, gameId, this.userRepo)
 
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())
@@ -211,7 +230,7 @@ class GameService(
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        user.auth.verifyToken(token)
+        token.verifyToken(user, gameId, this.userRepo)
 
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())
@@ -225,7 +244,6 @@ class GameService(
         events.publishGameUpdated(newGame)
         newGame
     }
-
 
     /*
     suspend fun applyBoardTileEffect(

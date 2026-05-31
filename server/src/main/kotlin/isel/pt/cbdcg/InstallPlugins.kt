@@ -130,6 +130,7 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is UserError.TokenMismatch -> HttpStatusCode.Unauthorized
         is UserError.TokenNotFound -> HttpStatusCode.NotFound
         is UserError.IdNotFound -> HttpStatusCode.NotFound
+        is UserError.NotLoggedIn -> HttpStatusCode.Unauthorized
 
         is TableError.DuplicateName -> HttpStatusCode.Conflict
         is TableError.UserUnavailable -> HttpStatusCode.Conflict

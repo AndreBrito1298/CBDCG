@@ -10,49 +10,48 @@
 
 ### 2.1 Game Mechanics
 
-CBDCG is a turn-based board game where each player influences the game board creation, controls their character, collects items, and defeats enemies. Once all players complete their actions, they are redirected to the initial screen.
+CBDCG is a turn-based board game where each player influences the game board creation, controls their character, collects items, and defeats enemies. To win, a player must be at the **Start Tile** while holding all **Key Items**. Once a winner is declared, the game ends.
 
 #### Key Features:
-- **Character Control**: Players manage their in-game character
-- **Item Collection**: Strategic gathering of items from the game board
-- **Enemy Encounters**: Battle mechanics when characters meet on the same tile
-- **Turn-Based System**: Each player takes turns in a defined order
+- **Character Control**: Players manage their in-game character.
+- **Item Collection**: Strategic gathering of items from the game board, including **Key Items** necessary for victory.
+- **Dungeon Construction**: Players build the board by placing tiles.
+- **Turn-Based System**: Each player takes turns in a defined order.
+- **Victory Condition**: Return to the **Start Tile** with all **Key Items** in hand.
 
 ### 2.2 Game Flow
 
 #### Initial Setup:
-- Players can view game rules and access a list of available tables/lobbies
-- At least two players must be waiting in a lobby before the game creator can start the game
+- Players can view game rules and access a list of available tables/lobbies.
+- At least two players must be waiting in a lobby before the game creator can start the game.
 
 #### Character Cards:
 Each player receives a character card with:
-- **Name & Attributes**: Character class and ability descriptions
-- **Stats**: 4 colored stat bars representing different attributes
-- **Abilities**: Special passive or active abilities with descriptions
+- **Name & Attributes**: Character class and ability descriptions.
+- **Stats**: HP, ATK, DEF, SPE.
+- **Items**: Characters can equip items to boost their stats.
 
 #### Turn Phases (3 Phases):
 
-1. **Draw & Add Phase**
-   - Player receives one board piece
-   - Player decides whether to add additional pieces from their hand
-   - Add chosen pieces to any position on the board
+1. **Construction Phase**
+   - At the start of the turn, the player draws a tile from the deck.
+   - The player can place tiles from their hand onto the board.
 
-2. **Character Exchange Phase**
-   - Player can swap their current character with another character from their hand
+2. **Substitution Phase**
+   - Player can place their character on the board (if not already placed) or equip items.
 
 3. **Movement Phase**
-   - Player moves their character freely across the board
+   - Player moves their character across the board based on their SPE stat.
+   - During movement, characters can interact with tile effects (e.g., Chests).
 
 #### Turn Order:
-The turn order is dynamic and depends on:
-- Player character types
-- Equipped item types
-- When all players complete their turn, enemies also traverse the board with potential events to aid or hinder players
+The turn order is currently sequential based on the order players joined the game. When a full round of turns is completed, the dungeon turn increases.
 
-#### Battle Mechanics:
-When two character pieces occupy the same board tile, a battle ensues:
-- Battles are a crucial mechanic for obtaining items from other players
-- Items obtained through battle may be necessary to win the game
+#### Winning the Game:
+A player wins when:
+1. They are at the **Start Tile**.
+2. They have at least one **Key Item** in their hand.
+Check for victory happens after movement, drawing items, or at the end of a turn.
 
 ---
 

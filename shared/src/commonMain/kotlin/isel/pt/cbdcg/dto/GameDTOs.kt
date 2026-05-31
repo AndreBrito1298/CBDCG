@@ -128,14 +128,14 @@ data class BoardTileDTO(
 
 @Serializable
 data class TileDeckDTO(
-    val idx: Int,
-    val tile: TileDTO
+    val tile: TileDTO,
+    val copies: Int
 )
 
 @Serializable
 data class ItemDeckDTO(
-    val idx: Int,
-    val item: ItemDTO
+    val item: ItemDTO,
+    val copies: Int
 )
 
 @Serializable
@@ -172,7 +172,8 @@ data class GameDTO(
     val board: Array<BoardTileDTO>,
     val tileDeck: Array<TileDeckDTO>,
     val itemDeck: Array<ItemDeckDTO>,
-    val turn: TurnDTO
+    val turn: TurnDTO,
+    val winner: PlayerDTO?
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -187,6 +188,7 @@ data class GameDTO(
         if (!tileDeck.contentEquals(other.tileDeck)) return false
         if (!itemDeck.contentEquals(other.itemDeck)) return false
         if (turn != other.turn) return false
+        if (winner != other.winner) return false
 
         return true
     }
@@ -198,6 +200,7 @@ data class GameDTO(
         result = 31 * result + tileDeck.contentHashCode()
         result = 31 * result + itemDeck.contentHashCode()
         result = 31 * result + turn.hashCode()
+        result = 31 * result + (winner?.hashCode() ?: 0)
         return result
     }
 }
@@ -268,6 +271,13 @@ data class BoardTileEffectDTO(
         return result
     }
 }
+
+@Serializable
+data class LeaveGameDTO(
+    val userId: Int,
+    val gameId: Int,
+    val token: String
+)
 
 
 

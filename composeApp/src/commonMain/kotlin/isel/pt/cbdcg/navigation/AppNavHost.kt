@@ -168,6 +168,7 @@ fun AppNavHost(vm: AppViewModel) {
                     rotateTile = { flag -> vm.rotateTile(flag) },
                     zoom = { option -> vm.zoom(option) },
                     nextPhase = vm::nextPhase,
+                    leaveGame = vm::leaveGame
                 )
             }
 

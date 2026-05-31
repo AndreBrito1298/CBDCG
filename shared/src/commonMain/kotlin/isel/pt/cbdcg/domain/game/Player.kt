@@ -16,7 +16,7 @@ fun PlayerHand.numTileCards(): Int =
     this.values.filter{ it.type == CardType.TILE }.size
 
 fun PlayerHand.containsAllKeys(): Boolean =
-    this.values.filter{ card -> card is ItemCard && card.item.grade == Grade.KEY }.size == 5
+    this.values.filter { card -> card is ItemCard && card.item.grade == Grade.KEY }.size == 5
 
 data class Player(
     val user: User,

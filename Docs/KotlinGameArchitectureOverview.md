@@ -21,6 +21,6 @@
 - **Language**: Kotlin
 - **Framework**: Compose Multiplatform (KMP)
 - **Architecture**: Client-Server
-- **Communication Protocol**: HTTP
+- **Communication Protocol**: HTTP / WebSocket
 
 ### 4.2 System Architecture
