@@ -29,9 +29,4 @@ object SimpleCrypto {
         }
         return decrypted.toString(Charsets.UTF_8)
     }
-
-    fun AuthUser?.verifyToken(token: String) {
-        if(this?.token == null) throw UserError.TokenNotFound()
-        else if (this.token != encrypt(token)) throw UserError.TokenMismatch()
-    }
 }

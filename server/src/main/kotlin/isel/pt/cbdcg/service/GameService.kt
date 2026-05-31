@@ -1,6 +1,7 @@
 package isel.pt.cbdcg.service
 
 import isel.pt.cbdcg.domain.Role
+import isel.pt.cbdcg.domain.addToGame
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CharacterCard
 import isel.pt.cbdcg.domain.game.Game
@@ -24,13 +25,13 @@ import isel.pt.cbdcg.domain.game.draw
 import isel.pt.cbdcg.domain.game.nextPhase
 import isel.pt.cbdcg.domain.game.nextTurn
 import isel.pt.cbdcg.domain.game.placeOnBoard
+import isel.pt.cbdcg.domain.verifyToken
 import isel.pt.cbdcg.error.GameError
 import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.GameRepository
 import isel.pt.cbdcg.repository.TableRepository
 import isel.pt.cbdcg.repository.UserRepository
-import isel.pt.cbdcg.service.SimpleCrypto.verifyToken
 import isel.pt.cbdcg.webapi.websocket.EventsPublisher
 
 
@@ -45,15 +46,9 @@ class GameService(
         UpdaterName.MOVEMENT to CharacterMovement(),
     )
 
-    private val boardEntityUpdater: Map<UpdaterName, Updater<Entity>> = mapOf(
-
-    )
-
-    suspend fun createGame(tableId: UInt, userId: UInt, token: String): Result<Game> = runCatching {
-
+    suspend fun createGame(tableId: UInt, userId: UInt): Result<Game> = runCatching {
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        user.auth.verifyToken(token)
 
         val table = tableRepo.findById(tableId)
             ?: throw TableError.TableDoesNotExist(tableId.toString())
@@ -107,15 +102,19 @@ class GameService(
         val turnOrder = players.map{ it.user.id }
 
         val game = gameRepo.createGame(players, spectators, turnOrder, startingDeck, itemDeck)
+        user.addToGame(game.id, userRepo)
+        players.forEach { player ->
+            player.user.addToGame(game.id, userRepo)
+        }
+
         events.publishGameStarted(table, game)
 
         game
     }
     suspend fun placeOnBoard(userId: UInt, gameId: UInt, token: String, card: Card, idx: UInt, pos: BoardPosition): Result<Game> = runCatching {
-
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        user.auth.verifyToken(token)
+        token.verifyToken(user, gameId, this.userRepo)
 
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())
@@ -140,7 +139,7 @@ class GameService(
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        user.auth.verifyToken(token)
+        token.verifyToken(user, gameId, this.userRepo)
 
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())
@@ -172,7 +171,7 @@ class GameService(
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        user.auth.verifyToken(token)
+        token.verifyToken(user, gameId, this.userRepo)
 
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())
@@ -195,7 +194,7 @@ class GameService(
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        user.auth.verifyToken(token)
+        token.verifyToken(user, gameId, this.userRepo)
 
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())

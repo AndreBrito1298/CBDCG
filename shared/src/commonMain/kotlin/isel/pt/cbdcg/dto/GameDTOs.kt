@@ -193,7 +193,6 @@ data class GameDTO(
 @Serializable
 data class CreateGameDTO(
     val userId: Int,
-    val token: String,
     val tableId: Int
 )
 

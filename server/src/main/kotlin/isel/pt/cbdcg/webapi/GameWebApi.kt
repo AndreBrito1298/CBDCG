@@ -28,7 +28,6 @@ fun Route.gameWebApi(gameService: GameService) {
             val result = gameService.createGame(
                 tableId = input.tableId.toUInt(),
                 userId = input.userId.toUInt(),
-                token = input.token,
             ).getOrThrow()
 
             call.respond(HttpStatusCode.Created, result.toGameDTO())

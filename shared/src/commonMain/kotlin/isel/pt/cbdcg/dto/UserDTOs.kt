@@ -6,6 +6,7 @@ import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.User
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 @Serializable
 data class UserDTO(
@@ -21,7 +22,7 @@ fun UserDTO.toUser(): User = User(
     name = Name(name),
     email = Email(email),
     password = Password(password),
-    auth = AuthUser(auth)
+    auth = AuthUser(auth, id.toUInt(), null, Instant.DISTANT_FUTURE)
 )
 
 @Serializable

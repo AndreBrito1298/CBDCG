@@ -31,7 +31,6 @@ fun Route.tableWebApi(tableService: TableService) {
             val result = tableService.createTable(
                 tableName = input.name.toName(),
                 userId = input.userId.toUInt(),
-                token = input.token,
             ).getOrThrow()
 
             call.respond(HttpStatusCode.Created, result.toTableDTO())
@@ -44,7 +43,6 @@ fun Route.tableWebApi(tableService: TableService) {
             val result = tableService.joinTable(
                 userId = input.user.toUInt(),
                 tableId = input.table.toUInt(),
-                token = input.token,
             ).getOrThrow()
 
             call.respond(HttpStatusCode.OK, result.toTableDTO())
@@ -57,7 +55,6 @@ fun Route.tableWebApi(tableService: TableService) {
             tableService.leaveTable(
                 userId = input.user.toUInt(),
                 tableId = input.table.toUInt(),
-                token = input.token,
             ).getOrThrow()
 
             call.response.status(HttpStatusCode.OK)
@@ -70,7 +67,6 @@ fun Route.tableWebApi(tableService: TableService) {
             tableService.changeRole(
                 userId = input.user.toUInt(),
                 tableId = input.table.toUInt(),
-                token = input.token,
                 role = input.role.toRole()!!
             ).getOrThrow()
 

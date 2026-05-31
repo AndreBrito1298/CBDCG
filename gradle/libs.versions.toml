@@ -51,6 +51,7 @@ ktor-serverCors = { module = "io.ktor:ktor-server-cors", version.ref = "ktor" }
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
 exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exposed" }
+exposed-json = {module = "org.jetbrains.exposed:exposed-json", version.ref = "exposed"}
 h2 = { module = "com.h2database:h2", version.ref = "h2" }
 androidx-media3-common-ktx = { group = "androidx.media3", name = "media3-common-ktx", version.ref = "media3CommonKtx" }
 

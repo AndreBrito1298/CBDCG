@@ -45,14 +45,12 @@ fun TableDTO.toTable(): Table = Table(
 data class TableOperationInput(
     val table: Int,
     val user: Int,
-    val token: String
 )
 
 @Serializable
 data class RoleChangeInput(
     val table: Int,
     val user: Int,
-    val token: String,
     val role: String
 )
 
@@ -60,5 +58,4 @@ data class RoleChangeInput(
 data class CreateTableDTO(
     val name: String,
     val userId: Int,
-    val token: String,
 )

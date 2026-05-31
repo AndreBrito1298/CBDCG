@@ -2,7 +2,7 @@ package isel.pt.cbdcg.repository.database
 
 /*
 
-import isel.pt.cbdcg.domain.AuthUser
+import AuthUser
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
@@ -12,7 +12,6 @@ import isel.pt.cbdcg.repository.database.Tables.AuthUsers
 import isel.pt.cbdcg.repository.database.Tables.AuthUsersDao
 import isel.pt.cbdcg.repository.database.Tables.Users
 import isel.pt.cbdcg.repository.database.Tables.UsersDao
-import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
@@ -20,7 +19,7 @@ object UserRepositoryDB: UserRepository {
 
     fun loginUser(authenticatedUser: AuthUser) {
         transaction {
-            val user = UsersDao.find { Users.email eq authenticatedUser.email.string }.singleOrNull()
+            val user = UsersDao.find { Users.id eq authenticatedUser.userId.toInt() }.singleOrNull()
                 ?: return@transaction
 
             AuthUsersDao.new {
@@ -36,6 +35,14 @@ object UserRepositoryDB: UserRepository {
                 ?: return@transaction
             AuthUsersDao.find { AuthUsers.userId eq user.id.value }
                 .forEach { it.delete() }
+        }
+    }
+
+    fun updateSession(authenticatedUser: AuthUser) {
+        transaction {
+            val user= AuthUsersDao.find { AuthUsers.userId eq authenticatedUser.userId.toInt() }
+            if(user != null) {
+            }
         }
     }
 

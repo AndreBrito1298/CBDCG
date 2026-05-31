@@ -23,6 +23,8 @@ sealed class UserError(
     class TokenNotFound: UserError("Authentication token was not found.")
     class TokenMismatch: UserError("Token does not match.")
     class AlreadyLoggedIn: UserError("User is logged in on a different client.")
+
+    class NotLoggedIn: UserError("User is not logged in.")
     class IdNotFound: UserError("ID does not exist.")
     class OAuthError(reason: String) : UserError("OAuth authentication failed: $reason")
 }

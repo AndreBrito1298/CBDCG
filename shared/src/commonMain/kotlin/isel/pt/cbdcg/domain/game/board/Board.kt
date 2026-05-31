@@ -146,11 +146,12 @@ fun Board.equipItem(position: BoardPosition, player: Player, item: Item, turnPha
 
     return copy(tiles = newBoard)
 }
-fun Board.applyBoardTileEffect(result: EffectResult<BoardTile>): Board =
+fun Board.applyBoardTileUpdater(result: EffectResult<BoardTile>): Board =
     when (result) {
         is EffectResult.One -> replaceBoardTile(result.value)
         is EffectResult.Many -> result.values.fold(this) { board, updatedTile -> board.replaceBoardTile(updatedTile) }
     }
+
 private fun Board.replaceBoardTile(updatedTile: BoardTile): Board {
     val newTiles = tiles.filterNot { it.pos == updatedTile.pos }.toMutableList()
     newTiles.add(updatedTile)

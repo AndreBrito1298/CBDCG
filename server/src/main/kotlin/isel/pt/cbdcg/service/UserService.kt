@@ -5,6 +5,7 @@ import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.domain.getNextTokenRefresh
 import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.UserRepository
 import java.util.UUID
@@ -14,7 +15,6 @@ class UserService(
 ) {
 
     fun createUser(name: Name, email: Email, password: Password): Result<User> = runCatching {
-
         if(userRepo.findByEmail(email) != null)
             throw UserError.DuplicateEmail(email.string)
 
@@ -23,9 +23,10 @@ class UserService(
 
         val plainToken = UUID.randomUUID().toString()
         val encryptedToken = SimpleCrypto.encrypt(plainToken)
-        userRepo.save(user.copy(auth = AuthUser(encryptedToken)))
+        val newSessionEnd = getNextTokenRefresh()
+        userRepo.save(user.copy(auth = AuthUser(encryptedToken, user.id, null, newSessionEnd)))
 
-        user.copy(auth = AuthUser(plainToken))
+        user.copy(auth = AuthUser(plainToken, user.id, null, newSessionEnd))
     }
 
     fun login(email: Email, password: Password): Result<User> = runCatching {
@@ -41,11 +42,11 @@ class UserService(
 
         val plainToken = UUID.randomUUID().toString()
         val encryptedToken = SimpleCrypto.encrypt(plainToken)
-        val auth = user.copy(auth = AuthUser(encryptedToken))
+        val auth = user.copy(auth = AuthUser(encryptedToken, user.id, null, getNextTokenRefresh()))
 
         userRepo.save(auth)
 
-        auth.copy(auth = AuthUser(plainToken))
+        auth.copy(auth = AuthUser(plainToken, user.id, null, getNextTokenRefresh()))
     }
 
     fun logout(token: String) = runCatching {

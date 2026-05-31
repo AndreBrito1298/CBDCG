@@ -21,6 +21,8 @@ fun ItemDTO.toItem(): Item = Item(
     grade = grade.toGrade(),
 )
 
+fun getItemByName(name: String): Item? = ItemCatalog.items.find { it.name == name }
+
 object ItemCatalog {
     val items = listOf(
         Item(name = "iron_claw", stats = Stats(0, 1, 0, 0), grade = Grade.BASIC),

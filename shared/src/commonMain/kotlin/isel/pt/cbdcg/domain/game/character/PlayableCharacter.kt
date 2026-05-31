@@ -48,6 +48,8 @@ fun CharacterDTO.toPlayableCharacter(): PlayableCharacter =
         items = items.map{ it.toItem() },
         grade = grade.toGrade()
     )
+
+fun getPlayableCharacterByName(name: String): PlayableCharacter? = PlayableCharacterCatalog.playableCharacters.find { it.name == name }
 object PlayableCharacterCatalog {
     val playableCharacters = listOf(
         PlayableCharacter(name = "trainee", baseStats = Stats(3, 2, 2, 2), grade = Grade.BASIC),

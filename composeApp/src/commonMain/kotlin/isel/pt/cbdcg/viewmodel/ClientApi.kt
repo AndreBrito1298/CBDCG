@@ -25,6 +25,7 @@ import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.UpdaterName
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.toGame
 import isel.pt.cbdcg.dto.CreateGameDTO
@@ -33,7 +34,7 @@ import isel.pt.cbdcg.dto.CreateUserDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
-import isel.pt.cbdcg.dto.MoveCharacterDTO
+import isel.pt.cbdcg.dto.BoardTileEffectDTO
 import isel.pt.cbdcg.dto.NextPhaseDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RoleChangeInput
@@ -195,32 +196,32 @@ class ClientApi(private val client: HttpClient) {
         fetch<TableDTO>(
             path = "tables/create",
             method = HttpMethod.Post,
-            body = CreateTableDTO(tableName.string, id.toInt(), token)
+            body = CreateTableDTO(tableName.string, id.toInt())
         ).map{ it.toTable() }
     suspend fun joinTable(userId: UInt, tableId: UInt, token: String): Result<Table> =
         fetch<TableDTO>(
             path = "tables/join",
             method = HttpMethod.Post,
-            body = TableOperationInput(tableId.toInt(), userId.toInt(), token)
+            body = TableOperationInput(tableId.toInt(), userId.toInt())
         ).map{ it.toTable() }
     suspend fun leaveTable(userId: UInt, tableId: UInt, token: String): Result<Unit> =
         fetch<Unit>(
             path = "tables/leave",
             method = HttpMethod.Post,
-            body = TableOperationInput(tableId.toInt(), userId.toInt(), token)
+            body = TableOperationInput(tableId.toInt(), userId.toInt())
         )
     suspend fun changeRole(userId: UInt, tableId: UInt, token: String, role: Role): Result<Unit> =
         fetch<Unit>(
             path = "tables/change-role",
             method = HttpMethod.Post,
-            body = RoleChangeInput(tableId.toInt(), userId.toInt(), token, role.toString())
+            body = RoleChangeInput(tableId.toInt(), userId.toInt(), role.toString())
         )
 
     suspend fun createGame(tableId: UInt, userId: UInt, token: String): Result<Game> =
         fetch<GameDTO>(
             path = "game/create",
             method = HttpMethod.Post,
-            body = CreateGameDTO(userId.toInt(), token, tableId.toInt())
+            body =CreateGameDTO(userId.toInt(), tableId.toInt())
         ).map{ it.toGame() }
     suspend fun placeOnBoard(userId: UInt, gameId: UInt, token: String, card: Card, idx: UInt, pos: BoardPosition): Result<Game> =
         fetch<GameDTO>(
@@ -242,9 +243,9 @@ class ClientApi(private val client: HttpClient) {
         ).map{ it.toGame() }
     suspend fun moveCharacter(userId: UInt, gameId: UInt, token: String, origin: BoardTile, target: BoardTile): Result<Game> =
         fetch<GameDTO>(
-            path = "game/move",
+            path = "game/applyBoardEffect",
             method = HttpMethod.Post,
-            body = MoveCharacterDTO(userId.toInt(), gameId.toInt(), token, origin.toBoardTileDTO(), target.toBoardTileDTO())
+            body = BoardTileEffectDTO(userId.toInt(), gameId.toInt(), token, UpdaterName.MOVEMENT,origin.toBoardTileDTO(), arrayOf(target.toBoardTileDTO()))
         ).map{ it.toGame() }
 
     private suspend inline fun <reified T> fetch(

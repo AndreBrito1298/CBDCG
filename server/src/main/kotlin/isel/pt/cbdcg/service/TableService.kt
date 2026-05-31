@@ -10,7 +10,6 @@ import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
 import isel.pt.cbdcg.repository.memory.TableRepositoryMem
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
-import isel.pt.cbdcg.service.SimpleCrypto.verifyToken
 import isel.pt.cbdcg.webapi.websocket.EventsPublisher
 import kotlin.collections.plus
 import kotlin.runCatching
@@ -25,11 +24,10 @@ class TableService(
     fun getTables(): Result<List<Table>> = runCatching {
         tableRepo.getAllTables()
     }
-    suspend fun createTable(tableName: Name, userId: UInt, token: String): Result<Table> = runCatching {
+    suspend fun createTable(tableName: Name, userId: UInt): Result<Table> = runCatching {
 
         val owner = userRepo.findById(userId)
-            ?: throw UserError.IdNotFound()
-        owner.auth.verifyToken(token)
+        if(owner!!.auth == null) throw UserError.NotLoggedIn()
 
         val participant = Participant(owner, Role.PLAYER)
 
@@ -42,11 +40,12 @@ class TableService(
 
         table
     }
-    suspend fun joinTable(userId: UInt, tableId: UInt, token: String): Result<Table> = runCatching {
+    suspend fun joinTable(userId: UInt, tableId: UInt): Result<Table> = runCatching {
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        user.auth.verifyToken(token)
+        if(user.auth == null) throw UserError.NotLoggedIn()
+
 
         val table = tableRepo.findById(tableId)
             ?: throw TableError.TableDoesNotExist(tableId.toString())
@@ -68,11 +67,11 @@ class TableService(
 
         newTable
     }
-    suspend fun leaveTable(userId: UInt, tableId: UInt, token: String): Result<Unit> = runCatching {
+    suspend fun leaveTable(userId: UInt, tableId: UInt): Result<Unit> = runCatching {
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        user.auth.verifyToken(token)
+        if(user.auth == null) throw UserError.NotLoggedIn()
 
         val table = tableRepo.findById(tableId)
             ?: throw TableError.TableDoesNotExist(tableId.toString())
@@ -95,11 +94,11 @@ class TableService(
         val tables = tableRepo.getAllTables()
         events.publishLobbyTables(tables)
     }
-    suspend fun changeRole(userId: UInt, tableId: UInt, token: String, role: Role): Result<Unit> = runCatching  {
+    suspend fun changeRole(userId: UInt, tableId: UInt, role: Role): Result<Unit> = runCatching  {
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        user.auth.verifyToken(token)
+        if(user.auth == null) throw UserError.NotLoggedIn()
 
         val table = tableRepo.findById(tableId)
             ?: throw TableError.TableDoesNotExist(tableId.toString())

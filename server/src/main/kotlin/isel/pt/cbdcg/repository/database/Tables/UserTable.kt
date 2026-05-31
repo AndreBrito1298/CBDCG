@@ -1,8 +1,6 @@
 package isel.pt.cbdcg.repository.database.Tables
 
-import com.android.identity.cbor.Uint
 import isel.pt.cbdcg.configs.MAX_NAME_LENGTH
-import isel.pt.cbdcg.domain.AuthUser
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
@@ -12,14 +10,12 @@ import org.jetbrains.exposed.v1.core.dao.id.IntIdTable
 import org.jetbrains.exposed.v1.dao.IntEntity
 import org.jetbrains.exposed.v1.dao.IntEntityClass
 
-
 object Users : IntIdTable("users") {
     val name = varchar("name", MAX_NAME_LENGTH)
     val email = varchar("email", 255).uniqueIndex()
     val password = varchar("password", MAX_NAME_LENGTH)
     val creationDate = long("creation_date")
 }
-
 class UsersDao(id: EntityID<Int>) : IntEntity(id){
     companion object : IntEntityClass<UsersDao>(Users)
 

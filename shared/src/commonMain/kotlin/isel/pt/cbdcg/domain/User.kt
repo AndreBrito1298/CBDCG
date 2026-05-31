@@ -2,6 +2,7 @@ package isel.pt.cbdcg.domain
 
 import isel.pt.cbdcg.dto.UserDTO
 
+
 /**
  * User representation:
  * @property id Unique identifier of the user.
