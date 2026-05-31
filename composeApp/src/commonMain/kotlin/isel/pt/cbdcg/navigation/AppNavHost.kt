@@ -162,6 +162,7 @@ fun AppNavHost(vm: AppViewModel) {
                     placeOnBoard = { pos -> vm.placeOnBoard(pos) },
                     selectBoardCharacter = { tile -> vm.selectBoardCharacter(tile) },
                     toggleCardStats = { card -> vm.inspectCard(card) },
+                    onEffectInfoClick = { effect -> vm.drawItem(effect) },
                     moveSignal = vm::moveSignal,
                     moveCharacter = { tile -> vm.moveCharacter(tile) },
                     rotateTile = { flag -> vm.rotateTile(flag) },

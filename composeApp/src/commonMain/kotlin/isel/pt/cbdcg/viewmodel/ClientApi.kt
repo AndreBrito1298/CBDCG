@@ -31,6 +31,7 @@ import isel.pt.cbdcg.domain.game.toGame
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.CreateUserDTO
+import isel.pt.cbdcg.dto.DrawItemDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
@@ -246,6 +247,12 @@ class ClientApi(private val client: HttpClient) {
             path = "game/applyBoardEffect",
             method = HttpMethod.Post,
             body = BoardTileEffectDTO(userId.toInt(), gameId.toInt(), token, UpdaterName.MOVEMENT,origin.toBoardTileDTO(), arrayOf(target.toBoardTileDTO()))
+        ).map{ it.toGame() }
+    suspend fun drawItem(userId: UInt, gameId: UInt, token: String, boardTile: BoardTile): Result<Game> =
+        fetch<GameDTO>(
+            path = "game/draw-item",
+            method = HttpMethod.Post,
+            body = DrawItemDTO(userId.toInt(), gameId.toInt(), token, boardTile.toBoardTileDTO())
         ).map{ it.toGame() }
 
     private suspend inline fun <reified T> fetch(

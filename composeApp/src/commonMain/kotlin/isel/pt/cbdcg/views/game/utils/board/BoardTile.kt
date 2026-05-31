@@ -1,6 +1,5 @@
 package isel.pt.cbdcg.views.game.utils.board
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,17 +11,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import cbdcg.composeapp.generated.resources.Res
-import cbdcg.composeapp.generated.resources.allDrawableResources
-import org.jetbrains.compose.resources.painterResource
+import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.views.game.utils.ZoomedImage
 
 @Composable
 fun BoardTile(
     conditions: BoardTileDrawConditions,
+    boardTile: BoardTile,
     tileName: String,
-    characterName: String?,
     tileSize: Dp,
     tilePath: TilePathSegment?,
     onClick: () -> Unit,
@@ -31,24 +31,33 @@ fun BoardTile(
     moveSignal: () -> Unit,
 ) {
 
-    val tileResource = Res.allDrawableResources[tileName]
-        ?: error("Drawable not found: $tileName")
+    val effectName = boardTile.tile.specialEffect.type.name
+    val characterName = boardTile.character?.name
 
     Box(
         modifier = Modifier
-            .size(tileSize)
-            .then(
-                if(conditions.placingTile || conditions.placingCharacter || conditions.characterIsMoving)
-                    Modifier.clickable{ onClick() }
-                else Modifier
-            ),
+            .size(tileSize),
         contentAlignment = Alignment.Center
     ){
-        Image(
-            painter = painterResource(tileResource),
-            contentDescription = tileName,
-            modifier = Modifier.fillMaxSize()
+        ZoomedImage(
+            fileName = tileName,
+            zoom = 1.0f,
+            select = onClick,
+            canSelect = conditions.placingCharacter || conditions.characterIsMoving
         )
+
+        if(effectName != "None"){
+            ZoomedImage(
+                fileName = effectName,
+                zoom = 0.33f,
+                select = onClick,
+                canSelect = conditions.placingCharacter || conditions.characterIsMoving,
+                filter =
+                    if(boardTile.cooldown > 0u)
+                        ColorFilter.colorMatrix(ColorMatrix().apply{ setToSaturation(0f) })
+                    else null
+            )
+        }
 
         if(tilePath != null) {
             MovementPathOverlay(
@@ -77,7 +86,6 @@ fun BoardTile(
             BoardCharacter(
                 conditions = conditions,
                 characterName = characterName,
-                tileSize = tileSize,
                 onClick = { if(conditions.equippingItem || conditions.characterIsMoving) onClick() else selectCharacter()  },
                 inspect = inspectCharacter,
                 moveSignal = moveSignal,

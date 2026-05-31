@@ -19,7 +19,6 @@ fun Board.connectedNeighbours(boardTile: BoardTile): List<BoardTile> =
         if (boardTile.tile.canConnectTo(dir, nextTile.tile)) nextTile
         else null
     }
-
 fun Board.connectionDistancesFrom(target: BoardTile): Map<BoardTile, Int> {
     val distances = mutableMapOf<BoardTile, Int>()
     val queue = ArrayDeque<BoardTile>()
@@ -52,23 +51,30 @@ fun Board.findPath(from: BoardTile, to: BoardTile, maxDistance: Int): List<Board
     var bestPath = listOf(from)
 
     while (queue.isNotEmpty()) {
+
         val path = queue.removeFirst()
         val current = path.last()
 
         if (current == to) return path
 
+        // Averigua se é para atualizar 'bestPath'
         val currentDistance = distancesToTarget[current]
         val bestDistance = distancesToTarget[bestPath.last()]
 
-        if (
-            currentDistance != null &&
-            (bestDistance == null || currentDistance < bestDistance)
-        ) {
+        if (currentDistance != null && (bestDistance == null || currentDistance < bestDistance))
             bestPath = path
-        }
+        // ---------------------------------------
 
         if (path.size - 1 >= maxDistance) continue
-        if (current != from && current.character != null) continue
+
+        // Verifica se encontrou um obstáculo
+        val ignoreTileEffect =
+            current.tile.specialEffect.type == TileEffectTypes.None || current.tile.specialEffect.type == TileEffectTypes.Start
+
+        val collision = current.character != null
+
+        if (current != from && !collision && !ignoreTileEffect) continue
+        // -----------------------------------
 
         for (next in connectedNeighbours(current)) {
             if (next in visited) continue
@@ -86,7 +92,8 @@ data class Board(
     val tiles: BoardTiles = listOf(
         BoardTile(
             pos = BoardPosition(0,0),
-            tile = Tile(Direction.entries),
+            tile = Tile(Direction.entries, TileEffect(type = TileEffectTypes.Start)),
+            cooldown = 0u,
             character = null
         )
     )
@@ -146,6 +153,10 @@ fun Board.equipItem(position: BoardPosition, player: Player, item: Item, turnPha
 
     return copy(tiles = newBoard)
 }
+fun Board.reduceCooldown(): Board =
+    copy(tiles = tiles.map{ it.copy(cooldown = (it.cooldown.toInt() - 1).coerceAtLeast(0).toUInt()) })
+
+
 fun Board.applyBoardTileUpdater(result: EffectResult<BoardTile>): Board =
     when (result) {
         is EffectResult.One -> replaceBoardTile(result.value)

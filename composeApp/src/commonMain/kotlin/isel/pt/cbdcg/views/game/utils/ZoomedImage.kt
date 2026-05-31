@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import cbdcg.composeapp.generated.resources.Res
@@ -19,7 +20,8 @@ fun ZoomedImage(
     fileName: String,
     zoom: Float,
     select: () -> Unit,
-    canSelect: Boolean
+    canSelect: Boolean,
+    filter: ColorFilter? = null,
 ) {
 
     val resource = Res.allDrawableResources[fileName]
@@ -36,6 +38,7 @@ fun ZoomedImage(
         Image(
             painter = painterResource(resource),
             contentDescription = fileName,
+            colorFilter = filter,
             modifier = Modifier
                 .size(128.dp)
                 .graphicsLayer {

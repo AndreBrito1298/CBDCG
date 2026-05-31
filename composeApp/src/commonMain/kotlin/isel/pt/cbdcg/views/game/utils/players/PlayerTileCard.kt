@@ -33,6 +33,15 @@ fun PlayerTileCard(
             canSelect = true
         )
 
+        if(tile.specialEffect.type.name != "None"){
+            ZoomedImage(
+                fileName = tile.specialEffect.type.name,
+                zoom = 0.25f,
+                select = select,
+                canSelect = true
+            )
+        }
+
         DropdownMenu(
             expanded = isSelected,
             onDismissRequest = select

@@ -37,5 +37,10 @@ object ItemCatalog {
         Item(name = "daggers", stats = Stats(0, 0, 0, 1), grade = Grade.BASIC),
         Item(name = "spear", stats = Stats(0, 0, 0, 1), grade = Grade.BASIC),
         Item(name = "winged_bow", stats = Stats(0, 0, 0, 1), grade = Grade.BASIC),
+        Item(name = "red_key", stats = Stats(0,0,0,0), grade = Grade.KEY),
+        Item(name = "blue_key", stats = Stats(0,0,0,0), grade = Grade.KEY),
+        Item(name = "green_key", stats = Stats(0,0,0,0), grade = Grade.KEY),
+        Item(name = "yellow_key", stats = Stats(0,0,0,0), grade = Grade.KEY),
+        Item(name = "white_key", stats = Stats(0,0,0,0), grade = Grade.KEY),
     )
 }

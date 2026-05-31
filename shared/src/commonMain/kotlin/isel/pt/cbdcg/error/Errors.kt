@@ -63,6 +63,7 @@ sealed class BoardError(
     class TileOccupied : BoardError("This tile is occupied.")
     class CharacterLimitReached : BoardError("You can only have one character in play.")
     class NoTargetFound : BoardError("No available target found.")
+    class EffectInCooldown(name: String, remaining: Int) : BoardError("The effect $name is in cooldown (Dungeon Turns until ready: $remaining)")
 }
 
 sealed class GameError(
@@ -76,8 +77,8 @@ sealed class GameError(
     class MustPlaceTile(max: Int) : GameError("You can have a maximum of $max tiles in your hand.")
     class NoActiveCharacters : GameError("You must have at least one active character.")
     class CharacterMovementRestriction : GameError("You can only move your character during the Movement Phase.")
-
     class EffectNotFound(effect: String) : GameError("Effect '$effect' not found.")
+    class EmptyDeck : GameError("Deck is empty.")
 }
 
 sealed class CharacterError(

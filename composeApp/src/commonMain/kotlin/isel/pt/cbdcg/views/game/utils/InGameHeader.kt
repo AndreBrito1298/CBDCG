@@ -15,6 +15,7 @@ fun InGameHeader(
     phase: String,
     playerName: String,
     currentPlayerName: String,
+    remainingMoves: String? = null
 ) {
 
     Column(
@@ -26,8 +27,12 @@ fun InGameHeader(
             style = MaterialTheme.typography.titleSmall
         )
 
+        val movesText = if(remainingMoves != null)
+                            " | Remaining Moves: $remainingMoves"
+                        else ""
+
         Text(
-            text = "Current Player: $currentPlayerName | Phase: $phase",
+            text = "Current Player: $currentPlayerName | Phase: $phase" + movesText,
             style = MaterialTheme.typography.bodyMedium
         )
     }

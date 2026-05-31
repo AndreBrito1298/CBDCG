@@ -19,9 +19,9 @@ import isel.pt.cbdcg.views.game.utils.ZoomedImage
 @Composable
 fun CardBasicInfoColumn(
     modifier: Modifier,
-    name: String,
+    mainText: String,
     zoom: Float,
-    grade: String,
+    subText: String,
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
@@ -36,7 +36,7 @@ fun CardBasicInfoColumn(
                     .padding(8.dp)
             ) {
                 ZoomedImage(
-                    fileName = name,
+                    fileName = mainText,
                     zoom = zoom,
                     select = {},
                     canSelect = false
@@ -44,13 +44,13 @@ fun CardBasicInfoColumn(
             }
 
             Text(
-                text = name.replace('_', ' ').uppercase(),
+                text = mainText.replace('_', ' ').uppercase(),
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
 
             Text(
-                text = grade,
+                text = subText,
                 fontSize = 13.sp
             )
         }

@@ -3,15 +3,12 @@ package isel.pt.cbdcg.domain.game.board
 import isel.pt.cbdcg.domain.game.CardType
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
-import isel.pt.cbdcg.domain.game.PlayerHand
 import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.addToHand
-import isel.pt.cbdcg.domain.game.board.characterMovementSAM
 import isel.pt.cbdcg.domain.game.removeFromHand
 import isel.pt.cbdcg.error.BoardError
 import isel.pt.cbdcg.error.GameError
-import kotlin.random.Random
-import kotlin.reflect.typeOf
+
 
 interface Entity
 
@@ -32,8 +29,7 @@ fun interface Updater<T : Entity> {
 }
 
 class CharacterMovement: Updater<BoardTile> {
-    override fun Game.apply(
-        origin: BoardTile, vararg targets: BoardTile?): EffectResult.Many<BoardTile> {
+    override fun Game.apply(origin: BoardTile, vararg targets: BoardTile?): EffectResult.Many<BoardTile> {
         if(this.turn.phase != TurnPhase.MOVEMENT) throw GameError.CharacterMovementRestriction()
         val newStartingTile = origin.copy(character = null)
         val endTile = targets.first() ?: throw BoardError.NoTargetFound()
@@ -88,12 +84,10 @@ class swap(): Updater<Board> {
     }
 }
 
+/*
 fun Game.applyBoardTileUpdater(updater: Updater<BoardTile>, origin: BoardTile, vararg targets: BoardTile): Game {
     val g = this
     val result = updater.run { g.apply(origin, *targets) }
     return copy(board = board.applyBoardTileUpdater(result))
 }
-
-fun main(){
-    listOf(stealSAM,characterMovementSAM)
-}
+*/

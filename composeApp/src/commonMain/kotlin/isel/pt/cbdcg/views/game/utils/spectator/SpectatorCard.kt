@@ -41,12 +41,23 @@ fun SpectatorCard(
                 )
             }
 
-            is TileCard -> ZoomedImage(
-                fileName = card.tile.toString(),
-                zoom = zoom,
-                select = {},
-                canSelect = false
-            )
+            is TileCard -> {
+                ZoomedImage(
+                    fileName = card.tile.toString(),
+                    zoom = zoom,
+                    select = {},
+                    canSelect = false
+                )
+
+                if(card.tile.specialEffect.type.name != "None"){
+                    ZoomedImage(
+                        fileName = card.tile.specialEffect.type.name,
+                        zoom = 0.25f,
+                        select = {},
+                        canSelect = false
+                    )
+                }
+            }
         }
     }
 }

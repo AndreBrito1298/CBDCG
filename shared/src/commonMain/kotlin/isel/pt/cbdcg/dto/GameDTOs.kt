@@ -5,7 +5,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class TileDTO(
-    val connections: Array<String>
+    val connections: Array<String>,
+    val specialEffect: TileEffectDTO,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -14,14 +15,24 @@ data class TileDTO(
         other as TileDTO
 
         if (!connections.contentEquals(other.connections)) return false
+        if (specialEffect != other.specialEffect) return false
 
         return true
     }
     override fun hashCode(): Int {
-        return connections.contentHashCode()
+        var result = connections.contentHashCode()
+        result = 31 * result + specialEffect.hashCode()
+        return result
     }
 }
 
+@Serializable
+data class
+TileEffectDTO(
+    val type: String,
+    val maxCooldown: Int,
+    val info: String
+)
 @Serializable
 data class CardDTO(
     val type: String,
@@ -111,6 +122,7 @@ data class ItemDTO(
 data class BoardTileDTO(
     val pos: String,
     val tile: TileDTO,
+    val cooldown: Int,
     val character: CharacterDTO?
 )
 
@@ -246,7 +258,6 @@ data class BoardTileEffectDTO(
 
         return true
     }
-
     override fun hashCode(): Int {
         var result = userId
         result = 31 * result + gameId
@@ -257,3 +268,24 @@ data class BoardTileEffectDTO(
         return result
     }
 }
+
+
+
+// Will be changed
+
+@Serializable
+data class MoveCharacterDTO(
+    val userId: Int,
+    val gameId: Int,
+    val token: String,
+    val origin: BoardTileDTO,
+    val target: BoardTileDTO
+)
+
+@Serializable
+data class DrawItemDTO(
+    val userId: Int,
+    val gameId: Int,
+    val token: String,
+    val origin: BoardTileDTO,
+)
