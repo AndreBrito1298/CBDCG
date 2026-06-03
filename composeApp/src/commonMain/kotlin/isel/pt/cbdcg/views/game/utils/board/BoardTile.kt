@@ -53,9 +53,11 @@ fun BoardTile(
                 select = onClick,
                 canSelect = conditions.placingCharacter || conditions.characterIsMoving,
                 filter =
-                    if(boardTile.cooldown > 0u)
-                        ColorFilter.colorMatrix(ColorMatrix().apply{ setToSaturation(0f) })
-                    else null
+                    boardTile.cooldown?.let {
+                        if(it > 0u)
+                            ColorFilter.colorMatrix(ColorMatrix().apply{ setToSaturation(0f) })
+                        else null
+                    }
             )
         }
 

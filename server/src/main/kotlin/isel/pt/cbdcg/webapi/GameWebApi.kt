@@ -10,8 +10,10 @@ import isel.pt.cbdcg.domain.game.board.toBoardTile
 import isel.pt.cbdcg.domain.game.board.toPosition
 import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.domain.game.toGameDTO
+import isel.pt.cbdcg.dto.BoardTileEffectDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.DrawItemDTO
+import isel.pt.cbdcg.dto.GameUpdaterDTO
 import isel.pt.cbdcg.dto.LeaveGameDTO
 import isel.pt.cbdcg.dto.MoveCharacterDTO
 import isel.pt.cbdcg.dto.NextPhaseDTO
@@ -81,39 +83,36 @@ fun Route.gameWebApi(gameService: GameService) {
             call.respond(HttpStatusCode.OK, result.toGameDTO())
         }
 
-        /*
-        post("/applyBoardEffect") {
+
+        post("/sdasdadw") {
             val input = call.receive<BoardTileEffectDTO>()
-            val result = gameService.applyBoardTileEffect(
+            val result = gameService.applyGameUpdater(
                 userId = input.userId.toUInt(),
                 gameId = input.gameId.toUInt(),
                 token = input.token,
                 updaterName = input.updaterName,
                 origin = input.origin.toBoardTile(),
-                targets = input.target.map { it.toBoardTile() }.toTypedArray(),
+                targets = input.target.map { it.toBoardTile() },
             ).getOrThrow()
 
             call.respond(HttpStatusCode.OK, result.toGameDTO())
         }
-        */
 
-        // Will be changed
-
-        post("/move"){
-
-            val input = call.receive<MoveCharacterDTO>()
-
-            val result = gameService.moveCharacter(
+        post("/applyGameUpdater") {
+            val input = call.receive<GameUpdaterDTO>()
+            val result = gameService.applyGameUpdater(
                 userId = input.userId.toUInt(),
                 gameId = input.gameId.toUInt(),
                 token = input.token,
-                from = input.origin.toBoardTile(),
-                to = input.target.toBoardTile(),
+                updaterName = input.updaterName,
+                origin = input.origin.toType(),
+                targets = input.target.map { it.toType() },
             ).getOrThrow()
 
             call.respond(HttpStatusCode.OK, result.toGameDTO())
-
         }
+
+
 
         post("/draw-item"){
 

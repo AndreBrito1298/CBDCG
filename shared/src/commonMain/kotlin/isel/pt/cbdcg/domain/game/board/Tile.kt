@@ -40,7 +40,7 @@ fun TileEffectDTO.toTileEffect(): TileEffect =
 data class Tile(
     val connections: List<Direction>,
     val specialEffect: TileEffect = TileEffect()
-) : Entity {
+) {
     override fun toString(): String =
         connections.map { it.name[0] }.sorted().joinToString("")
 }

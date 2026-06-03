@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.domain.game.board
 
+import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.toCharacter
 import isel.pt.cbdcg.dto.BoardTileDTO
@@ -7,9 +8,14 @@ import isel.pt.cbdcg.dto.BoardTileDTO
 data class BoardTile(
     val pos: BoardPosition,
     val tile: Tile,
-    val cooldown: UInt,
+    val cooldown: UInt?,
     val character: Character?
-): Entity
+): Entity {
+    override fun applyToGame(game: Game): Game {
+       return game.copy(board = game.board.replaceBoardTile(this))
+    }
+}
+
 
 fun BoardTile.directionTo(other: BoardTile): Direction? =
     when {
@@ -25,7 +31,7 @@ fun BoardTile.toBoardTileDTO(): BoardTileDTO =
     BoardTileDTO(
         pos.toString(),
         tile.toTileDTO(),
-        cooldown.toInt(),
+        cooldown?.toInt() ?: null,
         character?.toCharacterDTO()
     )
 
@@ -33,6 +39,6 @@ fun BoardTileDTO.toBoardTile(): BoardTile =
     BoardTile(
         pos = pos.toPosition(),
         tile = tile.toTile(),
-        cooldown = cooldown.toUInt(),
+        cooldown = cooldown!!.toUInt(),
         character = character?.toCharacter()
     )

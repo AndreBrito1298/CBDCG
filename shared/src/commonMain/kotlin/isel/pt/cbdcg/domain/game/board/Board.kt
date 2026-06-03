@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.domain.game.board
 
+import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.character.Character
@@ -97,7 +98,12 @@ data class Board(
             character = null
         )
     )
-): Entity
+): Entity {
+    override fun applyToGame(game: Game): Game {
+        TODO("Not yet implemented")
+    }
+}
+
 fun Board.checkBlocked(position: BoardPosition, tile: Tile){
 
     val adjTiles = tile.getAdjacent(tiles, position)
@@ -154,16 +160,10 @@ fun Board.equipItem(position: BoardPosition, player: Player, item: Item, turnPha
     return copy(tiles = newBoard)
 }
 fun Board.reduceCooldown(): Board =
-    copy(tiles = tiles.map{ it.copy(cooldown = (it.cooldown.toInt() - 1).coerceAtLeast(0).toUInt()) })
+    copy(tiles = tiles.map{ it.copy(cooldown = (it.cooldown!!.toInt() - 1).coerceAtLeast(0).toUInt()) })
 
 
-fun Board.applyBoardTileUpdater(result: EffectResult<BoardTile>): Board =
-    when (result) {
-        is EffectResult.One -> replaceBoardTile(result.value)
-        is EffectResult.Many -> result.values.fold(this) { board, updatedTile -> board.replaceBoardTile(updatedTile) }
-    }
-
-private fun Board.replaceBoardTile(updatedTile: BoardTile): Board {
+fun Board.replaceBoardTile(updatedTile: BoardTile): Board {
     val newTiles = tiles.filterNot { it.pos == updatedTile.pos }.toMutableList()
     newTiles.add(updatedTile)
     return copy(tiles = newTiles)

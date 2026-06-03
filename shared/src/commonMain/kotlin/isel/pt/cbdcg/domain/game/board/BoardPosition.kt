@@ -1,6 +1,6 @@
 package isel.pt.cbdcg.domain.game.board
 
-data class BoardPosition(val x: Int, val y: Int): Entity{
+data class BoardPosition(val x: Int, val y: Int){
     override fun toString(): String = "$x,$y"
 }
 

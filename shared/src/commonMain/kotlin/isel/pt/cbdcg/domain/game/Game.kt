@@ -37,7 +37,11 @@ data class Game(
     val itemDeck: Deck<Item>,
     val turn: Turn,
     val winner: Player? = null
-): Entity
+): Entity {
+    override fun applyToGame(game: Game): Game {
+        TODO("Not yet implemented")
+    }
+}
 
 fun Game.toGameDTO(): GameDTO {
 
@@ -222,7 +226,7 @@ fun Game.drawItem(player: Player, boardTile: BoardTile): Game {
         throw GameError.NotYourTurn()
 
     if(boardTile.cooldown != 0u)
-        throw BoardError.EffectInCooldown(boardTile.tile.specialEffect.type.name, boardTile.cooldown.toInt())
+        throw BoardError.EffectInCooldown(boardTile.tile.specialEffect.type.name, boardTile.cooldown!!.toInt())
 
     val newBoard = board.tiles.map{
         if(it == boardTile) boardTile.copy(cooldown = boardTile.tile.specialEffect.maxCooldown)
