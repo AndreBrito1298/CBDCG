@@ -25,6 +25,7 @@ import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.Entity
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.toGame
@@ -33,6 +34,7 @@ import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.CreateUserDTO
 import isel.pt.cbdcg.dto.DrawItemDTO
 import isel.pt.cbdcg.dto.GameDTO
+import isel.pt.cbdcg.dto.GameUpdaterDTO
 import isel.pt.cbdcg.dto.LeaveGameDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
@@ -47,6 +49,7 @@ import isel.pt.cbdcg.dto.UnequipItemDTO
 import isel.pt.cbdcg.dto.UserDTO
 import isel.pt.cbdcg.dto.WsClientMessage
 import isel.pt.cbdcg.dto.WsServerMessage
+import isel.pt.cbdcg.dto.toEntityDTO
 import isel.pt.cbdcg.dto.toTable
 import isel.pt.cbdcg.dto.toUser
 import kotlinx.coroutines.CoroutineScope
@@ -56,6 +59,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlin.reflect.KClass
+import kotlin.reflect.KType
 
 class ClientApi(private val client: HttpClient) {
 
@@ -246,9 +251,12 @@ class ClientApi(private val client: HttpClient) {
         ).map{ it.toGame() }
     suspend fun moveCharacter(userId: UInt, gameId: UInt, token: String, origin: BoardTile, target: BoardTile): Result<Game> =
         fetch<GameDTO>(
-            path = "game/move",
+            path = "game/applyGameUpdater",
             method = HttpMethod.Post,
-            body = MoveCharacterDTO(userId.toInt(), gameId.toInt(), token, origin.toBoardTileDTO(), target.toBoardTileDTO())
+            body = GameUpdaterDTO(userId.toInt(), gameId.toInt(), token,
+                "CharacterMovement",
+                toEntityDTO(origin),
+                arrayOf(toEntityDTO( target)))
         ).map{ it.toGame() }
     suspend fun drawItem(userId: UInt, gameId: UInt, token: String, boardTile: BoardTile): Result<Game> =
         fetch<GameDTO>(

@@ -1,0 +1,104 @@
+@startuml database_schema
+
+entity "users" {
+    * id : integer <<PK>>
+    --
+    name : varchar(MAX_NAME_LENGTH)
+    email : varchar(255) <<unique>>
+    password : varchar(MAX_NAME_LENGTH)
+    creation_date : long
+}
+
+entity "authUsers" {
+    * id : integer <<PK>>
+    --
+    token : varchar(255)
+    user_id : integer <<FK>>
+}
+
+entity "tables" {
+    * id : integer <<PK>>
+    --
+    name : varchar(MAX_NAME_LENGTH) <<unique>>
+    owner : integer <<FK>>
+    capacity : integer
+}
+
+entity "participants" {
+    * id : integer <<PK>>
+    --
+    userId : integer <<FK>>
+    lobbyId : integer <<FK>>
+    role : varchar(10)
+}
+
+entity "games" {
+    * id : integer <<PK>>
+    --
+    game_turn : integer
+    current_player : integer <<FK>>
+    turn_phase : enumeration
+    item_deck : json
+    tile_deck : json
+}
+
+entity "game_players" {
+    * id : integer <<PK>>
+    --
+    game_id : integer <<FK>>
+    user_id : integer <<FK>>
+    player_hands : json
+    current_character : varchar(255)
+}
+
+entity "game_spectators" {
+    * id : integer <<PK>>
+    --
+    game_id : integer <<FK>>
+    user_id : integer <<FK>>
+}
+
+entity "board_tiles" {
+    * id : integer <<PK>>
+    --
+    game_id : integer <<FK>>
+    x : integer
+    y : integer
+    board_tiles : json
+    character_name : varchar(255)
+}
+
+entity "board_character_items" {
+    * id : integer <<PK>>
+    --
+    board_tile_id : integer <<FK>>
+    name : varchar(255)
+}
+
+entity "board_character_modifiers" {
+    * id : integer <<PK>>
+    --
+    character_name : integer <<FK>>
+    stats : varchar(50)
+    duration : integer
+}
+
+' Relationships
+users "1" -- "0..*" authUsers : "has"
+users "1" -- "0..*" tables : "owns"
+users "1" -- "0..*" participants : "is a"
+tables "1" -- "0..*" participants : "contains"
+
+games "1" -- "0..*" game_players : "has"
+games "1" -- "0..*" game_spectators : "has"
+games "1" -- "0..*" board_tiles : "takes place on"
+
+users "1" -- "0..*" game_players : "plays in"
+users "1" -- "0..*" game_spectators : "watches"
+
+game_players "1" -- "1" games : "is current player" (currentPlayer FK)
+
+board_tiles "1" -- "0..*" board_character_items : "has"
+board_tiles "1" -- "0..*" board_character_modifiers : "has"
+
+@enduml

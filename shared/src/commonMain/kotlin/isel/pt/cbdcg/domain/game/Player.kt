@@ -22,7 +22,13 @@ data class Player(
     val user: User,
     val hand: PlayerHand,
     val currentCharacter: String?,
-) : Entity
+) : Entity {
+    override fun applyToGame(game: Game): Game {
+        val newPlayerList = game.players.filter { it.user != this.user }.toMutableList()
+        newPlayerList.add(this)
+        return game.copy(players = newPlayerList)
+    }
+}
 
 
 fun Player.addToHand(card: Card): Player {
@@ -52,6 +58,7 @@ fun Player.toPlayerDTO(): PlayerDTO =
         currentCharacter = currentCharacter
     )
 
+
 fun PlayerDTO.toPlayer(): Player{
 
     val hand = hand.mapIndexed { index, card -> index.toUInt() to card.toCard() }.toMap()
@@ -61,4 +68,5 @@ fun PlayerDTO.toPlayer(): Player{
         hand = hand,
         currentCharacter = currentCharacter
     )
+
 }

@@ -1,6 +1,5 @@
 package isel.pt.cbdcg.dto
 
-import isel.pt.cbdcg.domain.game.board.UpdaterName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -122,7 +121,7 @@ data class ItemDTO(
 data class BoardTileDTO(
     val pos: String,
     val tile: TileDTO,
-    val cooldown: Int,
+    val cooldown: Int?,
     val character: CharacterDTO?
 )
 
@@ -242,7 +241,7 @@ data class BoardTileEffectDTO(
     val userId: Int,
     val gameId: Int,
     val token: String,
-    val updaterName: UpdaterName,
+    val updaterName: String,
     val origin: BoardTileDTO,
     val target: Array<BoardTileDTO>,
 ) {

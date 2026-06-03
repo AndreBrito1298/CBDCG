@@ -1,5 +1,7 @@
 package isel.pt.cbdcg.domain.game.character
 
+import isel.pt.cbdcg.domain.game.Game
+import isel.pt.cbdcg.domain.game.board.replaceBoardTile
 import isel.pt.cbdcg.dto.CharacterDTO
 import isel.pt.cbdcg.error.CharacterError
 
@@ -30,6 +32,18 @@ data class PlayableCharacter(
             grade = grade.code(),
             items = items.map{ it.toItemDTO() }.toTypedArray()
         )
+
+    override fun applyToGame(game: Game): Game {
+        game.board.tiles.forEach { tile ->
+            if(tile.character != null){
+                if(tile.character.name == this.name){
+                    val tile = tile.copy(character =  this)
+                    return game.copy(board = game.board.replaceBoardTile(tile))
+                }
+            }
+        }
+        return game
+    }
 }
 
 fun PlayableCharacter.equipItem(item: Item): PlayableCharacter {

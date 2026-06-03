@@ -69,9 +69,11 @@ fun BoardTile(
                 zoom = 0.33f,
                 modifier = Modifier.size(tileSize),
                 filter =
-                    if(boardTile.cooldown > 0u)
-                        ColorFilter.colorMatrix(ColorMatrix().apply{ setToSaturation(0f) })
-                    else null
+                    boardTile.cooldown?.let {
+                        if(it > 0u)
+                            ColorFilter.colorMatrix(ColorMatrix().apply{ setToSaturation(0f) })
+                        else null
+                    }
             )
         }
 

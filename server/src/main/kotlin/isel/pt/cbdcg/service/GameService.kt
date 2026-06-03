@@ -15,9 +15,9 @@ import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.CharacterMovement
 import isel.pt.cbdcg.domain.game.board.Direction
-import isel.pt.cbdcg.domain.game.board.Updater
-import isel.pt.cbdcg.domain.game.board.UpdaterName
+import isel.pt.cbdcg.domain.game.board.Entity
 import isel.pt.cbdcg.domain.game.board.Tile
+import isel.pt.cbdcg.domain.game.board.gameUpdateByName
 // import isel.pt.cbdcg.domain.game.board.applyBoardTileUpdater
 import isel.pt.cbdcg.domain.game.board.rotate
 import isel.pt.cbdcg.domain.game.character.Character
@@ -48,10 +48,6 @@ class GameService(
     private val events: EventsPublisher,
 ) {
 
-    private val boardTileUpdater: Map<UpdaterName, Updater<BoardTile>> = mapOf(
-        UpdaterName.MOVEMENT to CharacterMovement(),
-    )
-
     suspend fun createGame(tableId: UInt, userId: UInt): Result<Game> = runCatching {
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
@@ -75,8 +71,11 @@ class GameService(
 
         val characters = PlayableCharacterCatalog.playableCharacters.shuffled()
         val allItems = ItemCatalog.items.associateWith { 1u }
+
+        // Para testar o "fim de jogo" e tudo mais, estamos a permitir que os KEY items possam ser obtidos no início.
+
         // val itemDeck = allItems.filter{ it.key.grade != Grade.KEY }.toMutableMap()
-        val itemDeck = allItems.toMutableMap() // Isto é temporário, enquanto não está mais nada implementado
+        val itemDeck = allItems.toMutableMap()
 
         val players = table.participants.filter{ it.role == Role.READY }
             .mapIndexed{ playerIdx, player ->
@@ -119,30 +118,7 @@ class GameService(
 
         game
     }
-    suspend fun placeOnBoard(userId: UInt, gameId: UInt, token: String, card: Card, idx: UInt, pos: BoardPosition): Result<Game> = runCatching {
-        val user = userRepo.findById(userId)
-            ?: throw UserError.IdNotFound()
-        token.verifyToken(user, gameId, this.userRepo)
 
-        val game = gameRepo.findById(gameId)
-            ?: throw GameError.GameNotFound(gameId.toInt())
-
-        val player = game.players.find{ it.user.id == user.id }
-            ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
-
-        val newGame = if(game.turn.gameTurn == 0u){
-            game.placeOnBoard(player, pos, card, idx).resolveTurnZero()
-        } else {
-            game.placeOnBoard(player, pos, card, idx)
-        }
-
-        gameRepo.save(newGame)
-
-        events.publishGameUpdated(newGame)
-
-        newGame
-
-    }
     fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)
@@ -175,6 +151,7 @@ class GameService(
 
         newGame
     }
+
     suspend fun nextPhase(userId: UInt, gameId: UInt, token: String): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)
@@ -210,6 +187,32 @@ class GameService(
     }
 
     // Effects to be implemented
+
+    suspend fun placeOnBoard(userId: UInt, gameId: UInt, token: String, card: Card, idx: UInt, pos: BoardPosition): Result<Game> = runCatching {
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
+        token.verifyToken(user, gameId, this.userRepo)
+
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
+
+        val player = game.players.find{ it.user.id == user.id }
+            ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
+
+        val newGame = if(game.turn.gameTurn == 0u){
+            game.placeOnBoard(player, pos, card, idx).resolveTurnZero()
+        } else {
+            game.placeOnBoard(player, pos, card, idx)
+        }
+
+        gameRepo.save(newGame)
+
+        events.publishGameUpdated(newGame)
+
+        newGame
+
+    }
+
     suspend fun moveCharacter(userId: UInt, gameId: UInt, token: String, from: BoardTile, to: BoardTile): Result<Game> = runCatching{
 
         val user = userRepo.findById(userId)
@@ -228,6 +231,7 @@ class GameService(
         events.publishGameUpdated(newGame)
         newGame
     }
+
     suspend fun drawItem(userId: UInt, gameId: UInt, token: String, trigger: BoardTile): Result<Game> = runCatching{
 
         val user = userRepo.findById(userId)
@@ -266,14 +270,14 @@ class GameService(
 
         newGame
     }
-    /*
-    suspend fun applyBoardTileEffect(
+
+    suspend fun applyGameUpdater(
         userId: UInt,
         gameId: UInt,
         token: String,
-        updaterName: UpdaterName,
-        origin: BoardTile,
-        vararg targets: BoardTile,
+        updaterName: String,
+        origin: Entity,
+        targets: List<Entity>,
     ): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)
@@ -283,11 +287,11 @@ class GameService(
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())
 
-        if(boardTileUpdater[updaterName] == null) throw GameError.EffectNotFound(updaterName.name)
-        val newGame = game.applyBoardTileUpdater(boardTileUpdater[updaterName]!!, origin, *targets)
+        val newGame = game.gameUpdateByName(updaterName, origin, targets)
+
         gameRepo.save(newGame)
         events.publishGameUpdated(newGame)
         newGame
     }
-    */
+
 }
