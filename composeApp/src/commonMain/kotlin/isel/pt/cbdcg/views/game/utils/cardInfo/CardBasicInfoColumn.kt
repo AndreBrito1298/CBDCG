@@ -37,9 +37,7 @@ fun CardBasicInfoColumn(
             ) {
                 ZoomedImage(
                     fileName = mainText,
-                    zoom = zoom,
-                    select = {},
-                    canSelect = false
+                    zoom = zoom
                 )
             }
 

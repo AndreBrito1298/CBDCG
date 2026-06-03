@@ -11,7 +11,9 @@ import androidx.compose.ui.unit.Dp
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CardType
 import isel.pt.cbdcg.domain.game.CharacterCard
+import isel.pt.cbdcg.domain.game.ItemCard
 import isel.pt.cbdcg.domain.game.Player
+import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.BoardTiles
@@ -19,13 +21,21 @@ import isel.pt.cbdcg.domain.game.board.getAdjacent
 import isel.pt.cbdcg.domain.game.board.getBlocked
 import isel.pt.cbdcg.viewmodel.GameUIState
 
-data class BoardTileDrawConditions(
-    val placingTile: Boolean,
-    val placingCharacter: Boolean,
-    val equippingItem: Boolean,
-    val characterIsSelected: Boolean,
-    val characterCanMove: Boolean,
-    val characterIsMoving: Boolean,
+interface BoardTilePossibleActions{
+    object InspectTileEffect : BoardTilePossibleActions
+    object InspectCharacter : BoardTilePossibleActions
+    object PlaceCard : BoardTilePossibleActions
+    object MoveCharacter : BoardTilePossibleActions
+    object ApplyMovement : BoardTilePossibleActions
+}
+
+data class BoardTileDDM(
+    val inspectTileEffect: Boolean,
+    val inspectCharacter: Boolean,
+    val placeCharacter: Boolean,
+    val equipItem: Boolean,
+    val moveCharacter: Boolean,
+    val applyMovement: Boolean
 )
 
 @Composable
@@ -35,17 +45,12 @@ fun Board(
     gameBoard: BoardTiles,
     tileSize: Dp,
     placeCard: (BoardPosition) -> Unit,
-    selectBoardCharacter: (BoardTile) -> Unit,
-    inspectCharacter: (Card) -> Unit,
-    moveSignal: () -> Unit,
+    inspect: (Card) -> Unit,
+    moveSignal: (BoardTile) -> Unit,
     moveCharacter: (BoardTile) -> Unit,
 ) {
 
     val positions = gameBoard.map { it.pos }
-
-    val selectedCharacter = (gameState as? GameUIState.SelectBoardCharacter)?.position?.character
-    val (isTileCard, isCharacterCard, isItemCard) =
-        CardType.entries.map{ type -> (gameState as? GameUIState.PlacingCard)?.card?.type == type }
 
     val minX = positions.minOf { it.x } - 1
     val maxX = positions.maxOf { it.x } + 1
@@ -74,30 +79,43 @@ fun Board(
                             else ""
 
                         val character = boardTile.character
+
+                        val actions = BoardTileDDM(
+                            inspectTileEffect = gameState is GameUIState.Idle &&
+                                    boardTile.tile.specialEffect.type.name != "None" &&
+                                    boardTile.tile.specialEffect.type.name != "Start",
+                            inspectCharacter = gameState is GameUIState.Idle &&
+                                    character != null,
+                            placeCharacter = gameState is GameUIState.PlacingCard &&
+                                    gameState.card is CharacterCard,
+                            equipItem = gameState is GameUIState.PlacingCard &&
+                                    gameState.card is ItemCard,
+                            moveCharacter = gameState is GameUIState.Idle &&
+                                    character != null &&
+                                    character.name == player?.currentCharacter,
+                            applyMovement = gameState is GameUIState.MovingCharacter
+                        )
+
                         val tilePath =
-                            if(gameState is GameUIState.MovingCharacter && boardTile in gameState.path)
+                            if(actions.applyMovement && boardTile in (gameState as GameUIState.MovingCharacter).path)
                                 pathSegmentFor(gameState.path, boardTile)
                             else null
 
-                        val drawConditions = BoardTileDrawConditions(
-                            placingTile = isTileCard,
-                            placingCharacter = isCharacterCard,
-                            equippingItem = isItemCard,
-                            characterIsSelected = selectedCharacter == character && character != null,
-                            characterCanMove = selectedCharacter == character && character != null && character.name == player?.currentCharacter,
-                            characterIsMoving = gameState is GameUIState.MovingCharacter,
-                        )
-
                         BoardTile(
-                            conditions = drawConditions,
+                            actions = actions,
                             boardTile = boardTile,
                             tileName = tileName,
                             tileSize = tileSize,
                             tilePath = tilePath,
-                            onClick = { if(!drawConditions.characterIsMoving) placeCard(position) else moveCharacter(boardTile) },
-                            selectCharacter = { selectBoardCharacter(boardTile) },
-                            inspectCharacter = { if(character != null) inspectCharacter(CharacterCard(character)) },
-                            moveSignal = moveSignal,
+                            onClick = { action ->
+                                when(action){
+                                    is BoardTilePossibleActions.InspectTileEffect -> inspect(TileCard(boardTile.tile))
+                                    is BoardTilePossibleActions.InspectCharacter -> inspect(CharacterCard(character!!))
+                                    is BoardTilePossibleActions.PlaceCard -> placeCard(position)
+                                    is BoardTilePossibleActions.MoveCharacter -> moveSignal(boardTile)
+                                    is BoardTilePossibleActions.ApplyMovement -> moveCharacter(boardTile)
+                                }
+                            }
                         )
                     }
                     else EmptyBoardTile(

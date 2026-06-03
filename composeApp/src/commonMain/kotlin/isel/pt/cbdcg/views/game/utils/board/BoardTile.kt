@@ -7,7 +7,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,38 +27,47 @@ import isel.pt.cbdcg.views.game.utils.ZoomedImage
 
 @Composable
 fun BoardTile(
-    conditions: BoardTileDrawConditions,
+    actions: BoardTileDDM,
     boardTile: BoardTile,
     tileName: String,
     tileSize: Dp,
     tilePath: TilePathSegment?,
-    onClick: () -> Unit,
-    selectCharacter: () -> Unit,
-    inspectCharacter: () -> Unit,
-    moveSignal: () -> Unit,
+    onClick: (BoardTilePossibleActions) -> Unit,
 ) {
 
+    var expanded by remember { mutableStateOf(false) }
     val effectName = boardTile.tile.specialEffect.type.name
     val characterName = boardTile.character?.name
 
+    val isClickable = actions.placeCharacter || actions.equipItem || actions.applyMovement ||
+            actions.moveCharacter || actions.inspectTileEffect || actions.inspectCharacter
+
     Box(
         modifier = Modifier
-            .size(tileSize),
+            .size(tileSize)
+            .clickable(enabled = isClickable) {
+                when {
+                    actions.placeCharacter || actions.equipItem -> onClick(BoardTilePossibleActions.PlaceCard)
+                    actions.applyMovement -> onClick(BoardTilePossibleActions.ApplyMovement)
+                    else -> expanded = true
+                }
+            },
         contentAlignment = Alignment.Center
     ){
+
+        // Draw the Tile
         ZoomedImage(
             fileName = tileName,
             zoom = 1.0f,
-            select = onClick,
-            canSelect = conditions.placingCharacter || conditions.characterIsMoving
+            modifier = Modifier.size(tileSize)
         )
 
+        // Draw the Effect
         if(effectName != "None"){
             ZoomedImage(
                 fileName = effectName,
                 zoom = 0.33f,
-                select = onClick,
-                canSelect = conditions.placingCharacter || conditions.characterIsMoving,
+                modifier = Modifier.size(tileSize),
                 filter =
                     if(boardTile.cooldown > 0u)
                         ColorFilter.colorMatrix(ColorMatrix().apply{ setToSaturation(0f) })
@@ -59,6 +75,7 @@ fun BoardTile(
             )
         }
 
+        // Draw the yellow path
         if(tilePath != null) {
             MovementPathOverlay(
                 segment = tilePath,
@@ -66,7 +83,8 @@ fun BoardTile(
             )
         }
 
-        if (conditions.placingCharacter) {
+        // Draw the gray dots
+        if (actions.placeCharacter) {
             Box(
                 modifier = Modifier
                     .size(tileSize / 3)
@@ -82,14 +100,46 @@ fun BoardTile(
             )
         }
 
+        // Draw the Character
         if(characterName != null){
-            BoardCharacter(
-                conditions = conditions,
-                characterName = characterName,
-                onClick = { if(conditions.equippingItem || conditions.characterIsMoving) onClick() else selectCharacter()  },
-                inspect = inspectCharacter,
-                moveSignal = moveSignal,
+            ZoomedImage(
+                fileName = characterName,
+                zoom = 1.0f,
+                modifier = Modifier.size(tileSize)
             )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            if (actions.moveCharacter) {
+                DropdownMenuItem(
+                    text = { Text("Move Character") },
+                    onClick = {
+                        expanded = false
+                        onClick(BoardTilePossibleActions.MoveCharacter)
+                    }
+                )
+            }
+            if (actions.inspectTileEffect) {
+                DropdownMenuItem(
+                    text = { Text("Inspect Tile Effect") },
+                    onClick = {
+                        expanded = false
+                        onClick(BoardTilePossibleActions.InspectTileEffect)
+                    }
+                )
+            }
+            if (actions.inspectCharacter) {
+                DropdownMenuItem(
+                    text = { Text("Inspect Character") },
+                    onClick = {
+                        expanded = false
+                        onClick(BoardTilePossibleActions.InspectCharacter)
+                    }
+                )
+            }
         }
     }
 }

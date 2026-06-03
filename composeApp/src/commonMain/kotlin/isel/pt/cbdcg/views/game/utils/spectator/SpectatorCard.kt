@@ -1,6 +1,7 @@
 package isel.pt.cbdcg.views.game.utils.spectator
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -30,14 +31,16 @@ fun SpectatorCard(
         modifier = Modifier
             .border(1.dp, Color.Black)
             .padding(8.dp)
+            .then(
+                if (card !is TileCard) Modifier.clickable { onSeeStats() }
+                else Modifier
+            )
     ) {
         when (card) {
             is CharacterCard, is ItemCard -> {
                 ZoomedImage(
                     fileName = fileName,
-                    zoom = zoom,
-                    select = onSeeStats,
-                    canSelect = true
+                    zoom = zoom
                 )
             }
 
@@ -45,16 +48,12 @@ fun SpectatorCard(
                 ZoomedImage(
                     fileName = card.tile.toString(),
                     zoom = zoom,
-                    select = {},
-                    canSelect = false
                 )
 
                 if(card.tile.specialEffect.type.name != "None"){
                     ZoomedImage(
                         fileName = card.tile.specialEffect.type.name,
                         zoom = 0.25f,
-                        select = {},
-                        canSelect = false
                     )
                 }
             }

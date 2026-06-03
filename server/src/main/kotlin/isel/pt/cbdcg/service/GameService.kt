@@ -20,6 +20,7 @@ import isel.pt.cbdcg.domain.game.board.UpdaterName
 import isel.pt.cbdcg.domain.game.board.Tile
 // import isel.pt.cbdcg.domain.game.board.applyBoardTileUpdater
 import isel.pt.cbdcg.domain.game.board.rotate
+import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.ItemCatalog
 import isel.pt.cbdcg.domain.game.character.PlayableCharacterCatalog
 import isel.pt.cbdcg.domain.game.draw
@@ -27,8 +28,9 @@ import isel.pt.cbdcg.domain.game.drawItem
 import isel.pt.cbdcg.domain.game.leaveGame
 import isel.pt.cbdcg.domain.game.moveCharacter
 import isel.pt.cbdcg.domain.game.nextPhase
-import isel.pt.cbdcg.domain.game.nextTurn
 import isel.pt.cbdcg.domain.game.placeOnBoard
+import isel.pt.cbdcg.domain.game.resolveTurnZero
+import isel.pt.cbdcg.domain.game.unequip
 import isel.pt.cbdcg.domain.verifyToken
 import isel.pt.cbdcg.error.GameError
 import isel.pt.cbdcg.error.TableError
@@ -129,7 +131,7 @@ class GameService(
             ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
 
         val newGame = if(game.turn.gameTurn == 0u){
-            game.placeOnBoard(player, pos, card, idx).nextTurn()
+            game.placeOnBoard(player, pos, card, idx).resolveTurnZero()
         } else {
             game.placeOnBoard(player, pos, card, idx)
         }
@@ -245,6 +247,25 @@ class GameService(
         newGame
     }
 
+    suspend fun unequip(userId: UInt, gameId: UInt, token: String, character: Character, index: Int): Result<Game> = runCatching {
+
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
+        token.verifyToken(user, gameId, this.userRepo)
+
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
+
+        val player = game.players.find{ it.user.id == user.id }
+            ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
+
+        val newGame = game.unequip(player, character, index)
+
+        gameRepo.save(newGame)
+        events.publishGameUpdated(newGame)
+
+        newGame
+    }
     /*
     suspend fun applyBoardTileEffect(
         userId: UInt,

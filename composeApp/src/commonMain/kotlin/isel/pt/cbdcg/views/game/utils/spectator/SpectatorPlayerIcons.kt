@@ -1,6 +1,7 @@
 package isel.pt.cbdcg.views.game.utils.spectator
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -23,7 +24,9 @@ fun SpectatorPlayerIcons(
             .border(
                 width = if (isSelected) 3.dp else 1.dp,
                 color = Color.Black
-            ).padding(8.dp),
+            )
+            .padding(8.dp)
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
 
@@ -34,8 +37,7 @@ fun SpectatorPlayerIcons(
         ZoomedImage(
             fileName = resourceName,
             zoom = zoom,
-            select = onClick,
-            canSelect = true
+            modifier = Modifier.size(64.dp)
         )
 
     }

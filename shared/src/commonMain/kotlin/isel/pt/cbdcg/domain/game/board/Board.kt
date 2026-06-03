@@ -1,11 +1,11 @@
 package isel.pt.cbdcg.domain.game.board
 
 import isel.pt.cbdcg.domain.game.Player
-import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.Item
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.domain.game.character.equipItem
+import isel.pt.cbdcg.domain.game.character.unequip
 import isel.pt.cbdcg.error.BoardError
 import kotlin.collections.plus
 
@@ -106,9 +106,7 @@ fun Board.checkBlocked(position: BoardPosition, tile: Tile){
     if(adjTiles.all{ (dir,_) -> blocked.contains(dir) })
         throw BoardError.TileConnectionMismatch()
 }
-fun Board.placeTile(position: BoardPosition, tile: Tile, turnPhase: TurnPhase): Board {
-    if(turnPhase != TurnPhase.CONSTRUCTION)
-        throw BoardError.TilePlacementRestriction()
+fun Board.placeTile(position: BoardPosition, tile: Tile): Board {
 
     if (tiles.any { it.pos == position })
         throw BoardError.PositionTaken(position.x, position.y)
@@ -117,29 +115,23 @@ fun Board.placeTile(position: BoardPosition, tile: Tile, turnPhase: TurnPhase): 
 
     return copy(tiles = tiles + BoardTile(position, tile, 0u, null))
 }
-fun Board.placeCharacter(position: BoardPosition, player: Player, character: Character, turnPhase: TurnPhase): Board {
-    if(turnPhase != TurnPhase.SUBSTITUTION)
-        throw BoardError.CharacterPlacementRestriction()
-
-    if(player.currentCharacter != null)
-        throw BoardError.CharacterLimitReached()
+fun Board.placeCharacter(position: BoardPosition, character: Character): Board {
 
     if(tiles.any{ it.pos == position && it.character != null })
         throw BoardError.TileOccupied()
 
     val newBoard = tiles.map{ boardTile ->
-        if(boardTile.pos == position)boardTile.copy(character = character)
+        if(boardTile.pos == position) boardTile.copy(character = character)
         else boardTile
     }
 
     return copy(tiles = newBoard)
 }
-fun Board.equipItem(position: BoardPosition, player: Player, item: Item, turnPhase: TurnPhase): Board{
-    if(turnPhase == TurnPhase.CONSTRUCTION)
-        throw BoardError.EquipItemRestriction()
+fun Board.equipItem(position: BoardPosition, player: Player, item: Item): Board{
 
     val tile = tiles.find{ it.pos == position }
         ?: throw BoardError.TileNotFound(position.x, position.y)
+
     val character = tile.character
         ?: throw BoardError.EmptyTile()
 
@@ -148,6 +140,15 @@ fun Board.equipItem(position: BoardPosition, player: Player, item: Item, turnPha
 
     val newBoard = tiles.map{ boardTile ->
         if(boardTile == tile) tile.copy(character = character.equipItem(item))
+        else boardTile
+    }
+
+    return copy(tiles = newBoard)
+}
+fun Board.unequip(character: PlayableCharacter, item: Item): Board {
+
+    val newBoard = tiles.map{ boardTile ->
+        if(boardTile.character?.name == character.name) boardTile.copy(character = character.unequip(item))
         else boardTile
     }
 

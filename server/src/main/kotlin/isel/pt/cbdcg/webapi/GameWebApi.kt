@@ -8,6 +8,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import isel.pt.cbdcg.domain.game.board.toBoardTile
 import isel.pt.cbdcg.domain.game.board.toPosition
+import isel.pt.cbdcg.domain.game.character.toCharacter
 import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.domain.game.toGameDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
@@ -17,6 +18,7 @@ import isel.pt.cbdcg.dto.MoveCharacterDTO
 import isel.pt.cbdcg.dto.NextPhaseDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RotatePieceDTO
+import isel.pt.cbdcg.dto.UnequipItemDTO
 import isel.pt.cbdcg.service.GameService
 
 fun Route.gameWebApi(gameService: GameService) {
@@ -97,6 +99,20 @@ fun Route.gameWebApi(gameService: GameService) {
         }
         */
 
+        post("/leave"){
+
+            val input = call.receive<LeaveGameDTO>()
+
+            gameService.leaveGame(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token
+            ).getOrThrow()
+
+            call.response.status(HttpStatusCode.OK)
+
+        }
+
         // Will be changed
 
         post("/move"){
@@ -129,17 +145,19 @@ fun Route.gameWebApi(gameService: GameService) {
             call.respond(HttpStatusCode.OK, result.toGameDTO())
         }
 
-        post("/leave"){
+        post("/unequip"){
 
-            val input = call.receive<LeaveGameDTO>()
+            val input = call.receive<UnequipItemDTO>()
 
-            gameService.leaveGame(
+            val result = gameService.unequip(
                 userId = input.userId.toUInt(),
                 gameId = input.gameId.toUInt(),
-                token = input.token
+                token = input.token,
+                character = input.character.toCharacter(),
+                index = input.index,
             ).getOrThrow()
 
-            call.response.status(HttpStatusCode.OK)
+            call.respond(HttpStatusCode.OK, result.toGameDTO())
 
         }
     }

@@ -147,13 +147,10 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is BoardError.PositionTaken -> HttpStatusCode.Conflict
         is BoardError.TileConnectionMismatch -> HttpStatusCode.Conflict
         is BoardError.CharacterLimitReached -> HttpStatusCode.Conflict
-        is BoardError.CharacterPlacementRestriction -> HttpStatusCode.Conflict
         is BoardError.EmptyTile -> HttpStatusCode.NotFound
-        is BoardError.EquipItemRestriction -> HttpStatusCode.Conflict
         is BoardError.EquipYourCharacter -> HttpStatusCode.BadRequest
         is BoardError.TileNotFound -> HttpStatusCode.NotFound
         is BoardError.TileOccupied -> HttpStatusCode.Conflict
-        is BoardError.TilePlacementRestriction -> HttpStatusCode.Conflict
         is BoardError.NoTargetFound -> HttpStatusCode.NotFound
         is BoardError.EffectInCooldown -> HttpStatusCode.Conflict
 
@@ -167,10 +164,14 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is GameError.CharacterMovementRestriction -> HttpStatusCode.Conflict
         is GameError.EmptyDeck -> HttpStatusCode.Conflict
         is GameError.EffectNotFound -> HttpStatusCode.NotFound
+        is GameError.CharacterPlacementRestriction -> HttpStatusCode.Conflict
+        is GameError.EquipItemRestriction -> HttpStatusCode.Conflict
+        is GameError.TilePlacementRestriction -> HttpStatusCode.Conflict
 
         is CardError.InvalidCardFormat -> HttpStatusCode.BadRequest
         
         is CharacterError.ItemCapacityLimit -> HttpStatusCode.Conflict
+        is CharacterError.ItemDoesNotExist -> HttpStatusCode.NotFound
     }
 
     return code to message

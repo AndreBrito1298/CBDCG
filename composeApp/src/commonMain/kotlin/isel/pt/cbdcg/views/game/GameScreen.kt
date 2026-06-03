@@ -20,7 +20,6 @@ import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.board.BoardTile
-import isel.pt.cbdcg.domain.game.board.TileEffect
 import isel.pt.cbdcg.viewmodel.GameUI
 import isel.pt.cbdcg.viewmodel.GameUIState
 import isel.pt.cbdcg.views.game.utils.GameOverDialog
@@ -30,7 +29,7 @@ import isel.pt.cbdcg.views.game.utils.players.PlayerHand
 import isel.pt.cbdcg.views.game.utils.board.ZoomButtons
 import isel.pt.cbdcg.views.game.utils.cardInfo.CardStatsDialog
 import isel.pt.cbdcg.views.game.utils.cardInfo.TileEffectDialog
-import isel.pt.cbdcg.views.game.utils.cardInfo.adjustStats
+import isel.pt.cbdcg.domain.game.character.adjustStats
 
 @Composable
 fun GameScreen(
@@ -40,10 +39,10 @@ fun GameScreen(
     selectCard: (UInt, Card) -> Unit,
     placeSignal: () -> Unit,
     placeOnBoard: (BoardPosition) -> Unit,
-    selectBoardCharacter: (BoardTile) -> Unit,
+    unequip: (Int) -> Unit,
     toggleCardStats: (Card?) -> Unit,
-    onEffectInfoClick: (TileEffect?) -> Unit,
-    moveSignal: () -> Unit,
+    onEffectInfoClick: () -> Unit,
+    moveSignal: (BoardTile) -> Unit,
     moveCharacter: (BoardTile) -> Unit,
     rotateTile: (Boolean) -> Unit,
     zoom: (Boolean) -> Unit,
@@ -124,9 +123,8 @@ fun GameScreen(
                         gameBoard = game.board.tiles,
                         tileSize = 128.dp * gameUI.boardZoom,
                         placeCard = { pos -> placeOnBoard(pos) },
-                        selectBoardCharacter = { tile -> selectBoardCharacter(tile) },
-                        inspectCharacter = { card -> toggleCardStats(card) },
-                        moveSignal = moveSignal,
+                        inspect = { card -> toggleCardStats(card) },
+                        moveSignal = { boardTile -> moveSignal(boardTile) },
                         moveCharacter = { pos -> moveCharacter(pos) }
                     )
                     ZoomButtons(
@@ -158,15 +156,16 @@ fun GameScreen(
     if(gameUI.state is GameUIState.InspectCard){
         CardStatsDialog(
             card = gameUI.state.card,
+            unequip = { idx -> unequip(idx) },
             onDismiss = { toggleCardStats(null) }
         )
     }
 
     if(gameUI.state is GameUIState.InspectTileEffect){
         TileEffectDialog(
-            effect = gameUI.state.boardTile.tile.specialEffect,
-            onConfirm = { onEffectInfoClick(gameUI.state.boardTile.tile.specialEffect) },
-            onDismiss = { onEffectInfoClick(null) }
+            effect = gameUI.state.tile.specialEffect,
+            activate = gameUI.state.activateInTile != null,
+            onConfirm = onEffectInfoClick,
         )
     }
 

@@ -21,19 +21,14 @@ import isel.pt.cbdcg.domain.game.board.TileEffect
 @Composable
 fun TileEffectDialog(
     effect: TileEffect,
+    activate: Boolean,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
 ){
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = onConfirm,
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("Activate")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Ignore")
+                Text(if(activate) "Activate" else "Dismiss")
             }
         },
         text = {

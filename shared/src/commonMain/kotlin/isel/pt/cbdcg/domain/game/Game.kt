@@ -15,14 +15,18 @@ import isel.pt.cbdcg.domain.game.board.toBoardTile
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.board.toTile
 import isel.pt.cbdcg.domain.game.board.toTileDTO
+import isel.pt.cbdcg.domain.game.board.unequip
+import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.Item
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
+import isel.pt.cbdcg.domain.game.character.adjustStats
 import isel.pt.cbdcg.domain.game.character.toItem
 import isel.pt.cbdcg.domain.game.character.toItemDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.ItemDeckDTO
 import isel.pt.cbdcg.dto.TileDeckDTO
 import isel.pt.cbdcg.error.BoardError
+import isel.pt.cbdcg.error.CharacterError
 import isel.pt.cbdcg.error.GameError
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -80,26 +84,20 @@ fun GameDTO.toGame(): Game {
 
 }
 
-fun Game.placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: UInt): Game {
+fun Game.resolveTurnZero() : Game {
 
-    if(player.user.id != turn.playerTurn.first())
-        throw GameError.NotYourTurn()
-
-    if(turn.gameTurn == 0u && card.type != CardType.TILE)
-        throw GameError.DungeonTurnZeroRule()
-
-    val newBoard = when(card.type){
-        CardType.TILE -> board.placeTile(position, (card as TileCard).tile, turn.phase)
-        CardType.CHARACTER -> board.placeCharacter(position, player, (card as CharacterCard).character, turn.phase)
-        CardType.ITEM -> board.equipItem(position, player, (card as ItemCard).item, turn.phase)
-    }
-
-    val updatedPlayers = players.map{
-        if(it.user == player.user) player.removeFromHand(idx)
-        else it
-    }
-
-    return copy(board = newBoard, players= updatedPlayers)
+    val remainingPlayers = turn.playerTurn.drop(1)
+    val nextPlayerTurn = remainingPlayers.ifEmpty { getTurnOrder() }
+    
+    val allTilesPlaced = players.all{ it.hand.numTileCards() == 0 }
+    val allPlayersPlacedACharacter = players.map{ player ->
+        player to board.tiles.find{ it.character != null && it.character.name == player.currentCharacter }?.character
+    }.all{ it.second != null }
+    
+    return if(!allTilesPlaced) copy(turn = Turn(0u, nextPlayerTurn, TurnPhase.CONSTRUCTION))
+           else if(allTilesPlaced && !allPlayersPlacedACharacter) copy(turn = Turn(0u, nextPlayerTurn, TurnPhase.SUBSTITUTION))
+           else copy(turn = Turn(1u, nextPlayerTurn, TurnPhase.CONSTRUCTION)).startTurnDraw()
+    
 }
 fun Game.nextPhase(): Game {
 
@@ -123,24 +121,35 @@ fun Game.nextPhase(): Game {
     }
 }
 fun Game.nextTurn(): Game {
-
+    
     val remainingPlayers = turn.playerTurn.drop(1)
 
-    val nextGameTurn =
-        if(turn.gameTurn == 0u){
-            val allTilesPlaced = players.all{ it.hand.numTileCards() == 0 }
-            if(allTilesPlaced) 1u else 0u
-        }
-        else{ if (remainingPlayers.isEmpty()) turn.gameTurn + 1u else turn.gameTurn }
-
-    val nextPlayerTurn = remainingPlayers.ifEmpty{ getTurnOrder() }
-    val newBoard = if(remainingPlayers.isEmpty() && turn.gameTurn != 0u){ board.reduceCooldown() } else board
+    val nextGameTurn = if (remainingPlayers.isEmpty()) turn.gameTurn + 1u else turn.gameTurn
+    val nextPlayerTurn = remainingPlayers.ifEmpty { getTurnOrder() }
+    val newBoard = if (remainingPlayers.isEmpty()) board.reduceCooldown() else board
 
     val nextTurn = copy(
         board = newBoard,
         turn = Turn(gameTurn = nextGameTurn, playerTurn = nextPlayerTurn, phase = TurnPhase.CONSTRUCTION)
     )
-    return nextTurn.startTurnDraw().checkWinner()
+    return nextTurn.startTurnDraw()
+}
+
+private fun Game.getTurnOrder(): List<UInt>{
+    
+    val playerToCharacter = players.map{ player ->
+        player to board.tiles.find{ it.character != null && it.character.name == player.currentCharacter }?.character
+    }
+    
+    val allPlayersPlacedACharacter = playerToCharacter.all { it.second != null }
+    
+    return if (allPlayersPlacedACharacter) {
+        playerToCharacter
+            .sortedByDescending { it.second!!.adjustStats().spe }
+            .map { it.first.user.id }
+    } else {
+        players.map { it.user.id }
+    }
 }
 fun Game.checkWinner(): Game {
 
@@ -201,6 +210,90 @@ fun Game.leaveGame(player: Player): Game {
            else newGame
 }
 
+// Up from here will eventually be replaced with the polymorphic structure
+
+fun Game.placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: UInt): Game {
+
+    if(player.user.id != turn.playerTurn.first())
+        throw GameError.NotYourTurn()
+
+    if(turn.gameTurn == 0u && turn.phase == TurnPhase.CONSTRUCTION && card.type != CardType.TILE)
+        throw GameError.DungeonTurnZeroRule()
+
+    return when(card.type){
+        
+        CardType.TILE -> placeTile(player, position, card as TileCard, idx)
+        CardType.CHARACTER -> placeCharacter(player, position, card as CharacterCard, idx)
+        CardType.ITEM -> placeItem(player, position, card as ItemCard, idx)
+    }
+}
+fun Game.placeTile(player: Player, position: BoardPosition, card: TileCard, idx: UInt): Game {
+
+    if(turn.phase != TurnPhase.CONSTRUCTION)
+        throw GameError.TilePlacementRestriction()
+
+    val updatedPlayers = players.map{
+        if(it.user == player.user) player.removeFromHand(idx)
+        else it
+    }
+    
+    val updatedBoard = board.placeTile(position, card.tile)
+    return copy(board = updatedBoard, players = updatedPlayers)
+}
+fun Game.placeCharacter(player: Player, position: BoardPosition, card: CharacterCard, idx: UInt): Game {
+
+    if(turn.phase != TurnPhase.SUBSTITUTION)
+        throw GameError.CharacterPlacementRestriction()
+
+    val playerWithoutCard = player.removeFromHand(idx)
+    val characterInTile = board.tiles.find{ it.pos == position }?.character
+
+    return if((characterInTile as? PlayableCharacter) == null || characterInTile.name != player.currentCharacter){
+
+        if(player.currentCharacter != null)
+            throw BoardError.CharacterLimitReached()
+
+        val updatedPlayers = players.map{
+            if(it.user == player.user) playerWithoutCard
+            else it
+        }
+
+        copy(board = board.placeCharacter(position, card.character), players = updatedPlayers)
+
+    } else {
+
+        val characterItemCards = characterInTile.items.map{ item -> ItemCard(item) }
+        val characterCard = CharacterCard(characterInTile.copy(items = emptyList()))
+
+        val updatedPlayer = (characterItemCards + characterCard)
+                .fold(playerWithoutCard){ initial, card -> initial.addToHand(card) }
+
+        val updatedBoard = board
+            .copy(tiles = board.tiles.map{ if(it.pos == position) it.copy(character = null) else it })
+            .placeCharacter(position, card.character)
+
+        val updatedPlayers = players.map{
+            if(it.user == player.user) updatedPlayer
+            else it
+        }
+
+        copy(board = updatedBoard, players = updatedPlayers)
+    }
+}
+fun Game.placeItem(player: Player, position: BoardPosition, card: ItemCard, idx: UInt): Game {
+
+    if(turn.phase != TurnPhase.SUBSTITUTION)
+        throw GameError.EquipItemRestriction()
+
+    val updatedPlayers = players.map{
+        if(it.user == player.user) player.removeFromHand(idx)
+        else it
+    }
+
+    val updatedBoard = board.equipItem(position, player, card.item)
+    return copy(board = updatedBoard, players = updatedPlayers)
+}
+
 fun Game.moveCharacter(from: BoardTile, to: BoardTile) : Game {
 
     if(this.turn.phase != TurnPhase.MOVEMENT) throw GameError.CharacterMovementRestriction()
@@ -255,6 +348,22 @@ fun Game.drawItem(player: Player, boardTile: BoardTile): Game {
     )
 }
 
-private fun Game.getTurnOrder(): List<UInt>{
-    return players.map{ it.user.id }
+fun Game.unequip(player: Player, character: Character, idx: Int): Game {
+
+    if(this.turn.phase != TurnPhase.SUBSTITUTION)
+        throw GameError.EquipItemRestriction()
+
+    if(character !is PlayableCharacter || character.name != player.currentCharacter)
+        throw BoardError.EquipYourCharacter()
+
+    val item = character.items.getOrNull(idx)
+        ?: throw CharacterError.ItemDoesNotExist(idx)
+
+    val updatedBoard = board.unequip(character, item)
+    val updatedPlayers = players.map{
+        if(it.user == player.user) it.addToHand(ItemCard(item))
+        else it
+    }
+
+    return copy(board = updatedBoard, players = updatedPlayers)
 }

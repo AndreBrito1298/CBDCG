@@ -29,7 +29,7 @@ fun AppNavHost(vm: AppViewModel) {
     val ui by vm.ui.collectAsState()
 
     val destination = when (ui.session) {
-        SessionState.SignedOut -> AppDestination.Menu
+        is SessionState.SignedOut -> AppDestination.Menu
         is SessionState.InLobby -> AppDestination.Lobby
         is SessionState.InTable -> AppDestination.Table
         is SessionState.InGame -> AppDestination.Game
@@ -160,10 +160,10 @@ fun AppNavHost(vm: AppViewModel) {
                     selectCard = { idx, card -> vm.selectCard(idx, card) },
                     placeSignal = vm::placeSignal,
                     placeOnBoard = { pos -> vm.placeOnBoard(pos) },
-                    selectBoardCharacter = { tile -> vm.selectBoardCharacter(tile) },
+                    unequip = { idx -> vm.unequip(idx) },
                     toggleCardStats = { card -> vm.inspectCard(card) },
-                    onEffectInfoClick = { effect -> vm.drawItem(effect) },
-                    moveSignal = vm::moveSignal,
+                    onEffectInfoClick = { vm.drawItem() },
+                    moveSignal = { boardTile -> vm.moveSignal(boardTile) },
                     moveCharacter = { tile -> vm.moveCharacter(tile) },
                     rotateTile = { flag -> vm.rotateTile(flag) },
                     zoom = { option -> vm.zoom(option) },
@@ -178,7 +178,6 @@ fun AppNavHost(vm: AppViewModel) {
                     game = session.game,
                     gameUI = ui.gameUI,
                     togglePlayerHand = { player -> vm.inspectPlayerHand(player) },
-                    selectBoardCharacter = { tile -> vm.selectBoardCharacter(tile) },
                     toggleCardStats = { card -> vm.inspectCard(card) },
                     zoom = { option -> vm.zoom(option) }
                 )

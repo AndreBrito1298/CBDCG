@@ -1,7 +1,6 @@
 package isel.pt.cbdcg.views.game.utils
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -19,9 +18,8 @@ import org.jetbrains.compose.resources.painterResource
 fun ZoomedImage(
     fileName: String,
     zoom: Float,
-    select: () -> Unit,
-    canSelect: Boolean,
     filter: ColorFilter? = null,
+    modifier: Modifier = Modifier,
 ) {
 
     val resource = Res.allDrawableResources[fileName]
@@ -29,10 +27,9 @@ fun ZoomedImage(
         ?: error("Drawable not found: $fileName")
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(128.dp)
-            .clipToBounds()
-            .clickable(enabled = canSelect, onClick = select),
+            .clipToBounds(),
         contentAlignment = Alignment.Center
     ){
         Image(

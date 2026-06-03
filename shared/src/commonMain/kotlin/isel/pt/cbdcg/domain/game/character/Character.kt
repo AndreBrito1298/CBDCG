@@ -30,3 +30,20 @@ fun CharacterDTO.toCharacter(): Character =
         CharacterRole.PLAYABLE -> this.toPlayableCharacter()
         CharacterRole.ENEMY -> TODO()
     }
+
+fun Character.adjustStats(): Stats {
+
+    val deltaItems =
+        if(this is PlayableCharacter)
+            items.fold(Stats(0,0,0,0)){ current, item ->
+                current + item.stats
+            }
+        else Stats(0,0,0,0)
+
+    val deltaModifiers =
+        activeStatModifiers.fold(Stats(0,0,0,0)){ current, mod ->
+            current + mod.stats
+        }
+
+    return baseStats + deltaItems + deltaModifiers
+}

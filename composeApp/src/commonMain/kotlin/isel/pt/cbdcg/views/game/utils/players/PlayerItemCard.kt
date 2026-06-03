@@ -1,6 +1,7 @@
 package isel.pt.cbdcg.views.game.utils.players
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenu
@@ -10,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import isel.pt.cbdcg.domain.game.character.Grade
 import isel.pt.cbdcg.domain.game.character.Item
 import isel.pt.cbdcg.views.game.utils.ZoomedImage
 
@@ -22,13 +24,14 @@ fun PlayerItemCard(
     inspect: () -> Unit,
 ){
     Box(
-        modifier= Modifier.border(1.dp, Color.Black).padding(8.dp)
+        modifier= Modifier
+            .border(1.dp, Color.Black)
+            .padding(8.dp)
+            .clickable(onClick = select)
     ){
         ZoomedImage(
             fileName = item.name,
-            zoom = 1.0f,
-            select = select,
-            canSelect = true
+            zoom = 1.0f
         )
 
         DropdownMenu(
@@ -40,10 +43,12 @@ fun PlayerItemCard(
                 onClick = inspect,
             )
 
-            DropdownMenuItem(
-                text = { Text("Equip") },
-                onClick = equip,
-            )
+            if(item.grade != Grade.KEY){
+                DropdownMenuItem(
+                    text = { Text("Equip") },
+                    onClick = equip,
+                )
+            }
         }
     }
 }

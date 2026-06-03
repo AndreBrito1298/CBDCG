@@ -26,6 +26,7 @@ import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
+import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.toGame
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
@@ -42,6 +43,7 @@ import isel.pt.cbdcg.dto.RoleChangeInput
 import isel.pt.cbdcg.dto.RotatePieceDTO
 import isel.pt.cbdcg.dto.TableDTO
 import isel.pt.cbdcg.dto.TableOperationInput
+import isel.pt.cbdcg.dto.UnequipItemDTO
 import isel.pt.cbdcg.dto.UserDTO
 import isel.pt.cbdcg.dto.WsClientMessage
 import isel.pt.cbdcg.dto.WsServerMessage
@@ -253,6 +255,12 @@ class ClientApi(private val client: HttpClient) {
             path = "game/draw-item",
             method = HttpMethod.Post,
             body = DrawItemDTO(userId.toInt(), gameId.toInt(), token, boardTile.toBoardTileDTO())
+        ).map{ it.toGame() }
+    suspend fun unequipItem(userId: UInt, gameId: UInt, token: String, character: Character, idx: Int): Result<Game> =
+        fetch<GameDTO>(
+            path = "game/unequip",
+            method = HttpMethod.Post,
+            body = UnequipItemDTO(userId.toInt(), gameId.toInt(), token, character.toCharacterDTO(), idx)
         ).map{ it.toGame() }
     suspend fun leaveGame(userId: UInt, gameId: UInt, token: String): Result<Unit> =
         fetch<Unit>(

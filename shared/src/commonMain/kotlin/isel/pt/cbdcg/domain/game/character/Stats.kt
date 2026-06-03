@@ -18,3 +18,11 @@ fun String.toStats(): Stats {
     val (hp, atk, def, spe) = this.split("&")
     return Stats(hp.toInt(), atk.toInt(), def.toInt(), spe.toInt())
 }
+
+operator fun Stats.plus(other: Stats): Stats =
+    copy(
+        hp = hp + other.hp,
+        atk = atk + other.atk,
+        def = def + other.def,
+        spe = spe + other.spe,
+    )

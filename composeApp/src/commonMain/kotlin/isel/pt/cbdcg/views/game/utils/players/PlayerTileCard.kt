@@ -1,6 +1,7 @@
 package isel.pt.cbdcg.views.game.utils.players
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenu
@@ -23,22 +24,21 @@ fun PlayerTileCard(
     rotateRight: () -> Unit,
 ) {
     Box(
-        modifier= Modifier.border(1.dp, Color.Black).padding(8.dp)
+        modifier= Modifier
+            .border(1.dp, Color.Black)
+            .padding(8.dp)
+            .clickable(onClick = select)
     ){
 
         ZoomedImage(
             fileName = tile.toString(),
-            zoom = 1.0f,
-            select = select,
-            canSelect = true
+            zoom = 1.0f
         )
 
         if(tile.specialEffect.type.name != "None"){
             ZoomedImage(
                 fileName = tile.specialEffect.type.name,
-                zoom = 0.25f,
-                select = select,
-                canSelect = true
+                zoom = 0.25f
             )
         }
 

@@ -54,12 +54,9 @@ sealed class BoardError(
 ): Error(msg, "Error found when performing a Board Tile related operation."){
     class PositionTaken(x: Int, y: Int): BoardError("The position ($x,$y) is already taken.")
     class TileConnectionMismatch: BoardError("The tile does not connect to the rest of the board.")
-    class TilePlacementRestriction : BoardError("You can only place a Tile during the Construction Phase.")
-    class CharacterPlacementRestriction : BoardError("You can only place a Character during the Substitution Phase.")
-    class EquipItemRestriction : BoardError("You cannot equip Items during the Construction Phase.")
     class TileNotFound(x: Int, y: Int) : BoardError("No tile found in position $x,$y.")
     class EmptyTile : BoardError("There is no Character in this tile.")
-    class EquipYourCharacter : BoardError("You can only equip your current Character.")
+    class EquipYourCharacter : BoardError("You can only equip/unequip your current Character.")
     class TileOccupied : BoardError("This tile is occupied.")
     class CharacterLimitReached : BoardError("You can only have one character in play.")
     class NoTargetFound : BoardError("No available target found.")
@@ -79,12 +76,17 @@ sealed class GameError(
     class CharacterMovementRestriction : GameError("You can only move your character during the Movement Phase.")
     class EffectNotFound(effect: String) : GameError("Effect '$effect' not found.")
     class EmptyDeck : GameError("Deck is empty.")
+    class CharacterPlacementRestriction : GameError("You can only place a Character during the Substitution Phase.")
+    class TilePlacementRestriction : GameError("You can only place a Tile during the Construction Phase.")
+    class EquipItemRestriction : GameError("You can only equip/unequip an Item during the Substitution Phase.")
+
 }
 
 sealed class CharacterError(
     msg: String,
 ): Error(msg, "Error found in Character-related operation."){
     class ItemCapacityLimit(n: Int) : CharacterError("You can have a maximum of $n items equipped.")
+    class ItemDoesNotExist(idx: Int) : CharacterError("This Characters does not have an item in the position $idx.")
 }
 
 sealed class CardError(

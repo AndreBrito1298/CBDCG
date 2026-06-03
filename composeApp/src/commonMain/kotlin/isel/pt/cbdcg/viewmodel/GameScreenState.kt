@@ -3,6 +3,7 @@ package isel.pt.cbdcg.viewmodel
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.Tile
 
 data class GameUI(
     val state: GameUIState,
@@ -32,17 +33,14 @@ sealed interface GameUIState {
         val player: Player,
     ) : GameUIState
 
-    data class SelectBoardCharacter(
-        val position: BoardTile,
-    ) : GameUIState
-
     data class MovingCharacter(
         val from: BoardTile,
         val path: List<BoardTile> = emptyList()
     ) : GameUIState
 
     data class InspectTileEffect(
-        val boardTile: BoardTile
+        val tile: Tile,
+        val activateInTile: BoardTile? = null
     ) : GameUIState
 
     data class GameOver(

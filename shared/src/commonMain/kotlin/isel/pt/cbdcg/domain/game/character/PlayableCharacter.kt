@@ -39,6 +39,7 @@ fun PlayableCharacter.equipItem(item: Item): PlayableCharacter {
 
     return copy(items = items + item)
 }
+fun PlayableCharacter.unequip(item: Item): PlayableCharacter = copy(items = items - item)
 
 fun CharacterDTO.toPlayableCharacter(): PlayableCharacter =
     PlayableCharacter(

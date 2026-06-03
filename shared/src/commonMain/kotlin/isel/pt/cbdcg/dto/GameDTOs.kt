@@ -299,3 +299,12 @@ data class DrawItemDTO(
     val token: String,
     val origin: BoardTileDTO,
 )
+
+@Serializable
+data class UnequipItemDTO(
+    val userId: Int,
+    val gameId: Int,
+    val token: String,
+    val character: CharacterDTO,
+    val index: Int,
+)

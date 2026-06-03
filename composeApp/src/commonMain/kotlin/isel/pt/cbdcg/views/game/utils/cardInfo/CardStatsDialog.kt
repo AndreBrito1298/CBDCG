@@ -17,11 +17,13 @@ import isel.pt.cbdcg.domain.game.ItemCard
 @Composable
 fun CardStatsPanel(
     card: Card,
+    unequip: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (card) {
         is CharacterCard -> CharacterInfoPanel(
             character = card.character,
+            unequip = { idx -> unequip(idx) },
             modifier = modifier
         )
 
@@ -37,8 +39,10 @@ fun CardStatsPanel(
 @Composable
 fun CardStatsDialog(
     card: Card,
+    unequip: (Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    println("DEBUG: Opening CardStatsDialog for card: ${card}")
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
@@ -49,11 +53,12 @@ fun CardStatsDialog(
         text = {
             Box(
                 modifier = Modifier
-                    .width(640.dp)
-                    .height(320.dp)
+                    .width(720.dp)
+                    .height(340.dp)
             ) {
                 CardStatsPanel(
                     card = card,
+                    unequip = { idx -> unequip(idx) },
                     modifier = Modifier.fillMaxSize()
                 )
             }

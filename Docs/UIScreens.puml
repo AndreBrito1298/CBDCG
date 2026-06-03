@@ -33,9 +33,11 @@ SearchTables --> WaitingTable : Join Table
 SearchTables --> WaitingTable : Create Table
 SearchTables --> Menu : Logout
 
+WaitingTable --> Game : Start Game (Player)
+WaitingTable --> Spectator : Start Game (Spectator)
 WaitingTable --> SearchTables : Leave Table
-WaitingTable --> SearchTables : Table deleted by owner
-WaitingTable --> Game : Start Game as player
-WaitingTable --> Spectator : Start Game as spectator
+
+Game --> SearchTables : Leave Game
+Spectator --> SearchTables : Leave Game
 
 @enduml

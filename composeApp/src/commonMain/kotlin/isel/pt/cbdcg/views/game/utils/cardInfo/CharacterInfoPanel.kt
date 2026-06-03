@@ -13,10 +13,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.character.Character
+import isel.pt.cbdcg.domain.game.character.adjustStats
 
 @Composable
 fun CharacterInfoPanel(
     character: Character,
+    unequip: (idx: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -33,17 +35,22 @@ fun CharacterInfoPanel(
 
         ) {
             CardBasicInfoColumn(
-                modifier = Modifier.width(180.dp),
+                modifier = Modifier.width(160.dp),
                 mainText = character.name,
                 zoom = 3.0f,
                 subText = character.grade.name,
             )
-            CharacterItemAndConditionColumn(
-                modifier = Modifier.width(180.dp),
+            CharacterEvolutionColumn(
+                modifier = Modifier.width(160.dp),
+                character = character,
+            )
+            CharacterEquippedItemsColumn(
+                modifier = Modifier.width(160.dp),
+                unequip = { idx -> unequip(idx) },
                 character = character,
             )
             CardStatsColumn(
-                modifier = Modifier.width(200.dp),
+                modifier = Modifier.width(190.dp),
                 stats = character.adjustStats(),
             )
         }

@@ -9,18 +9,18 @@ import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CardType
+import isel.pt.cbdcg.domain.game.CharacterCard
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
-import isel.pt.cbdcg.domain.game.board.TileEffect
 import isel.pt.cbdcg.domain.game.board.TileEffectTypes
 import isel.pt.cbdcg.domain.game.board.findPath
 import isel.pt.cbdcg.domain.game.board.rotate
-import isel.pt.cbdcg.views.game.utils.cardInfo.adjustStats
+import isel.pt.cbdcg.domain.game.character.adjustStats
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 data class AppUIState(
@@ -35,22 +35,16 @@ class AppViewModel(
     val clientApi: ClientApi,
 ): ViewModel() {
 
-    // Colocar o _ui no estado? - explicitFields
-    /*
-    The feature "explicit backing fields" is experimental and should be enabled explicitly.
-    This can be done by supplying the compiler argument '-Xexplicit-backing-fields', but note that no
-    stability guarantees are provided.
-    */
-    private val _ui = MutableStateFlow<AppUIState>(AppUIState())
-    val ui = _ui.asStateFlow()
+    val ui: StateFlow<AppUIState>
+        field = MutableStateFlow(AppUIState())
 
     init {
-
+        
         // Viewmodel must be ready to react to updates in the clientApi
 
         viewModelScope.launch {
             clientApi.tables.collect { tables ->
-                _ui.update { ui ->
+                ui.update { ui ->
                     val session = ui.session
 
                     if(session is SessionState.InLobby)
@@ -61,7 +55,7 @@ class AppViewModel(
         }
         viewModelScope.launch {
             clientApi.currentTable.collect { table ->
-                _ui.update { ui ->
+                ui.update { ui ->
                     when (val session = ui.session) {
                         is SessionState.InTable if table != null && table.participants.any { it.user.id == session.user.id } ->
                             ui.copy(session = session.copy(table = table))
@@ -77,7 +71,7 @@ class AppViewModel(
         }
         viewModelScope.launch {
             clientApi.game.collect { game ->
-                _ui.update { ui ->
+                ui.update { ui ->
                     when (val session = ui.session) {
                         is SessionState.InGame if game != null -> {
 
@@ -101,7 +95,7 @@ class AppViewModel(
     }
 
     fun dismissError() {
-        _ui.update { it.copy(errorMessage = null, gameUI = it.gameUI.copy(state= GameUIState.Idle)) }
+        ui.update { it.copy(errorMessage = null, gameUI = it.gameUI.copy(state= GameUIState.Idle)) }
     }
 
     // Websocket-related operations
@@ -129,30 +123,30 @@ class AppViewModel(
 
         return viewModelScope.launch {
 
-            _ui.update { it.copy(isLoading = true, errorMessage = null) }
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
 
             val email = Email(email)
             val password = Password(password)
 
-            val response = clientApi.login(email, password)
-
-            response.onSuccess { user ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = null,
-                        session = SessionState.InLobby(user, emptyList())
-                    )
+            clientApi.login(email, password).fold(
+                onSuccess = { user ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = SessionState.InLobby(user, emptyList())
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Login Failed."
+                        )
+                    }
                 }
-            }
-            response.onFailure { error ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Login Failed."
-                    )
-                }
-            }
+            )
         }
     }
     fun logout(): Job? {
@@ -162,26 +156,26 @@ class AppViewModel(
 
         val user = session.user
         val token = user.auth?.token ?: return null.also {
-            _ui.update { it.copy(errorMessage = "No token found.") }
+            ui.update { it.copy(errorMessage = "No token found.") }
         }
 
         return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            _ui.update { it.copy(isLoading = true, errorMessage = null) }
-
-            val response = clientApi.logout(token)
-            response.onSuccess {
-                stopObserving()
-                _ui.value = AppUIState()
-            }
-            response.onFailure { error ->
-                _ui.update{
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Logout Failed."
-                    )
+            clientApi.logout(token).fold(
+                onSuccess = {
+                    stopObserving()
+                    ui.value = AppUIState()
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Logout Failed."
+                        )
+                    }
                 }
-            }
+            )
         }
     }
     fun createUser(name: String, email: String, password: String): Job? {
@@ -189,33 +183,32 @@ class AppViewModel(
         val session = ui.value.session
         if(session !is SessionState.SignedOut) return null
 
-        return viewModelScope.launch{
-
-            _ui.update { it.copy(isLoading = true, errorMessage = null) }
+        return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
 
             val name = Name(name)
             val email = Email(email)
             val password = Password(password)
 
-            val response = clientApi.createUser(name, email, password)
-
-            response.onSuccess { user ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = null,
-                        session = SessionState.InLobby(user, emptyList())
-                    )
+            clientApi.createUser(name, email, password).fold(
+                onSuccess = { user ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = SessionState.InLobby(user, emptyList())
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Create User Failed."
+                        )
+                    }
                 }
-            }
-            response.onFailure { error ->
-                _ui.update{
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Create User Failed."
-                    )
-                }
-            }
+            )
         }
     }
 
@@ -227,28 +220,27 @@ class AppViewModel(
         if(session !is SessionState.InLobby) return null
 
         return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            _ui.update { it.copy(isLoading = true, errorMessage = null) }
-
-            val response = clientApi.getTables()
-
-            response.onSuccess { tables ->
-                    _ui.update {
+            clientApi.getTables().fold(
+                onSuccess = { tables ->
+                    ui.update {
                         it.copy(
                             isLoading = false,
                             errorMessage = null,
                             session = session.copy(tables = tables)
                         )
                     }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Could not load tables."
+                        )
+                    }
                 }
-            response.onFailure { error ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Could not load tables."
-                    )
-                }
-            }
+            )
         }
     }
     fun joinTable(table: Table): Job? {
@@ -258,29 +250,28 @@ class AppViewModel(
 
         val user = session.user
 
-        return viewModelScope.launch{
+        return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            _ui.update { it.copy(isLoading = true, errorMessage = null) }
-
-            val response = clientApi.joinTable(user.id, table.id)
-
-            response.onSuccess { table ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = null,
-                        session = SessionState.InTable(session.user, table)
-                    )
+            clientApi.joinTable(user.id, table.id).fold(
+                onSuccess = { table ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = SessionState.InTable(session.user, table)
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Join Table Failed."
+                        )
+                    }
                 }
-            }
-            response.onFailure { error ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Join Table Failed."
-                    )
-                }
-            }
+            )
         }
     }
     fun createTable(tableName: String): Job? {
@@ -290,32 +281,31 @@ class AppViewModel(
 
         val user = session.user
 
-        return viewModelScope.launch{
-
-            _ui.update { it.copy(isLoading = true, errorMessage = null) }
+        return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
 
             val name = Name(tableName)
             val id = user.id
 
-            val response = clientApi.createTable(name, id)
-
-            response.onSuccess { table ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = null,
-                        session = SessionState.InTable(session.user, table)
-                    )
+            clientApi.createTable(name, id).fold(
+                onSuccess = { table ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = SessionState.InTable(session.user, table)
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Create Table Failed."
+                        )
+                    }
                 }
-            }
-            response.onFailure { error ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Create Table Failed."
-                    )
-                }
-            }
+            )
         }
     }
     fun changeRole(role: Role): Job? {
@@ -326,28 +316,27 @@ class AppViewModel(
         val user = session.user
         val table = session.table
 
-        return viewModelScope.launch{
+        return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            _ui.update { it.copy(isLoading = true, errorMessage = null) }
-
-            val response = clientApi.changeRole(user.id, table.id, role)
-
-            response.onSuccess {
-                _ui.update{
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = null
-                    )
+            clientApi.changeRole(user.id, table.id, role).fold(
+                onSuccess = {
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Change Role Failed."
+                        )
+                    }
                 }
-            }
-            response.onFailure { error ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Change Role Failed."
-                    )
-                }
-            }
+            )
         }
 
     }
@@ -359,29 +348,28 @@ class AppViewModel(
         val user = session.user
         val table = session.table
 
-        return viewModelScope.launch{
+        return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            _ui.update { it.copy(isLoading = true, errorMessage = null) }
-
-            val response = clientApi.leaveTable(user.id, table.id)
-
-            response.onSuccess {
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = null,
-                        session = SessionState.InLobby(session.user, emptyList())
-                    )
+            clientApi.leaveTable(user.id, table.id).fold(
+                onSuccess = {
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = SessionState.InLobby(session.user, emptyList())
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Leave Table Failed."
+                        )
+                    }
                 }
-            }
-            response.onFailure { error ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Leave Table Failed."
-                    )
-                }
-            }
+            )
         }
     }
 
@@ -395,30 +383,29 @@ class AppViewModel(
         val user = session.user
         val table = session.table
 
-        return viewModelScope.launch{
+        return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            _ui.update { it.copy(isLoading = true, errorMessage = null) }
-
-            val response = clientApi.createGame(table.id, user.id)
-
-            response.onSuccess { game ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = null,
-                        session = SessionState.InGame(session.user, game),
-                        gameUI = it.gameUI.copy(state = GameUIState.Idle)
-                    )
+            clientApi.createGame(table.id, user.id).fold(
+                onSuccess = { game ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = SessionState.InGame(session.user, game),
+                            gameUI = it.gameUI.copy(state = GameUIState.Idle)
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Create Game Failed."
+                        )
+                    }
                 }
-            }
-            response.onFailure { error ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Create Game Failed."
-                    )
-                }
-            }
+            )
         }
     }
     fun placeOnBoard(pos: BoardPosition): Job? {
@@ -431,33 +418,32 @@ class AppViewModel(
         val user = session.user
         val game = session.game
         val token = user.auth?.token ?: return null.also {
-            _ui.update { it.copy(errorMessage = "No token found.") }
+            ui.update { it.copy(errorMessage = "No token found.") }
         }
 
-        return viewModelScope.launch{
+        return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            _ui.update { it.copy(isLoading = true, errorMessage = null) }
-
-            val response = clientApi.placeOnBoard(user.id, game.id, token, gameState.card, gameState.idx, pos)
-
-            response.onSuccess { newGame ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = null,
-                        session = session.copy(game = newGame),
-                        gameUI = it.gameUI.copy(state = GameUIState.Idle)
-                    )
+            clientApi.placeOnBoard(user.id, game.id, token, gameState.card, gameState.idx, pos).fold(
+                onSuccess = { newGame ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = session.copy(game = newGame),
+                            gameUI = it.gameUI.copy(state = GameUIState.Idle)
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Place Card Failed."
+                        )
+                    }
                 }
-            }
-            response.onFailure { error ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Place Card Failed."
-                    )
-                }
-            }
+            )
         }
     }
     fun rotateTile(right: Boolean): Job? {
@@ -470,35 +456,34 @@ class AppViewModel(
         val user = session.user
         val game = session.game
         val token = user.auth?.token ?: return null.also {
-            _ui.update { it.copy(errorMessage = "No token found.") }
+            ui.update { it.copy(errorMessage = "No token found.") }
         }
 
-        return viewModelScope.launch{
+        return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            _ui.update { it.copy(isLoading = true, errorMessage = null) }
-
-            val response = clientApi.rotateTile(user.id, game.id, token, gameState.idx, right)
-
-            response.onSuccess { newGame ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = null,
-                        session = session.copy(game = newGame),
-                        gameUI = it.gameUI.copy(
-                            state = gameState.copy(card = TileCard((gameState.card as TileCard).tile.rotate(right)))
+            clientApi.rotateTile(user.id, game.id, token, gameState.idx, right).fold(
+                onSuccess = { newGame ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = session.copy(game = newGame),
+                            gameUI = it.gameUI.copy(
+                                state = gameState.copy(card = TileCard((gameState.card as TileCard).tile.rotate(right)))
+                            )
                         )
-                    )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Rotate Tile Failed."
+                        )
+                    }
                 }
-            }
-            response.onFailure { error ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Rotate Tile Failed."
-                    )
-                }
-            }
+            )
         }
 
     }
@@ -510,34 +495,32 @@ class AppViewModel(
         val user = session.user
         val game = session.game
         val token = user.auth?.token ?: return null.also {
-            _ui.update { it.copy(errorMessage = "No token found.") }
+            ui.update { it.copy(errorMessage = "No token found.") }
         }
 
-        return viewModelScope.launch{
+        return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            _ui.update { it.copy(isLoading = true, errorMessage = null) }
-
-            val response = clientApi.nextPhase(user.id, game.id, token)
-
-            response.onSuccess { newGame ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = null,
-                        session = session.copy(game = newGame),
-                        gameUI = it.gameUI.copy(state = GameUIState.Idle, movementUsed = 0)
-                    )
+            clientApi.nextPhase(user.id, game.id, token).fold(
+                onSuccess = { newGame ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = session.copy(game = newGame),
+                            gameUI = it.gameUI.copy(state = GameUIState.Idle, movementUsed = 0)
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Couldn't skip phase."
+                        )
+                    }
                 }
-            }
-            response.onFailure { error ->
-                _ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Couldn't skip phase."
-                    )
-                }
-            }
-
+            )
         }
     }
     fun selectCard(idx: UInt, card: Card): Job? {
@@ -549,7 +532,7 @@ class AppViewModel(
         val selected = gameUI.state is GameUIState.SelectCard && gameUI.state.idx == idx
 
         return viewModelScope.launch{
-            _ui.update {
+            ui.update {
                 it.copy(
                     errorMessage = null,
                     gameUI = gameUI.copy(state =
@@ -568,7 +551,7 @@ class AppViewModel(
         if(gameUI.state !is GameUIState.SelectCard) return null
 
         return viewModelScope.launch {
-            _ui.update {
+            ui.update {
                 it.copy(
                     errorMessage = null,
                     gameUI = gameUI.copy(
@@ -587,13 +570,14 @@ class AppViewModel(
 
         val previous = (gameUI.state as? GameUIState.InspectCard)?.previous
         val nextState =
-            if(card == null) {
-                if (previous is GameUIState.InspectPlayer) previous
-                else GameUIState.Idle
-            } else GameUIState.InspectCard(card, gameUI.state)
+            when (card) {
+                null -> previous as? GameUIState.InspectPlayer ?: GameUIState.Idle
+                is TileCard -> GameUIState.InspectTileEffect(card.tile)
+                else -> GameUIState.InspectCard(card, gameUI.state)
+            }
 
         return viewModelScope.launch{
-            _ui.update {
+            ui.update {
                 it.copy(
                     errorMessage = null,
                     gameUI = gameUI.copy(state = nextState)
@@ -601,6 +585,55 @@ class AppViewModel(
             }
         }
 
+    }
+    fun unequip(idx: Int): Job? {
+
+        val session = ui.value.session
+        val gameUI = ui.value.gameUI
+        if(session !is SessionState.InGame) return null
+        if(gameUI.state !is GameUIState.InspectCard) return null
+
+        val user = session.user
+        val game = session.game
+        val token = user.auth?.token ?: return null.also {
+            ui.update { it.copy(errorMessage = "No token found.") }
+        }
+
+        val character = (gameUI.state.card as? CharacterCard)?.character ?: return null.also {
+            ui.update { it.copy(errorMessage = "This isn't a Character") }
+        }
+
+        return viewModelScope.launch {
+
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
+
+            clientApi.unequipItem(user.id, game.id, token, character, idx).fold(
+                onSuccess = { newGame ->
+
+                    val newCharacterInfo = newGame.board.tiles.find{ it.character?.name == character.name }?.character
+
+                    if(newCharacterInfo == null)
+                        ui.update { it.copy(isLoading = false, errorMessage = "Couldn't find Character") }
+                    else
+                        ui.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = null,
+                                session = session.copy(game = newGame),
+                                gameUI = gameUI.copy(state = gameUI.state.copy(card = CharacterCard(newCharacterInfo)))
+                            )
+                        }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Unequip Item Failed."
+                        )
+                    }
+                }
+            )
+        }
     }
     fun zoom(option: Boolean): Job?{
 
@@ -613,7 +646,7 @@ class AppViewModel(
             else (gameUI.boardZoom - 0.25f).coerceAtLeast(0.5f)
 
         return viewModelScope.launch{
-            _ui.update {
+            ui.update {
                 it.copy(
                     errorMessage = null,
                     gameUI = gameUI.copy(boardZoom = newZoom)
@@ -630,7 +663,7 @@ class AppViewModel(
         val selected = gameUI.state is GameUIState.InspectPlayer && gameUI.state.player == player
 
         return viewModelScope.launch{
-            _ui.update {
+            ui.update {
                 it.copy(
                     errorMessage = null,
                     gameUI = gameUI.copy(state =
@@ -640,35 +673,19 @@ class AppViewModel(
             }
         }
     }
-    fun selectBoardCharacter(tile: BoardTile): Job? {
+    fun moveSignal(boardTile: BoardTile): Job? {
 
         val session = ui.value.session
         val gameUI = ui.value.gameUI
         if(session !is SessionState.InGame) return null
-
-        val nextState = if(gameUI.state is GameUIState.SelectBoardCharacter || tile.character == null) GameUIState.Idle
-                        else GameUIState.SelectBoardCharacter(tile)
-
-        return viewModelScope.launch{
-            _ui.update{
-                it.copy(gameUI = gameUI.copy(state = nextState))
-            }
-        }
-    }
-    fun moveSignal(): Job? {
-
-        val session = ui.value.session
-        val gameUI = ui.value.gameUI
-        if(session !is SessionState.InGame) return null
-        if(gameUI.state !is GameUIState.SelectBoardCharacter) return null
 
         return viewModelScope.launch {
-            _ui.update {
+            ui.update {
                 it.copy(
                     errorMessage = null,
                     gameUI = gameUI.copy(
                         state = GameUIState.MovingCharacter(
-                            from = gameUI.state.position,
+                            from = boardTile,
                             path = emptyList()
                         )
                     )
@@ -688,64 +705,61 @@ class AppViewModel(
             val user = session.user
             val game = session.game
             val token = user.auth?.token ?: return null.also {
-                _ui.update { it.copy(errorMessage = "No token found.") }
+                ui.update { it.copy(errorMessage = "No token found.") }
             }
 
-            return viewModelScope.launch{
+            return viewModelScope.launch {
+                ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-                _ui.update { it.copy(isLoading = true, errorMessage = null) }
-
-                val response = clientApi.moveCharacter(
+                clientApi.moveCharacter(
                     user.id,
                     game.id,
                     token,
                     gameUI.state.path.first(),
                     gameUI.state.path.last(),
-                )
+                ).fold(
+                    onSuccess = { newGame ->
+                        val character = newGame.players.firstOrNull { player -> player.user.id == user.id }?.currentCharacter
+                        val boardTile = newGame.board.tiles.firstOrNull { boardTile ->
+                            boardTile.character?.name == character
+                        }
+                        val specialEffect = boardTile?.tile?.specialEffect?.type
+                        val winner = newGame.winner
 
-                response.onSuccess { newGame ->
+                        val nextState =
+                            if (winner != null) GameUIState.GameOver(winner)
+                            else if (specialEffect != null && specialEffect != TileEffectTypes.None && specialEffect != TileEffectTypes.Start)
+                                GameUIState.InspectTileEffect(boardTile.tile, boardTile)
+                            else GameUIState.Idle
 
-                    val character = newGame.players.firstOrNull{ player -> player.user.id == user.id }?.currentCharacter
-                    val boardTile = newGame.board.tiles.firstOrNull{ boardTile ->
-                        boardTile.character?.name == character
-                    }
-                    val specialEffect = boardTile?.tile?.specialEffect?.type
-                    val winner = newGame.winner
-
-                    val nextState =
-                        if (winner != null) GameUIState.GameOver(winner)
-                        else if(specialEffect != null && specialEffect != TileEffectTypes.None && specialEffect != TileEffectTypes.Start)
-                            GameUIState.InspectTileEffect(boardTile)
-                        else GameUIState.Idle
-
-                    _ui.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = null,
-                            session = session.copy(game = newGame),
-                            gameUI = it.gameUI.copy(
-                                state = nextState,
-                                movementUsed = gameUI.movementUsed + gameUI.state.path.size - 1
+                        ui.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = null,
+                                session = session.copy(game = newGame),
+                                gameUI = it.gameUI.copy(
+                                    state = nextState,
+                                    movementUsed = gameUI.movementUsed + gameUI.state.path.size - 1
+                                )
                             )
-                        )
+                        }
+                    },
+                    onFailure = { error ->
+                        ui.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = error.message ?: "Couldn't move character."
+                            )
+                        }
                     }
-                }
-                response.onFailure { error ->
-                    _ui.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = error.message ?: "Couldn't move character."
-                        )
-                    }
-                }
-
+                )
             }
         }
 
         val characterSpe = gameUI.state.from.character?.adjustStats()?.spe ?: 0
         val remainingMovement = characterSpe - gameUI.movementUsed
         if(remainingMovement <= 0) return null.also {
-            _ui.update { it.copy(errorMessage = "This character cannot move this turn anymore.") }
+            ui.update { it.copy(errorMessage = "This character cannot move this turn anymore.") }
         }
 
         val path = session.game.board.findPath(
@@ -755,7 +769,7 @@ class AppViewModel(
         )
 
         return viewModelScope.launch {
-            _ui.update {
+            ui.update {
                 it.copy(
                     errorMessage = null,
                     gameUI = gameUI.copy(
@@ -765,40 +779,36 @@ class AppViewModel(
             }
         }
     }
-    fun drawItem(effect: TileEffect?): Job? {
+    fun drawItem(): Job? {
+
+        // Por agora, o único efeito implementado é o de drawItem, esta função será ajustada mais tarde
 
         val session = ui.value.session
         val gameUI = ui.value.gameUI
         if(session !is SessionState.InGame) return null
         if(gameUI.state !is GameUIState.InspectTileEffect) return null
 
-        if(effect == null) {
-            return viewModelScope.launch{
-                _ui.update{
-                    it.copy(gameUI = gameUI.copy(state = GameUIState.Idle))
-                }
-            }
-        } else {
+        val user = session.user
+        val game = session.game
+        val token = user.auth?.token ?: return null.also {
+            ui.update { it.copy(errorMessage = "No token found.") }
+        }
 
-            val user = session.user
-            val game = session.game
-            val token = user.auth?.token ?: return null.also {
-                _ui.update { it.copy(errorMessage = "No token found.") }
-            }
+        val boardTile = gameUI.state.activateInTile ?: return null.also{
+            ui.update { it.copy(errorMessage = "Can't activate effect.") }
+        }
 
-            return viewModelScope.launch{
+        return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-                _ui.update { it.copy(isLoading = true, errorMessage = null) }
-
-                val response = clientApi.drawItem(
-                    user.id,
-                    game.id,
-                    token,
-                    gameUI.state.boardTile
-                )
-
-                response.onSuccess { newGame ->
-                    _ui.update {
+            clientApi.drawItem(
+                user.id,
+                game.id,
+                token,
+                boardTile
+            ).fold(
+                onSuccess = { newGame ->
+                    ui.update {
                         it.copy(
                             isLoading = false,
                             errorMessage = null,
@@ -806,17 +816,16 @@ class AppViewModel(
                             gameUI = it.gameUI.copy(state = GameUIState.Idle)
                         )
                     }
-                }
-                response.onFailure { error ->
-                    _ui.update {
+                },
+                onFailure = { error ->
+                    ui.update {
                         it.copy(
                             isLoading = false,
                             errorMessage = error.message ?: "Couldn't draw Item."
                         )
                     }
                 }
-
-            }
+            )
         }
     }
     fun leaveGame(): Job? {
@@ -830,25 +839,25 @@ class AppViewModel(
         val user = session.user
         val game = session.game
         val token = user.auth?.token ?: return null.also {
-            _ui.update { it.copy(errorMessage = "No token found.") }
+            ui.update { it.copy(errorMessage = "No token found.") }
         }
 
         */
 
         return viewModelScope.launch{
 
-            _ui.update{
+            ui.update{
                 it.copy(errorMessage = null, session = SessionState.InLobby(session.user, emptyList()))
             }
 
             /* Isto é mais para "expulsar" do que para "sair"
 
-            _ui.update { it.copy(isLoading = true, errorMessage = null) }
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
 
             val response = clientApi.leaveGame(user.id, game.id, token)
 
             response.onSuccess {
-                _ui.update {
+                ui.update {
                     it.copy(
                         isLoading = false,
                         errorMessage = null,
@@ -857,7 +866,7 @@ class AppViewModel(
                 }
             }
             response.onFailure { error ->
-                _ui.update {
+                ui.update {
                     it.copy(
                         isLoading = false,
                         errorMessage = error.message ?: "Leave Game Failed."

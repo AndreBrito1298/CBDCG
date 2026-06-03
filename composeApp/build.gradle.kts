@@ -18,7 +18,20 @@ kotlin {
         binaries.executable()
     }
 
+    targets.all {
+        compilations.all {
+            compileTaskProvider.configure {
+                compilerOptions {
+                    freeCompilerArgs.add("-Xexplicit-backing-fields")
+                }
+            }
+        }
+    }
+
     sourceSets {
+        all {
+            languageSettings.optIn("kotlin.experimental.ExperimentalTypeInference")
+        }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
