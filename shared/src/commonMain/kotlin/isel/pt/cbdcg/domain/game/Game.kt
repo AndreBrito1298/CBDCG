@@ -8,6 +8,7 @@ import isel.pt.cbdcg.domain.game.board.Entity
 import isel.pt.cbdcg.domain.game.board.Tile
 import isel.pt.cbdcg.domain.game.board.TileEffectTypes
 import isel.pt.cbdcg.domain.game.board.equipItem
+import isel.pt.cbdcg.domain.game.board.getStatModifier
 import isel.pt.cbdcg.domain.game.board.placeCharacter
 import isel.pt.cbdcg.domain.game.board.placeTile
 import isel.pt.cbdcg.domain.game.board.reduceCooldown
@@ -19,7 +20,9 @@ import isel.pt.cbdcg.domain.game.board.unequip
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.Item
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
+import isel.pt.cbdcg.domain.game.character.StatModifier
 import isel.pt.cbdcg.domain.game.character.adjustStats
+import isel.pt.cbdcg.domain.game.character.resolveStatModifiers
 import isel.pt.cbdcg.domain.game.character.toItem
 import isel.pt.cbdcg.domain.game.character.toItemDTO
 import isel.pt.cbdcg.dto.GameDTO
@@ -66,7 +69,6 @@ fun Game.toGameDTO(): GameDTO {
         winner = winner?.toPlayerDTO()
     )
 }
-
 fun GameDTO.toGame(): Game {
 
     val players = players.map{ it.toPlayer() }
@@ -183,7 +185,17 @@ fun Game.startTurnDraw(): Game {
         else player
     }
 
-    return copy(players = updatedPlayers, tileDeck = updatedDeck)
+    val player = players.find{ player -> player.user.id == nextPlayer }!!
+
+    val updatedCharacterModifiers = board.copy(tiles =
+        board.tiles.map{ boardTile ->
+            if((boardTile.character as? PlayableCharacter) != null && player.currentCharacter == boardTile.character.name)
+                boardTile.copy(character = boardTile.character.resolveStatModifiers())
+            else boardTile
+        }
+    )
+
+    return copy(players = updatedPlayers, tileDeck = updatedDeck, board = updatedCharacterModifiers)
 }
 fun Game.leaveGame(player: Player): Game {
 
@@ -213,9 +225,6 @@ fun Game.leaveGame(player: Player): Game {
     return if(turn.playerTurn.first() == player.user.id) newGame.nextTurn()
            else newGame
 }
-
-// Up from here will eventually be replaced with the polymorphic structure
-
 fun Game.placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: UInt): Game {
 
     if(player.user.id != turn.playerTurn.first())
@@ -297,6 +306,26 @@ fun Game.placeItem(player: Player, position: BoardPosition, card: ItemCard, idx:
     val updatedBoard = board.equipItem(position, player, card.item)
     return copy(board = updatedBoard, players = updatedPlayers)
 }
+fun Game.unequip(player: Player, character: Character, idx: Int): Game {
+
+    if(this.turn.phase != TurnPhase.SUBSTITUTION)
+        throw GameError.EquipItemRestriction()
+
+    if(character !is PlayableCharacter || character.name != player.currentCharacter)
+        throw BoardError.ApplyEffectOnYourCharacter()
+
+    val item = character.items.getOrNull(idx)
+        ?: throw CharacterError.ItemDoesNotExist(idx)
+
+    val updatedBoard = board.unequip(character, item)
+    val updatedPlayers = players.map{
+        if(it.user == player.user) it.addToHand(ItemCard(item))
+        else it
+    }
+
+    return copy(board = updatedBoard, players = updatedPlayers)
+}
+
 
 fun Game.moveCharacter(from: BoardTile, to: BoardTile) : Game {
 
@@ -352,22 +381,34 @@ fun Game.drawItem(player: Player, boardTile: BoardTile): Game {
     )
 }
 
-fun Game.unequip(player: Player, character: Character, idx: Int): Game {
+fun Game.updateStatModifiers(player: Player, boardTile: BoardTile): Game{
 
-    if(this.turn.phase != TurnPhase.SUBSTITUTION)
-        throw GameError.EquipItemRestriction()
+    // Falta refinar a lógica desta função, alguns efeitos afetam todos os personagens num raio à volta da origem...
 
-    if(character !is PlayableCharacter || character.name != player.currentCharacter)
-        throw BoardError.EquipYourCharacter()
+    if(player.user.id != turn.playerTurn.first())
+        throw GameError.NotYourTurn()
 
-    val item = character.items.getOrNull(idx)
-        ?: throw CharacterError.ItemDoesNotExist(idx)
+    if(boardTile.cooldown != 0u)
+        throw BoardError.EffectInCooldown(boardTile.tile.specialEffect.type.name, boardTile.cooldown!!.toInt())
 
-    val updatedBoard = board.unequip(character, item)
-    val updatedPlayers = players.map{
-        if(it.user == player.user) it.addToHand(ItemCard(item))
+    val character = (boardTile.character as? PlayableCharacter)
+        ?: throw BoardError.EmptyTile()
+
+    if(character.name != player.currentCharacter)
+        throw BoardError.ApplyEffectOnYourCharacter()
+
+    val statModifier = boardTile.tile.specialEffect.getStatModifier()
+
+    val newBoard = board.tiles.map{
+        if(it == boardTile)
+            boardTile.copy(
+                cooldown = boardTile.tile.specialEffect.maxCooldown,
+                character = character.copy(activeStatModifiers = character.activeStatModifiers + statModifier)
+            )
         else it
     }
 
-    return copy(board = updatedBoard, players = updatedPlayers)
+    return copy(
+        board = board.copy(tiles = newBoard)
+    )
 }

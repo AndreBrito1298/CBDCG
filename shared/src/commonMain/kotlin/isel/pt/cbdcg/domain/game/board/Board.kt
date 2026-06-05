@@ -69,7 +69,7 @@ fun Board.findPath(from: BoardTile, to: BoardTile, maxDistance: Int): List<Board
         if (path.size - 1 >= maxDistance) continue
 
         // Verifica se encontrou um obstáculo
-        val ignoreTileEffect =
+        val ignoreTileEffect = current.cooldown != 0u ||
             current.tile.specialEffect.type == TileEffectTypes.None || current.tile.specialEffect.type == TileEffectTypes.Start
 
         val collision = current.character != null
@@ -142,7 +142,7 @@ fun Board.equipItem(position: BoardPosition, player: Player, item: Item): Board{
         ?: throw BoardError.EmptyTile()
 
     if(character !is PlayableCharacter || character.name != player.currentCharacter)
-        throw BoardError.EquipYourCharacter()
+        throw BoardError.ApplyEffectOnYourCharacter()
 
     val newBoard = tiles.map{ boardTile ->
         if(boardTile == tile) tile.copy(character = character.equipItem(item))

@@ -23,13 +23,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
 data class AppUIState(
     val session: SessionState = SessionState.SignedOut,
     val gameUI: GameUI = GameUI(GameUIState.Idle),
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )
-
 
 class AppViewModel(
     val clientApi: ClientApi,
@@ -693,6 +693,58 @@ class AppViewModel(
             }
         }
     }
+    fun leaveGame(): Job? {
+
+        val session = ui.value.session
+        if(session !is SessionState.InGame) return null
+
+        /*
+
+
+        val user = session.user
+        val game = session.game
+        val token = user.auth?.token ?: return null.also {
+            ui.update { it.copy(errorMessage = "No token found.") }
+        }
+
+        */
+
+        return viewModelScope.launch{
+
+            ui.update{
+                it.copy(errorMessage = null, session = SessionState.InLobby(session.user, emptyList()))
+            }
+
+            /* Isto é mais para "expulsar" do que para "sair"
+
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
+
+            val response = clientApi.leaveGame(user.id, game.id, token)
+
+            response.onSuccess {
+                ui.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = null,
+                        session = SessionState.InLobby(session.user, emptyList())
+                    )
+                }
+            }
+            response.onFailure { error ->
+                ui.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = error.message ?: "Leave Game Failed."
+                    )
+                }
+            }
+
+            */
+        }
+    }
+
+    // Vão ser adaptadas ao novo modelo. A estrutura já obedece às regras, basta concluir a implementação
+
     fun moveCharacter(to: BoardTile): Job? {
 
         val session = ui.value.session
@@ -781,8 +833,6 @@ class AppViewModel(
     }
     fun drawItem(): Job? {
 
-        // Por agora, o único efeito implementado é o de drawItem, esta função será ajustada mais tarde
-
         val session = ui.value.session
         val gameUI = ui.value.gameUI
         if(session !is SessionState.InGame) return null
@@ -795,7 +845,7 @@ class AppViewModel(
         }
 
         val boardTile = gameUI.state.activateInTile ?: return null.also{
-            ui.update { it.copy(errorMessage = "Can't activate effect.") }
+            ui.update { it.copy(errorMessage = null, gameUI = gameUI.copy(state = GameUIState.Idle)) }
         }
 
         return viewModelScope.launch {
@@ -828,13 +878,12 @@ class AppViewModel(
             )
         }
     }
-    fun leaveGame(): Job? {
+    fun statModifierEffect(): Job? {
 
         val session = ui.value.session
+        val gameUI = ui.value.gameUI
         if(session !is SessionState.InGame) return null
-
-        /*
-
+        if(gameUI.state !is GameUIState.InspectTileEffect) return null
 
         val user = session.user
         val game = session.game
@@ -842,39 +891,34 @@ class AppViewModel(
             ui.update { it.copy(errorMessage = "No token found.") }
         }
 
-        */
+        val boardTile = gameUI.state.activateInTile ?: return null.also{
+            ui.update { it.copy(errorMessage = null, gameUI = gameUI.copy(state = GameUIState.Idle)) }
+        }
 
-        return viewModelScope.launch{
-
-            ui.update{
-                it.copy(errorMessage = null, session = SessionState.InLobby(session.user, emptyList()))
-            }
-
-            /* Isto é mais para "expulsar" do que para "sair"
+        return viewModelScope.launch {
 
             ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val response = clientApi.leaveGame(user.id, game.id, token)
-
-            response.onSuccess {
-                ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = null,
-                        session = SessionState.InLobby(session.user, emptyList())
-                    )
+            clientApi.statModifierEffect(user.id, game.id, token, boardTile).fold(
+                onSuccess = { newGame ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = session.copy(game = newGame),
+                            gameUI = it.gameUI.copy(state = GameUIState.Idle)
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Couldn't draw Item."
+                        )
+                    }
                 }
-            }
-            response.onFailure { error ->
-                ui.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Leave Game Failed."
-                    )
-                }
-            }
-
-            */
+            )
         }
     }
 }

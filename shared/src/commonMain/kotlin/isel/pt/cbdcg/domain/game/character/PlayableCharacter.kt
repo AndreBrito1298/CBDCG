@@ -54,12 +54,20 @@ fun PlayableCharacter.equipItem(item: Item): PlayableCharacter {
     return copy(items = items + item)
 }
 fun PlayableCharacter.unequip(item: Item): PlayableCharacter = copy(items = items - item)
+fun PlayableCharacter.resolveStatModifiers(): PlayableCharacter =
+    this.copy(activeStatModifiers =
+        this.activeStatModifiers.mapNotNull{ mod ->
+            val newDuration = mod.duration - 1u
+            if(newDuration <= 0u) null
+            else mod.copy(duration = newDuration)
+        }
+    )
 
 fun CharacterDTO.toPlayableCharacter(): PlayableCharacter =
     PlayableCharacter(
         name = name,
         baseStats = baseStats.toStats(),
-        activeStatModifiers = activeModifiers.map{ it.toModifier() },
+        activeStatModifiers = activeModifiers.map{ it.toStatModifier() },
         items = items.map{ it.toItem() },
         grade = grade.toGrade()
     )

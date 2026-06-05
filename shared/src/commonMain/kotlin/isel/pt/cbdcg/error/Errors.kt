@@ -56,7 +56,7 @@ sealed class BoardError(
     class TileConnectionMismatch: BoardError("The tile does not connect to the rest of the board.")
     class TileNotFound(x: Int, y: Int) : BoardError("No tile found in position $x,$y.")
     class EmptyTile : BoardError("There is no Character in this tile.")
-    class EquipYourCharacter : BoardError("You can only equip/unequip your current Character.")
+    class ApplyEffectOnYourCharacter : BoardError("You can only apply this effect in your current Character.")
     class TileOccupied : BoardError("This tile is occupied.")
     class CharacterLimitReached : BoardError("You can only have one character in play.")
     class NoTargetFound : BoardError("No available target found.")

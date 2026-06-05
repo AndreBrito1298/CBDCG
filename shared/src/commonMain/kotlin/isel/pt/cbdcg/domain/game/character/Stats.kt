@@ -7,11 +7,11 @@ import kotlin.collections.component4
 
 data class Stats(
     val hp: Int,
-    val atk: Int,
+    val dmg: Int,
     val def: Int,
     val spe: Int
 ) {
-    override fun toString() = "$hp&$atk&$def&$spe"
+    override fun toString() = "$hp&$dmg&$def&$spe"
 }
 
 fun String.toStats(): Stats {
@@ -22,7 +22,7 @@ fun String.toStats(): Stats {
 operator fun Stats.plus(other: Stats): Stats =
     copy(
         hp = hp + other.hp,
-        atk = atk + other.atk,
+        dmg = dmg + other.dmg,
         def = def + other.def,
         spe = spe + other.spe,
     )

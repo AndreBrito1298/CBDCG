@@ -31,7 +31,7 @@ fun BoardTile.toBoardTileDTO(): BoardTileDTO =
     BoardTileDTO(
         pos.toString(),
         tile.toTileDTO(),
-        cooldown?.toInt() ?: null,
+        cooldown?.toInt(),
         character?.toCharacterDTO()
     )
 

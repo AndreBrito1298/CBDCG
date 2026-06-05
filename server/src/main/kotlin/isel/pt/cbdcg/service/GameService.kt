@@ -10,10 +10,10 @@ import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.TurnPhase
+import isel.pt.cbdcg.domain.game.updateStatModifiers
 import isel.pt.cbdcg.domain.game.applyRandomSpecialEffects
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
-import isel.pt.cbdcg.domain.game.board.CharacterMovement
 import isel.pt.cbdcg.domain.game.board.Direction
 import isel.pt.cbdcg.domain.game.board.Entity
 import isel.pt.cbdcg.domain.game.board.Tile
@@ -231,26 +231,6 @@ class GameService(
         events.publishGameUpdated(newGame)
         newGame
     }
-
-    suspend fun drawItem(userId: UInt, gameId: UInt, token: String, trigger: BoardTile): Result<Game> = runCatching{
-
-        val user = userRepo.findById(userId)
-            ?: throw UserError.IdNotFound()
-        token.verifyToken(user, gameId, this.userRepo)
-
-        val game = gameRepo.findById(gameId)
-            ?: throw GameError.GameNotFound(gameId.toInt())
-
-        val player = game.players.find{ it.user.id == user.id }
-            ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
-
-        val newGame = game.drawItem(player, trigger)
-
-        gameRepo.save(newGame)
-        events.publishGameUpdated(newGame)
-        newGame
-    }
-
     suspend fun unequip(userId: UInt, gameId: UInt, token: String, character: Character, index: Int): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)
@@ -294,4 +274,41 @@ class GameService(
         newGame
     }
 
+    suspend fun drawItem(userId: UInt, gameId: UInt, token: String, trigger: BoardTile): Result<Game> = runCatching{
+
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
+        token.verifyToken(user, gameId, this.userRepo)
+
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
+
+        val player = game.players.find{ it.user.id == user.id }
+            ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
+
+        val newGame = game.drawItem(player, trigger)
+
+        gameRepo.save(newGame)
+        events.publishGameUpdated(newGame)
+        newGame
+    }
+
+    suspend fun updateStatModifiers(userId: UInt, gameId: UInt, token: String, origin: BoardTile): Result<Game> = runCatching {
+
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
+        token.verifyToken(user, gameId, this.userRepo)
+
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
+
+        val player = game.players.find{ it.user.id == user.id }
+            ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
+
+        val newGame = game.updateStatModifiers(player, origin)
+
+        gameRepo.save(newGame)
+        events.publishGameUpdated(newGame)
+        newGame
+    }
 }

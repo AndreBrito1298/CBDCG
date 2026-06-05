@@ -25,10 +25,10 @@ import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
-import isel.pt.cbdcg.domain.game.board.Entity
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.toGame
+import isel.pt.cbdcg.dto.UpdateModifiersDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.CreateUserDTO
@@ -38,7 +38,6 @@ import isel.pt.cbdcg.dto.GameUpdaterDTO
 import isel.pt.cbdcg.dto.LeaveGameDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
-import isel.pt.cbdcg.dto.MoveCharacterDTO
 import isel.pt.cbdcg.dto.NextPhaseDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RoleChangeInput
@@ -59,8 +58,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import kotlin.reflect.KClass
-import kotlin.reflect.KType
 
 class ClientApi(private val client: HttpClient) {
 
@@ -249,6 +246,20 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = NextPhaseDTO(userId.toInt(), gameId.toInt(), token)
         ).map{ it.toGame() }
+    suspend fun unequipItem(userId: UInt, gameId: UInt, token: String, character: Character, idx: Int): Result<Game> =
+        fetch<GameDTO>(
+            path = "game/unequip",
+            method = HttpMethod.Post,
+            body = UnequipItemDTO(userId.toInt(), gameId.toInt(), token, character.toCharacterDTO(), idx)
+        ).map{ it.toGame() }
+    suspend fun leaveGame(userId: UInt, gameId: UInt, token: String): Result<Unit> =
+        fetch<Unit>(
+            path = "game/leave",
+            method = HttpMethod.Post,
+            body = LeaveGameDTO(userId.toInt(), gameId.toInt(), token)
+        )
+
+
     suspend fun moveCharacter(userId: UInt, gameId: UInt, token: String, origin: BoardTile, target: BoardTile): Result<Game> =
         fetch<GameDTO>(
             path = "game/applyGameUpdater",
@@ -264,18 +275,17 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = DrawItemDTO(userId.toInt(), gameId.toInt(), token, boardTile.toBoardTileDTO())
         ).map{ it.toGame() }
-    suspend fun unequipItem(userId: UInt, gameId: UInt, token: String, character: Character, idx: Int): Result<Game> =
+    suspend fun statModifierEffect(userId: UInt, gameId: UInt, token: String, origin: BoardTile): Result<Game> =
         fetch<GameDTO>(
-            path = "game/unequip",
+            path = "game/update-modifiers",
             method = HttpMethod.Post,
-            body = UnequipItemDTO(userId.toInt(), gameId.toInt(), token, character.toCharacterDTO(), idx)
+            body = UpdateModifiersDTO(
+                userId = userId.toInt(),
+                gameId = gameId.toInt(),
+                token = token,
+                origin = origin.toBoardTileDTO(),
+            )
         ).map{ it.toGame() }
-    suspend fun leaveGame(userId: UInt, gameId: UInt, token: String): Result<Unit> =
-        fetch<Unit>(
-            path = "game/leave",
-            method = HttpMethod.Post,
-            body = LeaveGameDTO(userId.toInt(), gameId.toInt(), token)
-        )
 
     private suspend inline fun <reified T> fetch(
         path: String,

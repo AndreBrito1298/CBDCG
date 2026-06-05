@@ -11,12 +11,12 @@ import isel.pt.cbdcg.domain.game.board.toPosition
 import isel.pt.cbdcg.domain.game.character.toCharacter
 import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.domain.game.toGameDTO
+import isel.pt.cbdcg.dto.UpdateModifiersDTO
 import isel.pt.cbdcg.dto.BoardTileEffectDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.DrawItemDTO
 import isel.pt.cbdcg.dto.GameUpdaterDTO
 import isel.pt.cbdcg.dto.LeaveGameDTO
-import isel.pt.cbdcg.dto.MoveCharacterDTO
 import isel.pt.cbdcg.dto.NextPhaseDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RotatePieceDTO
@@ -99,66 +99,6 @@ fun Route.gameWebApi(gameService: GameService) {
 
         }
 
-
-        post("/sdasdadw") {
-            val input = call.receive<BoardTileEffectDTO>()
-            val result = gameService.applyGameUpdater(
-                userId = input.userId.toUInt(),
-                gameId = input.gameId.toUInt(),
-                token = input.token,
-                updaterName = input.updaterName,
-                origin = input.origin.toBoardTile(),
-                targets = input.target.map { it.toBoardTile() },
-            ).getOrThrow()
-
-            call.respond(HttpStatusCode.OK, result.toGameDTO())
-        }
-
-
-        post("/applyGameUpdater") {
-            val input = call.receive<GameUpdaterDTO>()
-            val result = gameService.applyGameUpdater(
-                userId = input.userId.toUInt(),
-                gameId = input.gameId.toUInt(),
-                token = input.token,
-                updaterName = input.updaterName,
-                origin = input.origin.toType(),
-                targets = input.target.map { it.toType() },
-            ).getOrThrow()
-
-            call.respond(HttpStatusCode.OK, result.toGameDTO())
-        }
-
-        post("/move"){
-
-            val input = call.receive<MoveCharacterDTO>()
-
-            val result = gameService.moveCharacter(
-                userId = input.userId.toUInt(),
-                gameId = input.gameId.toUInt(),
-                token = input.token,
-                from = input.origin.toBoardTile(),
-                to = input.target.toBoardTile(),
-            ).getOrThrow()
-
-            call.respond(HttpStatusCode.OK, result.toGameDTO())
-
-        }
-
-        post("/draw-item"){
-
-            val input = call.receive<DrawItemDTO>()
-
-            val result = gameService.drawItem(
-                userId = input.userId.toUInt(),
-                gameId = input.gameId.toUInt(),
-                token = input.token,
-                trigger = input.origin.toBoardTile(),
-            ).getOrThrow()
-
-            call.respond(HttpStatusCode.OK, result.toGameDTO())
-        }
-
         post("/unequip"){
 
             val input = call.receive<UnequipItemDTO>()
@@ -175,5 +115,63 @@ fun Route.gameWebApi(gameService: GameService) {
 
         }
 
+        post("/sdasdadw") {
+            val input = call.receive<BoardTileEffectDTO>()
+            val result = gameService.applyGameUpdater(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token,
+                updaterName = input.updaterName,
+                origin = input.origin.toBoardTile(),
+                targets = input.target.map { it.toBoardTile() },
+            ).getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.toGameDTO())
+        }
+
+        post("/applyGameUpdater") {
+            val input = call.receive<GameUpdaterDTO>()
+            val result = gameService.applyGameUpdater(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token,
+                updaterName = input.updaterName,
+                origin = input.origin.toType(),
+                targets = input.target.map { it.toType() },
+            ).getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.toGameDTO())
+        }
+
+        // Needs to be adapted
+
+        post("/draw-item"){
+
+            val input = call.receive<DrawItemDTO>()
+
+            val result = gameService.drawItem(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token,
+                trigger = input.origin.toBoardTile(),
+            ).getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.toGameDTO())
+        }
+
+        post("/update-modifiers"){
+
+            val input = call.receive<UpdateModifiersDTO>()
+
+            val result = gameService.updateStatModifiers(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token,
+                origin = input.origin.toBoardTile(),
+            ).getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.toGameDTO())
+
+        }
     }
 }

@@ -18,7 +18,7 @@ fun CardStatsColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         StatRow("HP", stats.hp, Color(0xFF00B050))
-        StatRow("DMG", stats.atk, Color(0xFFD00000))
+        StatRow("DMG", stats.dmg, Color(0xFFD00000))
         StatRow("DEF", stats.def, Color(0xFF0070C0))
         StatRow("SPE", stats.spe, Color(0xFFFFC000))
     }

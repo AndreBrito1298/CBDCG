@@ -148,7 +148,7 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is BoardError.TileConnectionMismatch -> HttpStatusCode.Conflict
         is BoardError.CharacterLimitReached -> HttpStatusCode.Conflict
         is BoardError.EmptyTile -> HttpStatusCode.NotFound
-        is BoardError.EquipYourCharacter -> HttpStatusCode.BadRequest
+        is BoardError.ApplyEffectOnYourCharacter -> HttpStatusCode.BadRequest
         is BoardError.TileNotFound -> HttpStatusCode.NotFound
         is BoardError.TileOccupied -> HttpStatusCode.Conflict
         is BoardError.NoTargetFound -> HttpStatusCode.NotFound

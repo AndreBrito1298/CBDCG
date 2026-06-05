@@ -278,18 +278,18 @@ data class LeaveGameDTO(
     val token: String
 )
 
-
-
-// Will be changed
-
 @Serializable
-data class MoveCharacterDTO(
+data class UnequipItemDTO(
     val userId: Int,
     val gameId: Int,
     val token: String,
-    val origin: BoardTileDTO,
-    val target: BoardTileDTO
+    val character: CharacterDTO,
+    val index: Int,
 )
+
+
+
+// Will be changed
 
 @Serializable
 data class DrawItemDTO(
@@ -298,12 +298,10 @@ data class DrawItemDTO(
     val token: String,
     val origin: BoardTileDTO,
 )
-
 @Serializable
-data class UnequipItemDTO(
+data class UpdateModifiersDTO(
     val userId: Int,
     val gameId: Int,
     val token: String,
-    val character: CharacterDTO,
-    val index: Int,
+    val origin: BoardTileDTO,
 )

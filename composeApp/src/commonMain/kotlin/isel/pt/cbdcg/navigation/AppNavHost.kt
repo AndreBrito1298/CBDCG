@@ -4,7 +4,9 @@ import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import isel.pt.cbdcg.domain.game.board.TileEffectTypes
 import isel.pt.cbdcg.viewmodel.AppViewModel
+import isel.pt.cbdcg.viewmodel.GameUIState
 import isel.pt.cbdcg.viewmodel.SessionState
 import isel.pt.cbdcg.views.game.GameScreen
 import isel.pt.cbdcg.views.game.SpectatorScreen
@@ -162,7 +164,18 @@ fun AppNavHost(vm: AppViewModel) {
                     placeOnBoard = { pos -> vm.placeOnBoard(pos) },
                     unequip = { idx -> vm.unequip(idx) },
                     toggleCardStats = { card -> vm.inspectCard(card) },
-                    onEffectInfoClick = { vm.drawItem() },
+                    onEffectInfoClick = {
+                        // Esta lógica não vai ficar aqui
+                        val effect = (ui.gameUI.state as? GameUIState.InspectTileEffect)?.tile?.specialEffect?.type
+                            ?: return@GameScreen
+                        when(effect){
+                            is TileEffectTypes.Chest, is TileEffectTypes.BigChest -> vm.drawItem()
+                            is TileEffectTypes.StatUp, is TileEffectTypes.StatDown,
+                            is TileEffectTypes.StatUpAoE, is TileEffectTypes.StatDownAoE -> vm.statModifierEffect()
+                            else -> return@GameScreen
+                        }
+                        // É temporário, para efeitos de testes.
+                    },
                     moveSignal = { boardTile -> vm.moveSignal(boardTile) },
                     moveCharacter = { tile -> vm.moveCharacter(tile) },
                     rotateTile = { flag -> vm.rotateTile(flag) },
