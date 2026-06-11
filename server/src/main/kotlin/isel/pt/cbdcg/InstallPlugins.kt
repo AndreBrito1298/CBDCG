@@ -167,6 +167,7 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is GameError.CharacterPlacementRestriction -> HttpStatusCode.Conflict
         is GameError.EquipItemRestriction -> HttpStatusCode.Conflict
         is GameError.TilePlacementRestriction -> HttpStatusCode.Conflict
+        is GameError.BattleNotConcluded -> HttpStatusCode.Conflict
 
         is CardError.InvalidCardFormat -> HttpStatusCode.BadRequest
         

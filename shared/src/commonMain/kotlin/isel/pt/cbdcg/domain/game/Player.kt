@@ -1,7 +1,6 @@
 package isel.pt.cbdcg.domain.game
 
 import isel.pt.cbdcg.domain.User
-import isel.pt.cbdcg.domain.game.board.Entity
 import isel.pt.cbdcg.domain.game.character.Grade
 import isel.pt.cbdcg.domain.toUserDTO
 import isel.pt.cbdcg.dto.PlayerDTO

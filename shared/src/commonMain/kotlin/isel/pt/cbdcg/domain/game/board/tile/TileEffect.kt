@@ -1,8 +1,7 @@
-package isel.pt.cbdcg.domain.game.board
+package isel.pt.cbdcg.domain.game.board.tile
 
 import isel.pt.cbdcg.domain.game.character.StatModifier
 import isel.pt.cbdcg.domain.game.character.Stats
-import isel.pt.cbdcg.dto.TileDTO
 import isel.pt.cbdcg.dto.TileEffectDTO
 import isel.pt.cbdcg.error.GameError
 
@@ -29,6 +28,7 @@ sealed interface TileEffectTypes {
 
 data class TileEffect(
     val type: TileEffectTypes = TileEffectTypes.None,
+    val range: UInt = 0u,
     val maxCooldown: UInt = 0u,
     val info: String = ""
 )
@@ -53,6 +53,7 @@ fun String.effectType(): TileEffectTypes {
     }
     throw GameError.InvalidFormat("Tile Effect", this)
 }
+
 fun TileEffect.getStatModifier(): StatModifier {
 
     val statType = when(this.type){
@@ -72,10 +73,10 @@ fun TileEffect.getStatModifier(): StatModifier {
 
     return StatModifier(
         stats = Stats(
-            hp = if(statType == StatType.Hp) statChange else 0,
-            dmg = if(statType == StatType.Dmg) statChange else 0,
-            def = if(statType == StatType.Def) statChange else 0,
-            spe = if(statType == StatType.Spe) statChange else 0
+            hp = if (statType == StatType.Hp) statChange else 0,
+            dmg = if (statType == StatType.Dmg) statChange else 0,
+            def = if (statType == StatType.Def) statChange else 0,
+            spe = if (statType == StatType.Spe) statChange else 0
         ),
         duration = 2u
     )
@@ -85,6 +86,7 @@ fun TileEffect.getStatModifier(): StatModifier {
 fun TileEffect.toTileEffectDTO(): TileEffectDTO =
     TileEffectDTO(
         type = type.name,
+        range = range.toInt(),
         maxCooldown = maxCooldown.toInt(),
         info = info
     )
@@ -92,56 +94,10 @@ fun TileEffect.toTileEffectDTO(): TileEffectDTO =
 fun TileEffectDTO.toTileEffect(): TileEffect =
     TileEffect(
         type = type.effectType(),
+        range = range.toUInt(),
         maxCooldown = maxCooldown.toUInt(),
         info = info
     )
-
-data class Tile(
-    val connections: List<Direction>,
-    val specialEffect: TileEffect = TileEffect()
-) {
-    override fun toString(): String =
-        connections.map { it.name[0] }.sorted().joinToString("")
-}
-
-fun Tile.canConnectTo(dir: Direction, tile: Tile): Boolean{
-
-    if(!this.connections.contains(dir)) return false
-
-    return tile.connections.contains(dir.opposite())
-}
-fun Tile.rotate(right: Boolean): Tile =
-    this.copy(
-        connections = connections.map { direction ->
-            if (right) direction.rotateRight()
-            else direction.rotateLeft()
-        }
-    )
-fun Tile.getBlocked(adjTiles: List<Pair<Direction, BoardTile>>): List<Direction> =
-    adjTiles.mapNotNull{
-        if(!canConnectTo(it.first, it.second.tile)) it.first
-        else null
-    }
-fun Tile.getAdjacent(tiles: BoardTiles, targetPos: BoardPosition): List<Pair<Direction, BoardTile>> =
-    connections.mapNotNull { dir ->
-        val neighbourPos = targetPos.neighbour(dir)
-        val neighbourTile = tiles.find { it.pos == neighbourPos }
-
-        if(neighbourTile != null) dir to neighbourTile
-        else null
-    }
-
-fun Tile.toTileDTO(): TileDTO =
-    TileDTO(
-        connections = connections.map { it.name[0].toString() }.toTypedArray(),
-        specialEffect = specialEffect.toTileEffectDTO()
-    )
-fun TileDTO.toTile(): Tile =
-    Tile(
-        connections = connections.map{ it.toDirection() },
-        specialEffect = specialEffect.toTileEffect()
-    )
-
 
 object AllTileEffects{
 
@@ -164,16 +120,18 @@ object AllTileEffects{
     val statUpAoE = StatType.entries.associate { stat ->
         TileEffect(
             type = TileEffectTypes.StatUpAoE(stat),
+            range = 3u,
             maxCooldown = 4u,
-            info = "Until the end of your next turn, all player characters within a 4 tile radius have +★★ in ${stat.name}."
+            info = "Until the end of your next turn, all player characters less than 4 tiles away have +★★ in ${stat.name}."
         ) to 1u
     }
 
     val statDownAoE = StatType.entries.associate { stat ->
         TileEffect(
             type = TileEffectTypes.StatDownAoE(stat),
+            range = 3u,
             maxCooldown = 4u,
-            info = "Until the end of your next turn, all player characters within a 4 tile radius have -★★ in ${stat.name}."
+            info = "Until the end of your next turn, all player characters less than 4 tiles away have -★★ in ${stat.name}."
         ) to 1u
     }
 

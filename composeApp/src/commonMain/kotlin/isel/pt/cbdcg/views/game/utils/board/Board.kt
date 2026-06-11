@@ -17,16 +17,19 @@ import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.BoardTiles
-import isel.pt.cbdcg.domain.game.board.getAdjacent
-import isel.pt.cbdcg.domain.game.board.getBlocked
+import isel.pt.cbdcg.domain.game.board.tile.getAdjacent
+import isel.pt.cbdcg.domain.game.board.tile.getBlocked
+import isel.pt.cbdcg.domain.game.character.Character
+import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.viewmodel.GameUIState
 
-interface BoardTilePossibleActions{
-    object InspectTileEffect : BoardTilePossibleActions
-    object InspectCharacter : BoardTilePossibleActions
-    object PlaceCard : BoardTilePossibleActions
-    object MoveCharacter : BoardTilePossibleActions
-    object ApplyMovement : BoardTilePossibleActions
+enum class BoardTilePossibleActions{
+    InspectTileEffect,
+    InspectCharacter,
+    PlaceCard,
+    MoveCharacter,
+    Challange,
+    ApplyMovement
 }
 
 data class BoardTileDDM(
@@ -35,6 +38,7 @@ data class BoardTileDDM(
     val placeCharacter: Boolean,
     val equipItem: Boolean,
     val moveCharacter: Boolean,
+    val battleCharacter: Boolean,
     val applyMovement: Boolean
 )
 
@@ -45,8 +49,9 @@ fun Board(
     gameBoard: BoardTiles,
     tileSize: Dp,
     placeCard: (BoardPosition) -> Unit,
-    inspect: (Card) -> Unit,
+    inspect: (Card, BoardTile? ) -> Unit,
     moveSignal: (BoardTile) -> Unit,
+    battleSignal: (Character, Character) -> Unit,
     moveCharacter: (BoardTile) -> Unit,
 ) {
 
@@ -68,22 +73,27 @@ fun Board(
                 for (x in minX..maxX) {
 
                     val position = BoardPosition(x,y)
-                    val boardTile = gameBoard.find { it.pos == position }
+                    val currentBoardTile = gameBoard.find { it.pos == position }
 
-                    if(boardTile != null){
+                    if(currentBoardTile != null){
 
-                        val adjTiles = boardTile.tile.getAdjacent(gameBoard, boardTile.pos)
-                        val blocked = boardTile.tile.getBlocked(adjTiles)
-                        val tileName = boardTile.tile.toString() +
+                        val adjTiles = currentBoardTile.tile.getAdjacent(gameBoard, currentBoardTile.pos)
+                        val blocked = currentBoardTile.tile.getBlocked(adjTiles)
+                        val tileName = currentBoardTile.tile.toString() +
                             if(blocked.isNotEmpty()) "_" + blocked.map{ it.name[0] }.joinToString("")
                             else ""
 
-                        val character = boardTile.character
+                        val character = currentBoardTile.character
+
+                        val adjacentCharacters = currentBoardTile.tile
+                            .getAdjacent(gameBoard, currentBoardTile.pos)
+                            .mapNotNull{ it.second.character }
+                        val playerCharacter = adjacentCharacters.find{ it.name == player?.currentCharacter }
 
                         val actions = BoardTileDDM(
                             inspectTileEffect = gameState is GameUIState.Idle &&
-                                    boardTile.tile.specialEffect.type.name != "None" &&
-                                    boardTile.tile.specialEffect.type.name != "Start",
+                                    currentBoardTile.tile.specialEffect.type.name != "None" &&
+                                    currentBoardTile.tile.specialEffect.type.name != "Start",
                             inspectCharacter = gameState is GameUIState.Idle &&
                                     character != null,
                             placeCharacter = gameState is GameUIState.PlacingCard &&
@@ -93,27 +103,32 @@ fun Board(
                             moveCharacter = gameState is GameUIState.Idle &&
                                     character != null &&
                                     character.name == player?.currentCharacter,
+                            battleCharacter = gameState is GameUIState.Idle &&
+                                    character != null &&
+                                    character.name != player?.currentCharacter &&
+                                    playerCharacter != null,
                             applyMovement = gameState is GameUIState.MovingCharacter
                         )
 
                         val tilePath =
-                            if(actions.applyMovement && boardTile in (gameState as GameUIState.MovingCharacter).path)
-                                pathSegmentFor(gameState.path, boardTile)
+                            if(actions.applyMovement && currentBoardTile in (gameState as GameUIState.MovingCharacter).path)
+                                pathSegmentFor(gameState.path, currentBoardTile)
                             else null
 
                         BoardTile(
                             actions = actions,
-                            boardTile = boardTile,
+                            boardTile = currentBoardTile,
                             tileName = tileName,
                             tileSize = tileSize,
                             tilePath = tilePath,
                             onClick = { action ->
                                 when(action){
-                                    is BoardTilePossibleActions.InspectTileEffect -> inspect(TileCard(boardTile.tile))
-                                    is BoardTilePossibleActions.InspectCharacter -> inspect(CharacterCard(character!!))
-                                    is BoardTilePossibleActions.PlaceCard -> placeCard(position)
-                                    is BoardTilePossibleActions.MoveCharacter -> moveSignal(boardTile)
-                                    is BoardTilePossibleActions.ApplyMovement -> moveCharacter(boardTile)
+                                    BoardTilePossibleActions.InspectTileEffect -> inspect(TileCard(currentBoardTile.tile), currentBoardTile)
+                                    BoardTilePossibleActions.InspectCharacter -> inspect(character.toCard(), currentBoardTile)
+                                    BoardTilePossibleActions.PlaceCard -> placeCard(position)
+                                    BoardTilePossibleActions.MoveCharacter -> moveSignal(currentBoardTile)
+                                    BoardTilePossibleActions.Challange -> battleSignal(requireNotNull(playerCharacter), requireNotNull(character))
+                                    BoardTilePossibleActions.ApplyMovement -> moveCharacter(currentBoardTile)
                                 }
                             }
                         )

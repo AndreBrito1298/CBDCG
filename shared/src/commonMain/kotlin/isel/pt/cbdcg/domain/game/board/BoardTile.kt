@@ -1,6 +1,10 @@
 package isel.pt.cbdcg.domain.game.board
 
+import isel.pt.cbdcg.domain.game.Entity
 import isel.pt.cbdcg.domain.game.Game
+import isel.pt.cbdcg.domain.game.board.tile.Tile
+import isel.pt.cbdcg.domain.game.board.tile.toTile
+import isel.pt.cbdcg.domain.game.board.tile.toTileDTO
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.toCharacter
 import isel.pt.cbdcg.dto.BoardTileDTO

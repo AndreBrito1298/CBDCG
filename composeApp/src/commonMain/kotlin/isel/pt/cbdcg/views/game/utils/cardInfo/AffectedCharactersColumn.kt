@@ -6,9 +6,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.Button
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,14 +19,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import isel.pt.cbdcg.domain.game.character.Character
-import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.views.game.utils.ZoomedImage
 
 @Composable
-fun CharacterEquippedItemsColumn(
+fun AffectedCharactersColumn(
     modifier: Modifier,
-    unequip: (Int) -> Unit,
-    character: Character,
+    characters: List<Character>,
 ) {
     Column(
         modifier = modifier
@@ -35,53 +33,44 @@ fun CharacterEquippedItemsColumn(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        if (character is PlayableCharacter) {
-            Text(
-                text = "Equipped Items",
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+        Text(
+            text = "Affected Characters",
+            fontWeight = FontWeight.Bold,
+            fontSize = 13.sp,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
 
+        if (characters.isEmpty()) {
+            Text(
+                text = "No characters affected",
+                fontSize = 12.sp,
+                color = Color.Gray,
+                textAlign = TextAlign.Center
+            )
+        } else {
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
-                itemsIndexed(character.items) { index, item ->
+                items(characters) { character ->
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         ZoomedImage(
-                            fileName = item.name,
+                            fileName = character.name,
                             zoom = 1.0f,
+                            modifier = Modifier.width(64.dp).height(64.dp)
                         )
 
                         Text(
-                            text = item.name.replace('_', ' '),
+                            text = character.name,
                             textAlign = TextAlign.Center,
-                            fontSize = 10.sp
+                            fontSize = 10.sp,
+                            modifier = Modifier.width(70.dp)
                         )
-
-                        Button(
-                            onClick = { unequip(index) },
-                            modifier = Modifier.padding(top = 4.dp).height(24.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
-                        ) {
-                            Text(
-                                text = "Unequip",
-                                fontSize = 10.sp
-                            )
-                        }
                     }
                 }
-            }
-            
-            if (character.items.isEmpty()) {
-                Text(
-                    text = "No items equipped",
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
             }
         }
     }

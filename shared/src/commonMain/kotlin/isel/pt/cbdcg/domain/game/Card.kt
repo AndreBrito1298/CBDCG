@@ -1,8 +1,8 @@
 package isel.pt.cbdcg.domain.game
 
-import isel.pt.cbdcg.domain.game.board.Tile
-import isel.pt.cbdcg.domain.game.board.toTile
-import isel.pt.cbdcg.domain.game.board.toTileDTO
+import isel.pt.cbdcg.domain.game.board.tile.Tile
+import isel.pt.cbdcg.domain.game.board.tile.toTile
+import isel.pt.cbdcg.domain.game.board.tile.toTileDTO
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.Item
 import isel.pt.cbdcg.domain.game.character.toItem
@@ -56,6 +56,8 @@ data class CharacterCard(
             item = null
         )
 }
+
+fun Character?.toCard() = CharacterCard(checkNotNull(this){ "Character should not be null for card conversion" })
 
 data class ItemCard(
     val item: Item

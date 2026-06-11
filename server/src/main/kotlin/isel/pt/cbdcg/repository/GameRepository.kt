@@ -4,7 +4,7 @@ import isel.pt.cbdcg.domain.game.Deck
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
-import isel.pt.cbdcg.domain.game.board.Tile
+import isel.pt.cbdcg.domain.game.board.tile.Tile
 import isel.pt.cbdcg.domain.game.character.Item
 
 interface GameRepository: Repository<Game> {

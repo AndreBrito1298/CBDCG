@@ -1,16 +1,13 @@
 package isel.pt.cbdcg.dto
 
 import isel.pt.cbdcg.domain.game.Player
-import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.board.BoardTile
-import isel.pt.cbdcg.domain.game.board.Entity
+import isel.pt.cbdcg.domain.game.Entity
 import isel.pt.cbdcg.domain.game.board.toBoardTile
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.toPlayer
 import isel.pt.cbdcg.domain.game.toPlayerDTO
 import kotlinx.serialization.Serializable
-import kotlin.reflect.KClass
-import kotlin.reflect.KType
 
 @Serializable
 data class EntityDTO(

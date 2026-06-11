@@ -79,7 +79,7 @@ sealed class GameError(
     class CharacterPlacementRestriction : GameError("You can only place a Character during the Substitution Phase.")
     class TilePlacementRestriction : GameError("You can only place a Tile during the Construction Phase.")
     class EquipItemRestriction : GameError("You can only equip/unequip an Item during the Substitution Phase.")
-
+    class BattleNotConcluded : GameError("There can be happening only one battle at a time.")
 }
 
 sealed class CharacterError(

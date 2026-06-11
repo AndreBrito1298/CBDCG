@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Card
+import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TurnPhase
@@ -23,7 +24,7 @@ import isel.pt.cbdcg.views.game.utils.board.Board
 import isel.pt.cbdcg.views.game.utils.InGameHeader
 import isel.pt.cbdcg.views.game.utils.spectator.SpectatorPlayerSelector
 import isel.pt.cbdcg.views.game.utils.board.ZoomButtons
-import isel.pt.cbdcg.views.game.utils.cardInfo.CardStatsDialog
+import isel.pt.cbdcg.views.game.utils.dialog.CardStatsDialog
 
 @Composable
 fun SpectatorScreen(
@@ -31,7 +32,7 @@ fun SpectatorScreen(
     game: Game,
     gameUI: GameUI,
     togglePlayerHand: (Player) -> Unit,
-    toggleCardStats: (Card?) -> Unit,
+    toggleCardStats: (Card?, BoardTile?) -> Unit,
     zoom: (Boolean) -> Unit,
 ){
     val currentPlayer = game.players.find {
@@ -83,8 +84,9 @@ fun SpectatorScreen(
                         tileSize = 128.dp * gameUI.boardZoom,
                         placeCard = {},
                         player = null,
-                        inspect = { card -> toggleCardStats(card) },
+                        inspect = { card, boardTile -> toggleCardStats(card, boardTile) },
                         moveSignal = {},
+                        battleSignal = {_,_ ->},
                         moveCharacter = {},
                     )
                     ZoomButtons(
@@ -110,7 +112,7 @@ fun SpectatorScreen(
                         players = game.players,
                         selected = selected,
                         select = { player -> togglePlayerHand(player) },
-                        onSeeStats = { card -> toggleCardStats(card) }
+                        onSeeStats = { card -> toggleCardStats(card, null) }
                     )
                 }
             }
@@ -121,7 +123,7 @@ fun SpectatorScreen(
         CardStatsDialog(
             card = gameUI.state.card,
             unequip = {  },
-            onDismiss = { toggleCardStats(null) }
+            onDismiss = { toggleCardStats(null, null) }
         )
     }
 }

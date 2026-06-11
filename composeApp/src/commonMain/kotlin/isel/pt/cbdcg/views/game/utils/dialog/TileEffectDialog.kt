@@ -1,9 +1,10 @@
-package isel.pt.cbdcg.views.game.utils.cardInfo
+package isel.pt.cbdcg.views.game.utils.dialog
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -16,13 +17,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import isel.pt.cbdcg.domain.game.board.TileEffect
+import isel.pt.cbdcg.domain.game.board.tile.TileEffect
+import isel.pt.cbdcg.domain.game.character.Character
+import isel.pt.cbdcg.views.game.utils.cardInfo.AffectedCharactersColumn
+import isel.pt.cbdcg.views.game.utils.cardInfo.CardBasicInfoColumn
+import isel.pt.cbdcg.views.game.utils.cardInfo.EffectDescription
 
 @Composable
 fun TileEffectDialog(
     effect: TileEffect,
     activate: Boolean,
     onConfirm: () -> Unit,
+    affectedCharacters: List<Character> = emptyList(),
 ){
     AlertDialog(
         onDismissRequest = onConfirm,
@@ -32,11 +38,12 @@ fun TileEffectDialog(
             }
         },
         text = {
-            Box(modifier = Modifier.width(640.dp).height(320.dp)){
+            Box(modifier = Modifier.width(775.dp).height(340.dp)){
                 TileEffectInfo(
                     modifier = Modifier.fillMaxSize(),
                     effectName = effect.type.name,
-                    description = effect.info
+                    description = effect.info,
+                    affectedCharacters = affectedCharacters
                 )
             }
         }
@@ -48,6 +55,7 @@ fun TileEffectInfo(
     modifier: Modifier = Modifier,
     effectName: String,
     description: String,
+    affectedCharacters: List<Character> = emptyList(),
 ) {
     Box(
         modifier = modifier
@@ -57,19 +65,23 @@ fun TileEffectInfo(
         contentAlignment = Alignment.Center
     ){
         Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.width(775.dp).height(340.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
             CardBasicInfoColumn(
-                modifier = Modifier.width(180.dp).height(320.dp),
+                modifier = Modifier.width(150.dp).fillMaxHeight(),
                 mainText = effectName,
                 zoom = 1.0f,
                 subText = ""
             )
             EffectDescription(
                 description = description,
-                modifier = Modifier.width(360.dp).height(320.dp)
+                modifier = Modifier.width(350.dp).fillMaxHeight()
+            )
+            AffectedCharactersColumn(
+                modifier = Modifier.width(200.dp).fillMaxHeight(),
+                characters = affectedCharacters
             )
         }
     }

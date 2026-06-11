@@ -1,9 +1,11 @@
 package isel.pt.cbdcg.viewmodel
 
+import isel.pt.cbdcg.domain.game.Battle
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.board.BoardTile
-import isel.pt.cbdcg.domain.game.board.Tile
+import isel.pt.cbdcg.domain.game.board.tile.Tile
+import isel.pt.cbdcg.domain.game.character.Character
 
 data class GameUI(
     val state: GameUIState,
@@ -40,7 +42,17 @@ sealed interface GameUIState {
 
     data class InspectTileEffect(
         val tile: Tile,
-        val activateInTile: BoardTile? = null
+        val boardTile: BoardTile? = null,
+        val activateInTile: Boolean = false
+    ) : GameUIState
+
+    data class CharacterCollision(
+        val movingCharacter: Character,
+        val staticCharacter: Character
+    ) : GameUIState
+
+    data class InBattle(
+        val battle: Battle
     ) : GameUIState
 
     data class GameOver(

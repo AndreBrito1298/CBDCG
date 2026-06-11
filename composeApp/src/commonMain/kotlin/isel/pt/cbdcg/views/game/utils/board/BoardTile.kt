@@ -124,6 +124,15 @@ fun BoardTile(
                     }
                 )
             }
+            if (actions.battleCharacter) {
+                DropdownMenuItem(
+                    text = { Text("Challange") },
+                    onClick = {
+                        expanded = false
+                        onClick(BoardTilePossibleActions.Challange)
+                    }
+                )
+            }
             if (actions.inspectTileEffect) {
                 DropdownMenuItem(
                     text = { Text("Inspect Tile Effect") },

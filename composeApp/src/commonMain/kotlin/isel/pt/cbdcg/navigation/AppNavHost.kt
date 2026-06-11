@@ -4,7 +4,7 @@ import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import isel.pt.cbdcg.domain.game.board.TileEffectTypes
+import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
 import isel.pt.cbdcg.viewmodel.AppViewModel
 import isel.pt.cbdcg.viewmodel.GameUIState
 import isel.pt.cbdcg.viewmodel.SessionState
@@ -163,25 +163,31 @@ fun AppNavHost(vm: AppViewModel) {
                     placeSignal = vm::placeSignal,
                     placeOnBoard = { pos -> vm.placeOnBoard(pos) },
                     unequip = { idx -> vm.unequip(idx) },
-                    toggleCardStats = { card -> vm.inspectCard(card) },
+                    toggleCardStats = { card, boardTile -> vm.inspectCard(card, boardTile) },
                     onEffectInfoClick = {
                         // Esta lógica não vai ficar aqui
                         val effect = (ui.gameUI.state as? GameUIState.InspectTileEffect)?.tile?.specialEffect?.type
                             ?: return@GameScreen
-                        when(effect){
+                        when (effect) {
                             is TileEffectTypes.Chest, is TileEffectTypes.BigChest -> vm.drawItem()
                             is TileEffectTypes.StatUp, is TileEffectTypes.StatDown,
                             is TileEffectTypes.StatUpAoE, is TileEffectTypes.StatDownAoE -> vm.statModifierEffect()
+
                             else -> return@GameScreen
                         }
                         // É temporário, para efeitos de testes.
                     },
                     moveSignal = { boardTile -> vm.moveSignal(boardTile) },
                     moveCharacter = { tile -> vm.moveCharacter(tile) },
+                    battleSignal = { current, target -> vm.battleSignal(current, target) },
+                    challenge = vm::challenge,
+                    sneak = vm::sneak,
                     rotateTile = { flag -> vm.rotateTile(flag) },
                     zoom = { option -> vm.zoom(option) },
                     nextPhase = vm::nextPhase,
-                    leaveGame = vm::leaveGame
+                    closeDialog = vm::idle,
+                    battleAction = { action -> /* aqui vai estar o when() */ },
+                    leaveGame = vm::leaveGame,
                 )
             }
 
@@ -191,7 +197,7 @@ fun AppNavHost(vm: AppViewModel) {
                     game = session.game,
                     gameUI = ui.gameUI,
                     togglePlayerHand = { player -> vm.inspectPlayerHand(player) },
-                    toggleCardStats = { card -> vm.inspectCard(card) },
+                    toggleCardStats = { card, boardTile -> vm.inspectCard(card, boardTile) },
                     zoom = { option -> vm.zoom(option) }
                 )
             }

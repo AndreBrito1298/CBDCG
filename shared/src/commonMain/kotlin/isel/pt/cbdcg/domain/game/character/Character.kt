@@ -1,6 +1,6 @@
 package isel.pt.cbdcg.domain.game.character
 
-import isel.pt.cbdcg.domain.game.board.Entity
+import isel.pt.cbdcg.domain.game.Entity
 import isel.pt.cbdcg.dto.CharacterDTO
 import isel.pt.cbdcg.error.GameError
 

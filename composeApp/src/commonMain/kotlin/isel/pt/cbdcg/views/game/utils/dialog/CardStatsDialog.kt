@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views.game.utils.cardInfo
+package isel.pt.cbdcg.views.game.utils.dialog
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +13,8 @@ import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CharacterCard
 import isel.pt.cbdcg.domain.game.ItemCard
+import isel.pt.cbdcg.views.game.utils.cardInfo.CharacterInfoPanel
+import isel.pt.cbdcg.views.game.utils.cardInfo.ItemInfoPanel
 
 @Composable
 fun CardStatsPanel(
@@ -42,7 +44,6 @@ fun CardStatsDialog(
     unequip: (Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    println("DEBUG: Opening CardStatsDialog for card: ${card}")
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {

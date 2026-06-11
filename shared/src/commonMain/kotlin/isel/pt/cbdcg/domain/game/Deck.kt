@@ -1,8 +1,8 @@
 package isel.pt.cbdcg.domain.game
 
-import isel.pt.cbdcg.domain.game.board.AllTileEffects
-import isel.pt.cbdcg.domain.game.board.Tile
-import isel.pt.cbdcg.domain.game.board.TileEffectTypes
+import isel.pt.cbdcg.domain.game.board.tile.AllTileEffects
+import isel.pt.cbdcg.domain.game.board.tile.Tile
+import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
 import isel.pt.cbdcg.error.GameError
 
 typealias Deck<T> = Map<T, UInt>

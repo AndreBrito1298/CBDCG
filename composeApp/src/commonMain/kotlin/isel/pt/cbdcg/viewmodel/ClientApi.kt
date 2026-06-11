@@ -28,6 +28,7 @@ import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.toGame
+import isel.pt.cbdcg.dto.StartBattleDTO
 import isel.pt.cbdcg.dto.UpdateModifiersDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
@@ -81,7 +82,7 @@ class ClientApi(private val client: HttpClient) {
     // Coroutine that is currently listening to any Server update message
     private var listenJob: Job? = null
 
-    // Translates a message and updates the local state ('tables' or 'currentTable')
+    // Translates a message and updates the local state
     private fun handleServerMessage(text: String) {
 
         val message = json.decodeFromString<WsServerMessage>(text)
@@ -284,6 +285,30 @@ class ClientApi(private val client: HttpClient) {
                 gameId = gameId.toInt(),
                 token = token,
                 origin = origin.toBoardTileDTO(),
+            )
+        ).map{ it.toGame() }
+    suspend fun challenge(userId: UInt, gameId: UInt, token: String, attacker: Character, defender: Character): Result<Game> =
+        fetch<GameDTO>(
+            path = "game/battle",
+            method = HttpMethod.Post,
+            body = StartBattleDTO(
+                userId = userId.toInt(),
+                gameId = gameId.toInt(),
+                token = token,
+                attacker = attacker.toCharacterDTO(),
+                defender = defender.toCharacterDTO()
+            )
+        ).map{ it.toGame() }
+    suspend fun sneak(userId: UInt, gameId: UInt, token: String, attacker: Character, defender: Character): Result<Game> =
+        fetch<GameDTO>(
+            path = "game/sneak",
+            method = HttpMethod.Post,
+            body = StartBattleDTO(
+                userId = userId.toInt(),
+                gameId = gameId.toInt(),
+                token = token,
+                attacker = attacker.toCharacterDTO(),
+                defender = defender.toCharacterDTO()
             )
         ).map{ it.toGame() }
 

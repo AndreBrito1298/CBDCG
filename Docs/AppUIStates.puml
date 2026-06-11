@@ -1,0 +1,34 @@
+@startuml
+title Fluxo de Estados do AppUIState
+
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+state "SessionState" as SS {
+    [*] --> SignedOut
+    SignedOut --> InLobby : login / createUser
+    InLobby --> InTable : joinTable / createTable
+    InTable --> InGame : start Game
+
+    InGame --> InLobby : leaveGame
+    InTable --> InLobby : leaveTable
+    InLobby --> SignedOut : logout
+}
+
+state "GameUIState (Dento de InGame)" as GS {
+    [*] --> Idle
+    Idle --> SelectCard : selectCard()
+    SelectCard --> PlacingCard : placeSignal()
+    PlacingCard --> Idle : placeOnBoard() / cancel
+
+    Idle --> MovingCharacter : moveSignal()
+    MovingCharacter --> Idle : moveCharacter() / cancel
+
+    Idle --> InspectCard : inspectCard()
+    InspectCard --> Idle : dismiss
+
+    Idle --> GameOver : winner != null (via Server)
+}
+
+
+@enduml

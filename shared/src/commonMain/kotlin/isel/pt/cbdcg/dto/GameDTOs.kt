@@ -29,6 +29,7 @@ data class TileDTO(
 data class
 TileEffectDTO(
     val type: String,
+    val range: Int,
     val maxCooldown: Int,
     val info: String
 )
@@ -172,6 +173,7 @@ data class GameDTO(
     val tileDeck: Array<TileDeckDTO>,
     val itemDeck: Array<ItemDeckDTO>,
     val turn: TurnDTO,
+    val battle: BattleDTO?,
     val winner: PlayerDTO?
 ) {
     override fun equals(other: Any?): Boolean {
@@ -187,6 +189,7 @@ data class GameDTO(
         if (!tileDeck.contentEquals(other.tileDeck)) return false
         if (!itemDeck.contentEquals(other.itemDeck)) return false
         if (turn != other.turn) return false
+        if (battle != other.battle) return false
         if (winner != other.winner) return false
 
         return true
@@ -199,7 +202,34 @@ data class GameDTO(
         result = 31 * result + tileDeck.contentHashCode()
         result = 31 * result + itemDeck.contentHashCode()
         result = 31 * result + turn.hashCode()
+        result = 31 * result + (battle?.hashCode() ?: 0)
         result = 31 * result + (winner?.hashCode() ?: 0)
+        return result
+    }
+}
+
+@Serializable
+data class BattleDTO(
+    val characters: Array<CharacterDTO>,
+    val turn: Int,
+    val currentTurn: CharacterDTO
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as BattleDTO
+
+        if (turn != other.turn) return false
+        if (currentTurn != other.currentTurn) return false
+        if (!characters.contentEquals(other.characters)) return false
+
+        return true
+    }
+    override fun hashCode(): Int {
+        var result = turn
+        result = 31 * result + characters.contentHashCode()
+        result = 31 * result + currentTurn.hashCode()
         return result
     }
 }
@@ -297,6 +327,15 @@ data class DrawItemDTO(
     val gameId: Int,
     val token: String,
     val origin: BoardTileDTO,
+)
+
+@Serializable
+data class StartBattleDTO(
+    val userId: Int,
+    val gameId: Int,
+    val token: String,
+    val attacker: CharacterDTO,
+    val defender: CharacterDTO
 )
 @Serializable
 data class UpdateModifiersDTO(

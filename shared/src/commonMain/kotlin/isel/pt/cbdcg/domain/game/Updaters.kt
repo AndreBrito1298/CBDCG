@@ -1,8 +1,7 @@
-package isel.pt.cbdcg.domain.game.board
+package isel.pt.cbdcg.domain.game
 
-import isel.pt.cbdcg.domain.game.Game
-import isel.pt.cbdcg.domain.game.Player
-import isel.pt.cbdcg.domain.game.TurnPhase
+import isel.pt.cbdcg.domain.game.board.Board
+import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.error.BoardError
 import isel.pt.cbdcg.error.GameError
 

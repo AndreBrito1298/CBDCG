@@ -1,0 +1,115 @@
+@startuml DominioGame
+hide empty members
+skinparam classAttributeIconSize 0
+
+
+class Game {
+  +id: UInt
+  +players: List<Player>
+  +spectators: List<Spectator>
+  +board: Board
+  +tileDeck: Deck<Tile>
+  +itemDeck: Deck<Item>
+  +turn: Turn
+  +winner: Player?
+  --
+  +nextPhase(): Game
+  +nextTurn(): Game
+  +getTurnOrder(): List<UInt>
+  +checkWinner(): Game
+  +startTurnDraw(): Game
+  +leaveGame(player: Player): Game
+  +placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: UInt): Game
+  +unequip(player: Player, character: Character, idx: Int): Game
+  +moveCharacter(from: BoardTile, to: BoardTile): Game
+  +drawItem(player: Player, boardTile: BoardTile): Game
+  +updateStatModifiers(player: Player, boardTile: BoardTile): Game
+}
+
+class Player {
+  +user: User
+  +hand: PlayerHand
+  +currentCharacter: String?
+  --
+  +applyToGame(game: Game): Game
+  +addToHand(card: Card): Player
+  +removeFromHand(idx: UInt): Player
+}
+
+class PlayerHand <<typealias>> {
+  Map<UInt, Card>
+}
+
+interface Card <<sealed>> {
+  +type: CardType
+}
+
+class TileCard {
+  +tile: Tile
+}
+
+class CharacterCard {
+  +character: Character
+}
+
+class ItemCard {
+  +item: Item
+}
+
+enum CardType {
+  TILE
+  CHARACTER
+  ITEM
+}
+
+class Board {
+}
+
+class Turn {
+  +gameTurn: UInt
+  +playerTurn: List<UInt>
+  +phase: TurnPhase
+  --
+  +toString(): String
+}
+
+enum TurnPhase {
+  CONSTRUCTION
+  SUBSTITUTION
+  MOVEMENT
+}
+
+class User {
+  +id: UInt
+}
+
+class Deck<T> <<typealias>> {
+  Map<T, UInt>
+}
+
+class Spectator { }
+
+
+Game *-- "2..*" Player : players
+Game *-- "0..*" Spectator : spectators
+Game *-- Board : board
+Game *-- "1" Deck : tileDeck
+Game *-- "1" Deck : itemDeck
+Game *-- Turn : turn
+Game o-- "0..1" Player : winner
+
+Player o-- User : user
+Player *-- PlayerHand : hand
+PlayerHand *-- "0..*" Card
+
+Card <|-- TileCard
+Card <|-- CharacterCard
+Card <|-- ItemCard
+Card *-- CardType : type
+
+Turn *-- TurnPhase : phase
+
+Deck *-- "0..*" Item : copies
+Deck *-- "0..*" Tile : copies
+
+@enduml

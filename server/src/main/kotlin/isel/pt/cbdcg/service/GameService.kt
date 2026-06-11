@@ -9,24 +9,23 @@ import isel.pt.cbdcg.domain.game.ItemCard
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TileCard
-import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.updateStatModifiers
 import isel.pt.cbdcg.domain.game.applyRandomSpecialEffects
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.Direction
-import isel.pt.cbdcg.domain.game.board.Entity
-import isel.pt.cbdcg.domain.game.board.Tile
-import isel.pt.cbdcg.domain.game.board.gameUpdateByName
-// import isel.pt.cbdcg.domain.game.board.applyBoardTileUpdater
-import isel.pt.cbdcg.domain.game.board.rotate
+import isel.pt.cbdcg.domain.game.Entity
+import isel.pt.cbdcg.domain.game.battle
+import isel.pt.cbdcg.domain.game.board.tile.Tile
+import isel.pt.cbdcg.domain.game.gameUpdateByName
+import isel.pt.cbdcg.domain.game.board.tile.rotate
 import isel.pt.cbdcg.domain.game.character.Character
+import isel.pt.cbdcg.domain.game.character.Grade
 import isel.pt.cbdcg.domain.game.character.ItemCatalog
 import isel.pt.cbdcg.domain.game.character.PlayableCharacterCatalog
 import isel.pt.cbdcg.domain.game.draw
 import isel.pt.cbdcg.domain.game.drawItem
 import isel.pt.cbdcg.domain.game.leaveGame
-import isel.pt.cbdcg.domain.game.moveCharacter
 import isel.pt.cbdcg.domain.game.nextPhase
 import isel.pt.cbdcg.domain.game.placeOnBoard
 import isel.pt.cbdcg.domain.game.resolveTurnZero
@@ -71,11 +70,7 @@ class GameService(
 
         val characters = PlayableCharacterCatalog.playableCharacters.shuffled()
         val allItems = ItemCatalog.items.associateWith { 1u }
-
-        // Para testar o "fim de jogo" e tudo mais, estamos a permitir que os KEY items possam ser obtidos no início.
-
-        // val itemDeck = allItems.filter{ it.key.grade != Grade.KEY }.toMutableMap()
-        val itemDeck = allItems.toMutableMap()
+        val itemDeck = allItems.filter{ it.key.grade != Grade.KEY }.toMutableMap()
 
         val players = table.participants.filter{ it.role == Role.READY }
             .mapIndexed{ playerIdx, player ->
@@ -212,25 +207,6 @@ class GameService(
         newGame
 
     }
-
-    suspend fun moveCharacter(userId: UInt, gameId: UInt, token: String, from: BoardTile, to: BoardTile): Result<Game> = runCatching{
-
-        val user = userRepo.findById(userId)
-            ?: throw UserError.IdNotFound()
-        token.verifyToken(user, gameId, this.userRepo)
-
-        val game = gameRepo.findById(gameId)
-            ?: throw GameError.GameNotFound(gameId.toInt())
-
-        if(game.turn.phase != TurnPhase.MOVEMENT)
-            throw GameError.CharacterMovementRestriction()
-
-        val newGame = game.moveCharacter(from, to)
-
-        gameRepo.save(newGame)
-        events.publishGameUpdated(newGame)
-        newGame
-    }
     suspend fun unequip(userId: UInt, gameId: UInt, token: String, character: Character, index: Int): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)
@@ -292,7 +268,21 @@ class GameService(
         events.publishGameUpdated(newGame)
         newGame
     }
+    suspend fun battle(userId: UInt, gameId: UInt, token: String, attacker: Character, defender: Character): Result<Game> = runCatching {
 
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
+        token.verifyToken(user, gameId, this.userRepo)
+
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
+
+        val newGame = game.battle(attacker, defender)
+
+        gameRepo.save(newGame)
+        events.publishGameUpdated(newGame)
+        newGame
+    }
     suspend fun updateStatModifiers(userId: UInt, gameId: UInt, token: String, origin: BoardTile): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)

@@ -4,23 +4,22 @@ import isel.pt.cbdcg.MAX_TILES_IN_HAND
 import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
-import isel.pt.cbdcg.domain.game.board.Entity
-import isel.pt.cbdcg.domain.game.board.Tile
-import isel.pt.cbdcg.domain.game.board.TileEffectTypes
+import isel.pt.cbdcg.domain.game.board.tile.Tile
+import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
 import isel.pt.cbdcg.domain.game.board.equipItem
-import isel.pt.cbdcg.domain.game.board.getStatModifier
+import isel.pt.cbdcg.domain.game.board.tile.getStatModifier
+import isel.pt.cbdcg.domain.game.board.connectionDistancesFrom
 import isel.pt.cbdcg.domain.game.board.placeCharacter
 import isel.pt.cbdcg.domain.game.board.placeTile
 import isel.pt.cbdcg.domain.game.board.reduceCooldown
 import isel.pt.cbdcg.domain.game.board.toBoardTile
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
-import isel.pt.cbdcg.domain.game.board.toTile
-import isel.pt.cbdcg.domain.game.board.toTileDTO
+import isel.pt.cbdcg.domain.game.board.tile.toTile
+import isel.pt.cbdcg.domain.game.board.tile.toTileDTO
 import isel.pt.cbdcg.domain.game.board.unequip
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.Item
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
-import isel.pt.cbdcg.domain.game.character.StatModifier
 import isel.pt.cbdcg.domain.game.character.adjustStats
 import isel.pt.cbdcg.domain.game.character.resolveStatModifiers
 import isel.pt.cbdcg.domain.game.character.toItem
@@ -43,6 +42,7 @@ data class Game(
     val tileDeck: Deck<Tile>,
     val itemDeck: Deck<Item>,
     val turn: Turn,
+    val battle : Battle? = null,
     val winner: Player? = null
 ): Entity {
     override fun applyToGame(game: Game): Game {
@@ -66,6 +66,7 @@ fun Game.toGameDTO(): GameDTO {
         tileDeck = tileDeck,
         itemDeck = itemDeck,
         turn = turn.toTurnDTO(),
+        battle = battle?.toBattleDTO(),
         winner = winner?.toPlayerDTO()
     )
 }
@@ -85,6 +86,7 @@ fun GameDTO.toGame(): Game {
         tileDeck = tileDeck,
         itemDeck = itemDeck,
         turn = turn.toTurn(),
+        battle = battle?.toBattle(),
         winner = winner?.toPlayer()
     )
 
@@ -325,23 +327,6 @@ fun Game.unequip(player: Player, character: Character, idx: Int): Game {
 
     return copy(board = updatedBoard, players = updatedPlayers)
 }
-
-
-fun Game.moveCharacter(from: BoardTile, to: BoardTile) : Game {
-
-    if(this.turn.phase != TurnPhase.MOVEMENT) throw GameError.CharacterMovementRestriction()
-    if(to.character != null) throw BoardError.TileOccupied()
-
-    val newBoard = board.tiles.map{ boardTile ->
-        when (boardTile.pos) {
-            from.pos -> boardTile.copy(character = null)
-            to.pos -> boardTile.copy(character = from.character)
-            else -> boardTile
-        }
-    }
-
-    return copy(board = board.copy(tiles = newBoard)).checkWinner()
-}
 fun Game.drawItem(player: Player, boardTile: BoardTile): Game {
 
     if(player.user.id != turn.playerTurn.first())
@@ -381,9 +366,7 @@ fun Game.drawItem(player: Player, boardTile: BoardTile): Game {
     )
 }
 
-fun Game.updateStatModifiers(player: Player, boardTile: BoardTile): Game{
-
-    // Falta refinar a lógica desta função, alguns efeitos afetam todos os personagens num raio à volta da origem...
+fun Game.updateStatModifiers(player: Player, boardTile: BoardTile): Game {
 
     if(player.user.id != turn.playerTurn.first())
         throw GameError.NotYourTurn()
@@ -397,18 +380,46 @@ fun Game.updateStatModifiers(player: Player, boardTile: BoardTile): Game{
     if(character.name != player.currentCharacter)
         throw BoardError.ApplyEffectOnYourCharacter()
 
-    val statModifier = boardTile.tile.specialEffect.getStatModifier()
+    val specialEffect = boardTile.tile.specialEffect
+    val statModifier = specialEffect.getStatModifier()
+    val range = specialEffect.range.toInt()
 
-    val newBoard = board.tiles.map{
-        if(it == boardTile)
-            boardTile.copy(
-                cooldown = boardTile.tile.specialEffect.maxCooldown,
-                character = character.copy(activeStatModifiers = character.activeStatModifiers + statModifier)
-            )
-        else it
+    val distances = board.connectionDistancesFrom(boardTile)
+    val affectedTiles = distances.filter { it.value <= range }.keys
+
+    val newBoard = board.tiles.map{ tile ->
+
+        val isOrigin = tile.pos == boardTile.pos
+        val affectedTile = affectedTiles.find { it.pos == tile.pos }
+
+        val newCooldown = if(isOrigin) specialEffect.maxCooldown else tile.cooldown
+
+        val updatedCharacter = if(affectedTile != null && tile.character is PlayableCharacter) {
+            val char = tile.character
+            char.copy(activeStatModifiers = char.activeStatModifiers + statModifier)
+        } else tile.character
+
+        tile.copy(
+            cooldown = newCooldown,
+            character = updatedCharacter
+        )
     }
 
     return copy(
         board = board.copy(tiles = newBoard)
+    )
+}
+
+fun Game.battle(attacker: Character, defender: Character): Game {
+
+    if(battle != null) throw GameError.BattleNotConcluded()
+    val attackerGoesFirst = attacker.adjustStats().spe + 1 >= defender.adjustStats().spe
+
+    return copy(battle =
+        Battle(
+            listOf(attacker, defender),
+            1u,
+            if(attackerGoesFirst) attacker else defender
+        )
     )
 }

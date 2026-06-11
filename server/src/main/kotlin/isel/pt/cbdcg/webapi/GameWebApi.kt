@@ -11,6 +11,7 @@ import isel.pt.cbdcg.domain.game.board.toPosition
 import isel.pt.cbdcg.domain.game.character.toCharacter
 import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.domain.game.toGameDTO
+import isel.pt.cbdcg.dto.StartBattleDTO
 import isel.pt.cbdcg.dto.UpdateModifiersDTO
 import isel.pt.cbdcg.dto.BoardTileEffectDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
@@ -143,8 +144,6 @@ fun Route.gameWebApi(gameService: GameService) {
             call.respond(HttpStatusCode.OK, result.toGameDTO())
         }
 
-        // Needs to be adapted
-
         post("/draw-item"){
 
             val input = call.receive<DrawItemDTO>()
@@ -172,6 +171,21 @@ fun Route.gameWebApi(gameService: GameService) {
 
             call.respond(HttpStatusCode.OK, result.toGameDTO())
 
+        }
+
+        post("/battle"){
+
+            val input = call.receive<StartBattleDTO>()
+
+            val result = gameService.battle(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token,
+                attacker = input.attacker.toCharacter(),
+                defender = input.defender.toCharacter(),
+            ).getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.toGameDTO())
         }
     }
 }

@@ -20,16 +20,23 @@ import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.connectionDistancesFrom
+import isel.pt.cbdcg.domain.game.character.Character
+import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.viewmodel.GameUI
 import isel.pt.cbdcg.viewmodel.GameUIState
-import isel.pt.cbdcg.views.game.utils.GameOverDialog
+import isel.pt.cbdcg.views.game.utils.dialog.GameOverDialog
 import isel.pt.cbdcg.views.game.utils.board.Board
 import isel.pt.cbdcg.views.game.utils.InGameHeader
 import isel.pt.cbdcg.views.game.utils.players.PlayerHand
 import isel.pt.cbdcg.views.game.utils.board.ZoomButtons
-import isel.pt.cbdcg.views.game.utils.cardInfo.CardStatsDialog
-import isel.pt.cbdcg.views.game.utils.cardInfo.TileEffectDialog
+import isel.pt.cbdcg.views.game.utils.dialog.CardStatsDialog
+import isel.pt.cbdcg.views.game.utils.dialog.TileEffectDialog
 import isel.pt.cbdcg.domain.game.character.adjustStats
+import isel.pt.cbdcg.views.game.utils.dialog.BattleAction
+import isel.pt.cbdcg.views.game.utils.dialog.BattleDialog
+import isel.pt.cbdcg.views.game.utils.dialog.CharacterCollisionDialog
+import isel.pt.cbdcg.views.game.utils.dialog.CollisionOption
 
 @Composable
 fun GameScreen(
@@ -40,14 +47,19 @@ fun GameScreen(
     placeSignal: () -> Unit,
     placeOnBoard: (BoardPosition) -> Unit,
     unequip: (Int) -> Unit,
-    toggleCardStats: (Card?) -> Unit,
+    toggleCardStats: (Card?, BoardTile?) -> Unit,
     onEffectInfoClick: () -> Unit,
     moveSignal: (BoardTile) -> Unit,
     moveCharacter: (BoardTile) -> Unit,
+    battleSignal: (Character, Character) -> Unit,
+    challenge: () -> Unit,
+    sneak: () -> Unit,
     rotateTile: (Boolean) -> Unit,
     zoom: (Boolean) -> Unit,
     nextPhase: () -> Unit,
+    closeDialog: () -> Unit,
     leaveGame: () -> Unit,
+    battleAction: (BattleAction) -> Unit
 ) {
 
     val currentPlayer = game.players.find {
@@ -123,8 +135,9 @@ fun GameScreen(
                         gameBoard = game.board.tiles,
                         tileSize = 128.dp * gameUI.boardZoom,
                         placeCard = { pos -> placeOnBoard(pos) },
-                        inspect = { card -> toggleCardStats(card) },
+                        inspect = { card, boardTile -> toggleCardStats(card, boardTile) },
                         moveSignal = { boardTile -> moveSignal(boardTile) },
+                        battleSignal = { current, target -> battleSignal(current, target) },
                         moveCharacter = { pos -> moveCharacter(pos) }
                     )
                     ZoomButtons(
@@ -144,7 +157,7 @@ fun GameScreen(
                         selectCard = { idx, card -> selectCard(idx, card) },
                         selected = (gameUI.state as? GameUIState.SelectCard)?.idx,
                         placeCard = placeSignal,
-                        inspectCard = { card -> toggleCardStats(card) },
+                        inspectCard = { card -> toggleCardStats(card, null) },
                         rotateLeft = { rotateTile(false) },
                         rotateRight = { rotateTile(true) },
                     )
@@ -153,26 +166,58 @@ fun GameScreen(
         }
     }
 
-    if(gameUI.state is GameUIState.InspectCard){
-        CardStatsDialog(
-            card = gameUI.state.card,
-            unequip = { idx -> unequip(idx) },
-            onDismiss = { toggleCardStats(null) }
-        )
-    }
+    when(gameUI.state){
+        is GameUIState.InspectCard ->
+            CardStatsDialog(
+                card = gameUI.state.card,
+                unequip = { idx -> unequip(idx) },
+                onDismiss = { toggleCardStats(null, null) }
+            )
+        is GameUIState.InspectTileEffect -> {
 
-    if(gameUI.state is GameUIState.InspectTileEffect){
-        TileEffectDialog(
-            effect = gameUI.state.tile.specialEffect,
-            activate = gameUI.state.activateInTile != null,
-            onConfirm = onEffectInfoClick,
-        )
-    }
+            val affectedCharacters =
+                gameUI.state.boardTile?.let { origin ->
+                    val range = gameUI.state.tile.specialEffect.range.toInt()
+                    val distances = game.board.connectionDistancesFrom(origin)
 
-    if(gameUI.state is GameUIState.GameOver){
-        GameOverDialog(
-            winner = gameUI.state.winner,
-            onDismiss = leaveGame
-        )
+                    distances.filter { it.value <= range }.keys
+                        .mapNotNull { it.character }
+                        .filterIsInstance<PlayableCharacter>()
+                } ?: emptyList()
+
+            TileEffectDialog(
+                effect = gameUI.state.tile.specialEffect,
+                activate = gameUI.state.activateInTile,
+                onConfirm = onEffectInfoClick,
+                affectedCharacters = affectedCharacters
+            )
+        }
+        is GameUIState.GameOver ->
+            GameOverDialog(
+                winner = gameUI.state.winner,
+                onDismiss = leaveGame
+            )
+        is GameUIState.CharacterCollision ->
+            CharacterCollisionDialog(
+                movingCharacter = gameUI.state.movingCharacter,
+                staticCharacter = gameUI.state.staticCharacter,
+                onClick = { option ->
+                    when(option) {
+                        CollisionOption.COMBAT -> { challenge()}
+                        CollisionOption.SNEAK -> { sneak() }
+                        CollisionOption.CANCEL -> { closeDialog() }
+                    }
+                },
+                onDismiss = closeDialog
+            )
+        is GameUIState.InBattle -> {
+            BattleDialog(
+                battle = gameUI.state.battle,
+                playerCharacterName = player.currentCharacter,
+                onClick = { action -> battleAction(action) },
+                onDismiss = closeDialog
+            )
+        }
+        else -> {  }
     }
 }

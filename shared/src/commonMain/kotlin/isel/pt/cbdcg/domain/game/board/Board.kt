@@ -1,7 +1,14 @@
 package isel.pt.cbdcg.domain.game.board
 
+import isel.pt.cbdcg.domain.game.Entity
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
+import isel.pt.cbdcg.domain.game.board.tile.Tile
+import isel.pt.cbdcg.domain.game.board.tile.TileEffect
+import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
+import isel.pt.cbdcg.domain.game.board.tile.canConnectTo
+import isel.pt.cbdcg.domain.game.board.tile.getAdjacent
+import isel.pt.cbdcg.domain.game.board.tile.getBlocked
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.Item
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
@@ -74,7 +81,7 @@ fun Board.findPath(from: BoardTile, to: BoardTile, maxDistance: Int): List<Board
 
         val collision = current.character != null
 
-        if (current != from && !collision && !ignoreTileEffect) continue
+        if (current != from && (collision || !ignoreTileEffect)) continue
         // -----------------------------------
 
         for (next in connectedNeighbours(current)) {
