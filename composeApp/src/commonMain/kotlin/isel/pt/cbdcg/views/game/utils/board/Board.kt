@@ -28,7 +28,7 @@ enum class BoardTilePossibleActions{
     InspectCharacter,
     PlaceCard,
     MoveCharacter,
-    Challange,
+    Challenge,
     ApplyMovement
 }
 
@@ -39,6 +39,7 @@ data class BoardTileDDM(
     val equipItem: Boolean,
     val moveCharacter: Boolean,
     val battleCharacter: Boolean,
+    val sneakThrough: Boolean,
     val applyMovement: Boolean
 )
 
@@ -97,7 +98,8 @@ fun Board(
                             inspectCharacter = gameState is GameUIState.Idle &&
                                     character != null,
                             placeCharacter = gameState is GameUIState.PlacingCard &&
-                                    gameState.card is CharacterCard,
+                                    gameState.card is CharacterCard &&
+                                    (character == null || character.name == player?.currentCharacter),
                             equipItem = gameState is GameUIState.PlacingCard &&
                                     gameState.card is ItemCard,
                             moveCharacter = gameState is GameUIState.Idle &&
@@ -107,6 +109,8 @@ fun Board(
                                     character != null &&
                                     character.name != player?.currentCharacter &&
                                     playerCharacter != null,
+                            sneakThrough = gameState is GameUIState.SneakDestination &&
+                                    gameState.targets.find { it.pos == currentBoardTile.pos } != null,
                             applyMovement = gameState is GameUIState.MovingCharacter
                         )
 
@@ -127,7 +131,7 @@ fun Board(
                                     BoardTilePossibleActions.InspectCharacter -> inspect(character.toCard(), currentBoardTile)
                                     BoardTilePossibleActions.PlaceCard -> placeCard(position)
                                     BoardTilePossibleActions.MoveCharacter -> moveSignal(currentBoardTile)
-                                    BoardTilePossibleActions.Challange -> battleSignal(requireNotNull(playerCharacter), requireNotNull(character))
+                                    BoardTilePossibleActions.Challenge -> battleSignal(requireNotNull(playerCharacter), requireNotNull(character))
                                     BoardTilePossibleActions.ApplyMovement -> moveCharacter(currentBoardTile)
                                 }
                             }

@@ -36,6 +36,7 @@ import isel.pt.cbdcg.domain.game.character.adjustStats
 import isel.pt.cbdcg.views.game.utils.dialog.BattleAction
 import isel.pt.cbdcg.views.game.utils.dialog.BattleDialog
 import isel.pt.cbdcg.views.game.utils.dialog.CharacterCollisionDialog
+import isel.pt.cbdcg.views.game.utils.dialog.ChooseTargetDialog
 import isel.pt.cbdcg.views.game.utils.dialog.CollisionOption
 
 @Composable
@@ -57,9 +58,10 @@ fun GameScreen(
     rotateTile: (Boolean) -> Unit,
     zoom: (Boolean) -> Unit,
     nextPhase: () -> Unit,
-    closeDialog: () -> Unit,
+    closeDialog: (Boolean) -> Unit,
+    attackTarget: (Character?) -> Unit,
+    battleAction: (BattleAction) -> Unit,
     leaveGame: () -> Unit,
-    battleAction: (BattleAction) -> Unit
 ) {
 
     val currentPlayer = game.players.find {
@@ -199,25 +201,43 @@ fun GameScreen(
             )
         is GameUIState.CharacterCollision ->
             CharacterCollisionDialog(
-                movingCharacter = gameUI.state.movingCharacter,
-                staticCharacter = gameUI.state.staticCharacter,
+                movingCharacter = gameUI.state.playerCharacter,
+                staticCharacter = gameUI.state.enemyCharacter,
+                canSneak = gameUI.state.playerCharacter.adjustStats().spe - gameUI.movementUsed >= 2,
                 onClick = { option ->
                     when(option) {
                         CollisionOption.COMBAT -> { challenge()}
                         CollisionOption.SNEAK -> { sneak() }
-                        CollisionOption.CANCEL -> { closeDialog() }
+                        CollisionOption.CANCEL -> { closeDialog(false) }
                     }
                 },
-                onDismiss = closeDialog
+                onDismiss = { closeDialog(false) }
             )
         is GameUIState.InBattle -> {
             BattleDialog(
                 battle = gameUI.state.battle,
                 playerCharacterName = player.currentCharacter,
-                onClick = { action -> battleAction(action) },
-                onDismiss = closeDialog
+                attackTarget = { attackTarget(null) },
+                onClick = { action ->
+                    when(action) {
+                        BattleAction.HOLD -> battleAction(BattleAction.HOLD)
+                        BattleAction.FLEE -> battleAction(BattleAction.FLEE)
+                        BattleAction.ATTACK -> return@BattleDialog
+                    }
+                },
+                onDismiss = {  }
             )
         }
+        is GameUIState.Attacking -> {
+            ChooseTargetDialog(
+                characters = gameUI.state.battle.characters,
+                playerCharacter = gameUI.state.battle.currentTurn,
+                target = { target -> attackTarget(target) },
+                attack = { battleAction(BattleAction.ATTACK) },
+                onDismiss = { closeDialog(true) }
+            )
+        }
+
         else -> {  }
     }
 }

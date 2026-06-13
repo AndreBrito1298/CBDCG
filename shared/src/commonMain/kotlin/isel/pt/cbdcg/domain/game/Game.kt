@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.domain.game
 
+import isel.pt.cbdcg.ATTACKER_INITIATIVE_BONUS
 import isel.pt.cbdcg.MAX_TILES_IN_HAND
 import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.board.BoardPosition
@@ -129,7 +130,10 @@ fun Game.nextPhase(): Game {
     }
 }
 fun Game.nextTurn(): Game {
-    
+
+    val winner = checkWinner()
+    if(winner != null) return this.copy(winner = winner)
+
     val remainingPlayers = turn.playerTurn.drop(1)
 
     val nextGameTurn = if (remainingPlayers.isEmpty()) turn.gameTurn + 1u else turn.gameTurn
@@ -142,7 +146,6 @@ fun Game.nextTurn(): Game {
     )
     return nextTurn.startTurnDraw()
 }
-
 private fun Game.getTurnOrder(): List<UInt>{
     
     val playerToCharacter = players.map{ player ->
@@ -159,9 +162,9 @@ private fun Game.getTurnOrder(): List<UInt>{
         players.map { it.user.id }
     }
 }
-fun Game.checkWinner(): Game {
+private fun Game.checkWinner(): Player? =
+    players.firstOrNull { player ->
 
-    val winningPlayer = players.firstOrNull { player ->
         val onStartTile = board.tiles.any {
             it.tile.specialEffect.type == TileEffectTypes.Start &&
             it.character != null && it.character.name == player.currentCharacter
@@ -170,9 +173,6 @@ fun Game.checkWinner(): Game {
         onStartTile && player.hand.containsAllKeys()
     }
 
-    return if (winningPlayer != null) copy(winner = winningPlayer)
-    else this
-}
 fun Game.startTurnDraw(): Game {
 
     if (turn.gameTurn == 0u || tileDeck.values.all { it == 0u }) return this
@@ -365,7 +365,6 @@ fun Game.drawItem(player: Player, boardTile: BoardTile): Game {
         itemDeck = updatedItemDeck,
     )
 }
-
 fun Game.updateStatModifiers(player: Player, boardTile: BoardTile): Game {
 
     if(player.user.id != turn.playerTurn.first())
@@ -395,8 +394,7 @@ fun Game.updateStatModifiers(player: Player, boardTile: BoardTile): Game {
         val newCooldown = if(isOrigin) specialEffect.maxCooldown else tile.cooldown
 
         val updatedCharacter = if(affectedTile != null && tile.character is PlayableCharacter) {
-            val char = tile.character
-            char.copy(activeStatModifiers = char.activeStatModifiers + statModifier)
+            tile.character.copy(activeStatModifiers = tile.character.activeStatModifiers + statModifier)
         } else tile.character
 
         tile.copy(
@@ -409,11 +407,10 @@ fun Game.updateStatModifiers(player: Player, boardTile: BoardTile): Game {
         board = board.copy(tiles = newBoard)
     )
 }
-
 fun Game.battle(attacker: Character, defender: Character): Game {
 
     if(battle != null) throw GameError.BattleNotConcluded()
-    val attackerGoesFirst = attacker.adjustStats().spe + 1 >= defender.adjustStats().spe
+    val attackerGoesFirst = attacker.adjustStats().spe + ATTACKER_INITIATIVE_BONUS >= defender.adjustStats().spe
 
     return copy(battle =
         Battle(
@@ -422,4 +419,14 @@ fun Game.battle(attacker: Character, defender: Character): Game {
             if(attackerGoesFirst) attacker else defender
         )
     )
+}
+fun Game.attack(player: Player, target: Character): Game {
+
+    if(battle == null)
+        throw GameError.NoBattleOngoing()
+
+    if(battle.currentTurn.name != player.currentCharacter)
+        throw GameError.NotYourTurn()
+
+    return copy(battle = battle.attack(target))
 }

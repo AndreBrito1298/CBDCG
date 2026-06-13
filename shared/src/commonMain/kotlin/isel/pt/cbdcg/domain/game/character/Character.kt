@@ -45,5 +45,5 @@ fun Character.adjustStats(): Stats {
             current + mod.stats
         }
 
-    return baseStats + deltaItems + deltaModifiers
+    return (baseStats + deltaItems + deltaModifiers).bounded()
 }

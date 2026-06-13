@@ -47,12 +47,22 @@ sealed interface GameUIState {
     ) : GameUIState
 
     data class CharacterCollision(
-        val movingCharacter: Character,
-        val staticCharacter: Character
+        val playerCharacter: Character,
+        val enemyCharacter: Character
+    ) : GameUIState
+
+    data class SneakDestination(
+        val origin: BoardTile,
+        val targets: List<BoardTile>
     ) : GameUIState
 
     data class InBattle(
-        val battle: Battle
+        val battle: Battle,
+    ) : GameUIState
+
+    data class Attacking(
+        val battle: Battle,
+        val target: Character
     ) : GameUIState
 
     data class GameOver(

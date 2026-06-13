@@ -40,7 +40,8 @@ fun BoardTile(
     val characterName = boardTile.character?.name
 
     val isClickable = actions.placeCharacter || actions.equipItem || actions.applyMovement ||
-            actions.moveCharacter || actions.inspectTileEffect || actions.inspectCharacter
+            actions.moveCharacter || actions.inspectTileEffect || actions.inspectCharacter ||
+            actions.sneakThrough
 
     Box(
         modifier = Modifier
@@ -48,7 +49,7 @@ fun BoardTile(
             .clickable(enabled = isClickable) {
                 when {
                     actions.placeCharacter || actions.equipItem -> onClick(BoardTilePossibleActions.PlaceCard)
-                    actions.applyMovement -> onClick(BoardTilePossibleActions.ApplyMovement)
+                    actions.applyMovement || actions.sneakThrough -> onClick(BoardTilePossibleActions.ApplyMovement)
                     else -> expanded = true
                 }
             },
@@ -85,18 +86,18 @@ fun BoardTile(
             )
         }
 
-        // Draw the gray dots
-        if (actions.placeCharacter) {
+        // Draw the yellow dots
+        if (actions.placeCharacter || actions.sneakThrough) {
             Box(
                 modifier = Modifier
                     .size(tileSize / 3)
                     .background(
-                        color = Color.White.copy(alpha = 0.45f),
+                        color = Color.Yellow.copy(alpha = 0.45f),
                         shape = CircleShape
                     )
                     .border(
                         width = 2.dp,
-                        color = Color.Black.copy(alpha = 0.65f),
+                        color = Color.Yellow.copy(alpha = 0.65f),
                         shape = CircleShape
                     )
             )
@@ -129,7 +130,7 @@ fun BoardTile(
                     text = { Text("Challange") },
                     onClick = {
                         expanded = false
-                        onClick(BoardTilePossibleActions.Challange)
+                        onClick(BoardTilePossibleActions.Challenge)
                     }
                 )
             }

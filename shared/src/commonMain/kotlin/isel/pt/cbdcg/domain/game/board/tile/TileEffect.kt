@@ -1,5 +1,9 @@
 package isel.pt.cbdcg.domain.game.board.tile
 
+import isel.pt.cbdcg.AOE_EFFECT_MOD
+import isel.pt.cbdcg.EFFECT_DURATION
+import isel.pt.cbdcg.SINGLE_TARGET_EFFECT_MOD
+import isel.pt.cbdcg.domain.game.character.ModifierType
 import isel.pt.cbdcg.domain.game.character.StatModifier
 import isel.pt.cbdcg.domain.game.character.Stats
 import isel.pt.cbdcg.dto.TileEffectDTO
@@ -65,10 +69,10 @@ fun TileEffect.getStatModifier(): StatModifier {
     }
 
     val statChange = when(this.type){
-        is TileEffectTypes.StatDown -> -1
-        is TileEffectTypes.StatDownAoE -> -2
-        is TileEffectTypes.StatUp -> +1
-        is TileEffectTypes.StatUpAoE -> +2
+        is TileEffectTypes.StatDown -> -SINGLE_TARGET_EFFECT_MOD
+        is TileEffectTypes.StatDownAoE -> -AOE_EFFECT_MOD
+        is TileEffectTypes.StatUp -> +SINGLE_TARGET_EFFECT_MOD
+        is TileEffectTypes.StatUpAoE -> +AOE_EFFECT_MOD
     }
 
     return StatModifier(
@@ -78,7 +82,8 @@ fun TileEffect.getStatModifier(): StatModifier {
             def = if (statType == StatType.Def) statChange else 0,
             spe = if (statType == StatType.Spe) statChange else 0
         ),
-        duration = 2u
+        duration = EFFECT_DURATION,
+        type = ModifierType.TILE_EFFECT
     )
 }
 
@@ -140,11 +145,11 @@ object AllTileEffects{
             type = TileEffectTypes.Chest,
             maxCooldown = 2u,
             info = "Draw one ITEM card from the Item Deck.\nCooldown: 2 Dungeon Turns\nRestriction: ---"
-        ) to 6u,
+        ) to 3u,
         TileEffect(
             type = TileEffectTypes.BigChest,
             maxCooldown = 3u,
             info = "Draw two ITEMS cards from the Item Deck.\nCooldown: 3 Dungeon Turns\nRestriction: ---"
-        ) to 3u
+        ) to 1u
     ) + statUp + statDown + statUpAoE + statDownAoE
 }

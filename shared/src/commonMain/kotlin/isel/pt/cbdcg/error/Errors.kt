@@ -1,5 +1,7 @@
 package isel.pt.cbdcg.error
 
+import isel.pt.cbdcg.MIN_PLAYERS_TO_START
+
 /**
  * Base Error class used to restrict every specific Error Type created.
  * @param msg Custom error message passed to the RuntimeException.
@@ -37,7 +39,7 @@ sealed class TableError(
     class UserNotFound(name: String, table: String) : TableError("User '$name' is not found in table '$table'.")
     class TableDoesNotExist(table: String) : TableError("Table '$table' was not found.")
     class OwnerOnly : TableError("This operation can only be performed by the owner of the table.")
-    class MinimumPlayersNeeded: TableError("There must be at least 2 players to start a game.")
+    class MinimumPlayersNeeded: TableError("There must be at least $MIN_PLAYERS_TO_START players to start a game.")
     class EveryPlayerReady: TableError("Every Player must be ready to start a Game.")
 }
 
@@ -80,6 +82,7 @@ sealed class GameError(
     class TilePlacementRestriction : GameError("You can only place a Tile during the Construction Phase.")
     class EquipItemRestriction : GameError("You can only equip/unequip an Item during the Substitution Phase.")
     class BattleNotConcluded : GameError("There can be happening only one battle at a time.")
+    class NoBattleOngoing : GameError("There is no battle ongoing.")
 }
 
 sealed class CharacterError(

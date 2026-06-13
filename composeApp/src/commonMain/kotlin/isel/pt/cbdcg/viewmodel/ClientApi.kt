@@ -28,6 +28,7 @@ import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.toGame
+import isel.pt.cbdcg.dto.BattleAttackDTO
 import isel.pt.cbdcg.dto.StartBattleDTO
 import isel.pt.cbdcg.dto.UpdateModifiersDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
@@ -299,16 +300,15 @@ class ClientApi(private val client: HttpClient) {
                 defender = defender.toCharacterDTO()
             )
         ).map{ it.toGame() }
-    suspend fun sneak(userId: UInt, gameId: UInt, token: String, attacker: Character, defender: Character): Result<Game> =
+    suspend fun attack(userId: UInt, gameId: UInt, token: String, target: Character): Result<Game> =
         fetch<GameDTO>(
-            path = "game/sneak",
+            path = "game/battle/attack",
             method = HttpMethod.Post,
-            body = StartBattleDTO(
+            body = BattleAttackDTO(
                 userId = userId.toInt(),
                 gameId = gameId.toInt(),
                 token = token,
-                attacker = attacker.toCharacterDTO(),
-                defender = defender.toCharacterDTO()
+                target = target.toCharacterDTO(),
             )
         ).map{ it.toGame() }
 

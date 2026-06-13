@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.domain.game
 
+import isel.pt.cbdcg.NUM_KEY_ITEMS
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.game.character.Grade
 import isel.pt.cbdcg.domain.toUserDTO
@@ -15,7 +16,7 @@ fun PlayerHand.numTileCards(): Int =
     this.values.filter{ it.type == CardType.TILE }.size
 
 fun PlayerHand.containsAllKeys(): Boolean =
-    this.values.filter { card -> card is ItemCard && card.item.grade == Grade.KEY }.size == 5
+    this.values.filter { card -> card is ItemCard && card.item.grade == Grade.KEY }.size == NUM_KEY_ITEMS
 
 data class Player(
     val user: User,

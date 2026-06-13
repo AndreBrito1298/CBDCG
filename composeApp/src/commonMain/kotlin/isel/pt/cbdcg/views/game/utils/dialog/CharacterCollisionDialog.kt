@@ -35,6 +35,7 @@ enum class CollisionOption {
 fun CharacterCollisionDialog(
     movingCharacter: Character,
     staticCharacter: Character,
+    canSneak: Boolean,
     onClick: (CollisionOption) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -54,6 +55,7 @@ fun CharacterCollisionDialog(
                     Modifier.fillMaxSize(),
                     movingCharacter,
                     staticCharacter,
+                    canSneak,
                     onClick
                 )
             }
@@ -67,6 +69,7 @@ fun CharacterCollisionInfo(
     modifier: Modifier = Modifier,
     movingCharacter: Character,
     staticCharacter: Character,
+    canSneak: Boolean,
     onClick: (CollisionOption) -> Unit,
 ){
     Box(
@@ -128,7 +131,7 @@ fun CharacterCollisionInfo(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
             ) {
                 Button(onClick = { onClick(CollisionOption.COMBAT) }) { Text("Combat") }
-                Button(onClick = { onClick(CollisionOption.SNEAK) }) { Text("Sneak") }
+                Button(onClick = { onClick(CollisionOption.SNEAK) }, enabled = canSneak) { Text("Sneak") }
                 Button(onClick = { onClick(CollisionOption.CANCEL) }) { Text("Cancel") }
             }
         }

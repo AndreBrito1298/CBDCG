@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.domain.game.character
 
+import isel.pt.cbdcg.ITEM_CAPACITY
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.board.replaceBoardTile
 import isel.pt.cbdcg.dto.CharacterDTO
@@ -11,7 +12,7 @@ data class PlayableCharacter(
     override val activeStatModifiers: List<StatModifier> = listOf(),
     override val grade: Grade,
     val items: List<Item> = listOf(),
-    val maxItems: Int = 1
+    val maxItems: Int = ITEM_CAPACITY
 ) : Character {
 
     override val role: CharacterRole = CharacterRole.PLAYABLE
@@ -55,11 +56,14 @@ fun PlayableCharacter.equipItem(item: Item): PlayableCharacter {
 }
 fun PlayableCharacter.unequip(item: Item): PlayableCharacter = copy(items = items - item)
 fun PlayableCharacter.resolveStatModifiers(): PlayableCharacter =
-    this.copy(activeStatModifiers =
-        this.activeStatModifiers.mapNotNull{ mod ->
-            val newDuration = mod.duration - 1u
-            if(newDuration <= 0u) null
-            else mod.copy(duration = newDuration)
+    copy(activeStatModifiers =
+        activeStatModifiers.mapNotNull{ mod ->
+            if(mod.duration == -1) mod
+            else{
+                val newDuration = mod.duration - 1
+                if(newDuration <= 0) null
+                else mod.copy(duration = newDuration)
+            }
         }
     )
 
@@ -80,14 +84,14 @@ object PlayableCharacterCatalog {
         PlayableCharacter(name = "apprentice", baseStats = Stats(2, 3, 2, 2), grade = Grade.BASIC),
         PlayableCharacter(name = "ninja", baseStats = Stats(2, 4, 1, 2), grade = Grade.BASIC),
         PlayableCharacter(name = "alchemist", baseStats = Stats(3, 3, 1, 2), grade = Grade.BASIC),
-        PlayableCharacter(name = "strange_alien", baseStats = Stats(3, 2, 2, 1), grade = Grade.BASIC),
+        PlayableCharacter(name = "strange_alien", baseStats = Stats(3, 2, 2, 1), grade = Grade.BASIC, maxItems = 2),
         PlayableCharacter(name = "vampire", baseStats = Stats(3, 3, 1, 2), grade = Grade.BASIC),
         PlayableCharacter(name = "guardian", baseStats = Stats(3, 2, 3, 1), grade = Grade.BASIC),
         PlayableCharacter(name = "elf", baseStats = Stats(3, 2, 1, 3), grade = Grade.BASIC),
         PlayableCharacter(name = "beast_warrior", baseStats = Stats(4, 1, 1, 3), grade = Grade.BASIC),
         PlayableCharacter(name = "nun", baseStats = Stats(3, 1, 1, 3), grade = Grade.BASIC),
         PlayableCharacter(name = "druid", baseStats = Stats(2, 3, 2, 1), grade = Grade.BASIC),
-        PlayableCharacter(name = "scrap_robot", baseStats = Stats(1, 2, 3, 3), grade = Grade.BASIC, maxItems = 2),
+        PlayableCharacter(name = "scrap_robot", baseStats = Stats(1, 2, 3, 3), grade = Grade.BASIC),
         PlayableCharacter(name = "juggernaut", baseStats = Stats(3, 3, 1, 2), grade = Grade.BASIC),
         PlayableCharacter(name = "necromancer", baseStats = Stats(3, 2, 1, 3), grade = Grade.BASIC),
         PlayableCharacter(name = "taoist", baseStats = Stats(2, 2, 2, 3), grade = Grade.BASIC),

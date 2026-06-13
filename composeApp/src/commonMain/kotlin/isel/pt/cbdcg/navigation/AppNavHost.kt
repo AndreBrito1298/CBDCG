@@ -10,6 +10,7 @@ import isel.pt.cbdcg.viewmodel.GameUIState
 import isel.pt.cbdcg.viewmodel.SessionState
 import isel.pt.cbdcg.views.game.GameScreen
 import isel.pt.cbdcg.views.game.SpectatorScreen
+import isel.pt.cbdcg.views.game.utils.dialog.BattleAction
 import isel.pt.cbdcg.views.lobby.SearchTablesScreen
 import isel.pt.cbdcg.views.lobby.WaitingTableScreen
 import isel.pt.cbdcg.views.startMenu.CreateUserScreen
@@ -179,14 +180,21 @@ fun AppNavHost(vm: AppViewModel) {
                     },
                     moveSignal = { boardTile -> vm.moveSignal(boardTile) },
                     moveCharacter = { tile -> vm.moveCharacter(tile) },
-                    battleSignal = { current, target -> vm.battleSignal(current, target) },
+                    battleSignal = { current, target -> vm.collisionSignal(current, target) },
                     challenge = vm::challenge,
-                    sneak = vm::sneak,
+                    sneak = vm::sneaking,
                     rotateTile = { flag -> vm.rotateTile(flag) },
                     zoom = { option -> vm.zoom(option) },
                     nextPhase = vm::nextPhase,
-                    closeDialog = vm::idle,
-                    battleAction = { action -> /* aqui vai estar o when() */ },
+                    closeDialog = { inBattle -> if(inBattle) vm.backToBattle() else vm.idle() },
+                    attackTarget = { target -> if(target == null) vm.attackMode() else vm.chooseTarget(target) },
+                    battleAction = { action ->
+                        when(action){
+                            BattleAction.HOLD -> TODO()
+                            BattleAction.FLEE -> TODO()
+                            BattleAction.ATTACK -> vm.attack()
+                        }
+                    },
                     leaveGame = vm::leaveGame,
                 )
             }

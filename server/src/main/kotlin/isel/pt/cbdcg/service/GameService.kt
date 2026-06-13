@@ -1,5 +1,14 @@
 package isel.pt.cbdcg.service
 
+import isel.pt.cbdcg.INITIAL_CHARACTER_CARDS
+import isel.pt.cbdcg.INITIAL_ITEM_CARDS
+import isel.pt.cbdcg.INITIAL_TILE_CARDS
+import isel.pt.cbdcg.MIN_PLAYERS_TO_START
+import isel.pt.cbdcg.NUM_2_WAY_TILES
+import isel.pt.cbdcg.NUM_3_WAY_TILES
+import isel.pt.cbdcg.NUM_4_WAY_TILES
+import isel.pt.cbdcg.NUM_COPIES_CHARACTER
+import isel.pt.cbdcg.NUM_COPIES_ITEM
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.addToGame
 import isel.pt.cbdcg.domain.game.Card
@@ -15,6 +24,7 @@ import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.Direction
 import isel.pt.cbdcg.domain.game.Entity
+import isel.pt.cbdcg.domain.game.attack
 import isel.pt.cbdcg.domain.game.battle
 import isel.pt.cbdcg.domain.game.board.tile.Tile
 import isel.pt.cbdcg.domain.game.gameUpdateByName
@@ -61,36 +71,52 @@ class GameService(
             throw TableError.EveryPlayerReady()
 
 
-        val startingDeck = mutableMapOf(
-            Tile(Direction.entries) to 13u,
-            Tile(listOf(Direction.EAST, Direction.NORTH, Direction.SOUTH)) to 24u,
-            Tile(listOf(Direction.EAST, Direction.NORTH)) to 31u,
-            Tile(listOf(Direction.NORTH, Direction.SOUTH)) to 31u,
+        val availableTiles = mutableMapOf(
+            Tile(Direction.entries) to NUM_4_WAY_TILES,
+            Tile(listOf(Direction.EAST, Direction.NORTH, Direction.SOUTH)) to NUM_3_WAY_TILES,
+            Tile(listOf(Direction.EAST, Direction.NORTH)) to NUM_2_WAY_TILES,
+            Tile(listOf(Direction.NORTH, Direction.SOUTH)) to NUM_2_WAY_TILES,
         ).applyRandomSpecialEffects().toMutableMap()
 
-        val characters = PlayableCharacterCatalog.playableCharacters.shuffled()
-        val allItems = ItemCatalog.items.associateWith { 1u }
-        val itemDeck = allItems.filter{ it.key.grade != Grade.KEY }.toMutableMap()
+        val availableCharacters = PlayableCharacterCatalog.playableCharacters
+            .shuffled()
+            .associateWith { NUM_COPIES_CHARACTER }
+            .toMutableMap()
+
+        val availableItems = ItemCatalog.items
+            .filter{ it.grade != Grade.KEY }
+            .associateWith { NUM_COPIES_ITEM }
+            .toMutableMap()
 
         val players = table.participants.filter{ it.role == Role.READY }
-            .mapIndexed{ playerIdx, player ->
+            .map{ player ->
 
                 val hand = mutableMapOf<UInt, Card>()
 
-                repeat(3){ idx ->
-
-                    val drawnTile = startingDeck.draw()
-                    val drawItem = itemDeck.draw()
-
+                repeat(INITIAL_TILE_CARDS){ idx ->
+                    val drawnTile = availableTiles.draw()
                     hand[idx.toUInt()] = TileCard(drawnTile)
-                    hand[5u + idx.toUInt()] = ItemCard(drawItem)
-
-                    startingDeck[drawnTile] = startingDeck[drawnTile]!! - 1u
-                    itemDeck[drawItem] = 0u
+                    val remaining = availableTiles[drawnTile] ?: 0u
+                    availableTiles[drawnTile] = (remaining - 1u).coerceAtLeast(0u)
                 }
 
-                hand[3u] = CharacterCard(characters[playerIdx * 2])
-                hand[4u] = CharacterCard(characters[playerIdx * 2 + 1])
+                val lastTileIdx = hand.size.toUInt()
+
+                repeat(INITIAL_ITEM_CARDS){ idx ->
+                    val drawnItem = availableItems.draw()
+                    hand[idx.toUInt() + lastTileIdx] = ItemCard(drawnItem)
+                    val remaining = availableItems[drawnItem] ?: 0u
+                    availableItems[drawnItem] = (remaining - 1u).coerceAtLeast(0u)
+                }
+
+                val lastItemIdx = hand.size.toUInt()
+
+                repeat(INITIAL_CHARACTER_CARDS){ idx ->
+                    val drawnCharacter = availableCharacters.draw()
+                    hand[idx.toUInt() + lastItemIdx] = CharacterCard(drawnCharacter)
+                    val remaining = availableCharacters[drawnCharacter] ?: 0u
+                    availableCharacters[drawnCharacter] = (remaining - 1u).coerceAtLeast(0u)
+                }
 
                 Player(player.user, hand.toList().sortedBy { it.first }.toMap(), null)
             }
@@ -98,12 +124,12 @@ class GameService(
         val spectators = table.participants.filter{ it.role == Role.SPECTATOR }
             .map{ spectator -> Spectator(spectator.user) }
 
-        if(players.size < 2)
+        if(players.size < MIN_PLAYERS_TO_START)
             throw TableError.MinimumPlayersNeeded()
 
         val turnOrder = players.map{ it.user.id }
 
-        val game = gameRepo.createGame(players, spectators, turnOrder, startingDeck, itemDeck)
+        val game = gameRepo.createGame(players, spectators, turnOrder, availableTiles, availableItems)
         user.addToGame(game.id, userRepo)
         players.forEach { player ->
             player.user.addToGame(game.id, userRepo)
@@ -296,6 +322,25 @@ class GameService(
             ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
 
         val newGame = game.updateStatModifiers(player, origin)
+
+        gameRepo.save(newGame)
+        events.publishGameUpdated(newGame)
+        newGame
+    }
+
+    suspend fun attack(userId: UInt, gameId: UInt, token: String, target: Character): Result<Game> = runCatching {
+
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
+        token.verifyToken(user, gameId, this.userRepo)
+
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
+
+        val player = game.players.find{ it.user.id == user.id }
+            ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
+
+        val newGame = game.attack(player, target)
 
         gameRepo.save(newGame)
         events.publishGameUpdated(newGame)

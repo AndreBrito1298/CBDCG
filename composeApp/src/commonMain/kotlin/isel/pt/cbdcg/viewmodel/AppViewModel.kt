@@ -2,6 +2,8 @@ package isel.pt.cbdcg.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import isel.pt.cbdcg.MIN_SNEAK_CHANCE
+import isel.pt.cbdcg.SNEAK_BASE_CHANCE
 import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
@@ -14,6 +16,7 @@ import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.connectedNeighbours
 import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
 import isel.pt.cbdcg.domain.game.board.findPath
 import isel.pt.cbdcg.domain.game.board.tile.rotate
@@ -25,6 +28,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 data class AppUIState(
     val session: SessionState = SessionState.SignedOut,
@@ -770,17 +774,17 @@ class AppViewModel(
         val session = ui.value.session
         val gameUI = ui.value.gameUI
         if(session !is SessionState.InGame) return null
+
+        if(gameUI.state is GameUIState.SneakDestination) return normalMovement(session, gameUI.state.origin, to, 2)
         if(gameUI.state !is GameUIState.MovingCharacter) return null
 
         val makeMovement = gameUI.state.path.lastOrNull() == to
 
-        return if(makeMovement && to.character == null) normalMovement(session, gameUI, to)
+        return if(makeMovement && to.character == null) normalMovement(session, gameUI.state.from, to, gameUI.state.path.size - 1)
         else if(makeMovement && to.character != null) moveToStartBattle(session, gameUI, to)
         else movementPath(session, gameUI, to)
     }
-    private fun normalMovement(session: SessionState.InGame, gameUI: GameUI, to: BoardTile): Job?{
-
-        if (gameUI.state !is GameUIState.MovingCharacter) return null
+    private fun normalMovement(session: SessionState.InGame, from: BoardTile, to: BoardTile, steps: Int): Job?{
 
         val user = session.user
         val game = session.game
@@ -796,20 +800,17 @@ class AppViewModel(
                 user.id,
                 game.id,
                 token,
-                gameUI.state.path.first(),
+                from,
                 to,
             ).fold(
                 onSuccess = { newGame ->
 
                     val boardTile = newGame.board.tiles.firstOrNull { boardTile ->
-                        boardTile.character == gameUI.state.from.character
+                        boardTile.character != null && boardTile.character == from.character
                     }
                     val specialEffect = boardTile?.tile?.specialEffect?.type
-                    val winner = newGame.winner
-
                     val nextState =
-                        if (winner != null) GameUIState.GameOver(winner)
-                        else if (specialEffect != null && boardTile.cooldown == 0u && specialEffect != TileEffectTypes.None && specialEffect != TileEffectTypes.Start)
+                        if (specialEffect != null && boardTile.cooldown == 0u && specialEffect != TileEffectTypes.None && specialEffect != TileEffectTypes.Start)
                             GameUIState.InspectTileEffect(boardTile.tile, boardTile, activateInTile = true)
                         else GameUIState.Idle
 
@@ -820,7 +821,7 @@ class AppViewModel(
                             session = session.copy(game = newGame),
                             gameUI = it.gameUI.copy(
                                 state = nextState,
-                                movementUsed = gameUI.movementUsed + gameUI.state.path.size - 1
+                                movementUsed = it.gameUI.movementUsed + steps
                             )
                         )
                     }
@@ -865,23 +866,13 @@ class AppViewModel(
                 gameUI.state.path.dropLast(1).last(),
             ).fold(
                 onSuccess = { newGame ->
-
-                    val winner = newGame.winner
-
-                    val nextState =
-                        if (winner != null) GameUIState.GameOver(winner)
-                        else GameUIState.CharacterCollision(
-                            movingCharacter = character,
-                            staticCharacter = enemy,
-                        )
-
                     ui.update {
                         it.copy(
                             isLoading = false,
                             errorMessage = null,
                             session = session.copy(game = newGame),
                             gameUI = it.gameUI.copy(
-                                state = nextState,
+                                state = GameUIState.CharacterCollision(character, enemy)      ,
                                 movementUsed = gameUI.movementUsed + gameUI.state.path.size - 2
                             )
                         )
@@ -926,8 +917,7 @@ class AppViewModel(
         }
         
     }
-
-    fun battleSignal(current: Character, target: Character): Job? {
+    fun collisionSignal(current: Character, target: Character): Job? {
 
         val session = ui.value.session
         val gameUI = ui.value.gameUI
@@ -939,15 +929,15 @@ class AppViewModel(
                     errorMessage = null,
                     gameUI = gameUI.copy(
                         state = GameUIState.CharacterCollision(
-                            movingCharacter = current,
-                            staticCharacter = target,
+                            playerCharacter = current,
+                            enemyCharacter = target,
                         )
                     )
                 )
             }
         }
     }
-    fun challenge(): Job? {
+    fun challenge(swap: Boolean = false): Job? {
 
         val session = ui.value.session
         val gameUI = ui.value.gameUI
@@ -960,11 +950,15 @@ class AppViewModel(
             ui.update { it.copy(errorMessage = "No token found.") }
         }
 
+        val (attacker, defender) =
+            if(!swap) gameUI.state.playerCharacter to gameUI.state.enemyCharacter
+            else gameUI.state.enemyCharacter to gameUI.state.playerCharacter
+
         return viewModelScope.launch {
 
             ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            clientApi.challenge(user.id, game.id, token, gameUI.state.movingCharacter, gameUI.state.staticCharacter).fold(
+            clientApi.challenge(user.id, game.id, token, attacker, defender).fold(
                 onSuccess = { newGame ->
 
                     val battle = newGame.battle
@@ -986,44 +980,37 @@ class AppViewModel(
         }
 
     }
-    fun sneak(): Job? {
+    fun sneaking(): Job? {
 
         val session = ui.value.session
         val gameUI = ui.value.gameUI
         if(session !is SessionState.InGame) return null
         if(gameUI.state !is GameUIState.CharacterCollision) return null
 
-        if(gameUI.state.movingCharacter.adjustStats().spe - gameUI.movementUsed < 2) return null.also {
+        if(gameUI.state.playerCharacter.adjustStats().spe - gameUI.movementUsed < 2) return null.also {
             ui.update { it.copy(errorMessage = "You don't have enough movement to sneak past the enemy.") }
         }
 
-        val user = session.user
-        val game = session.game
-        val token = user.auth?.token ?: return null.also {
-            ui.update { it.copy(errorMessage = "No token found.") }
-        }
+        val speDiff = (gameUI.state.playerCharacter.adjustStats().spe - gameUI.state.enemyCharacter.adjustStats().spe)
+            .coerceAtLeast(MIN_SNEAK_CHANCE)
+
+        val sneakChance = SNEAK_BASE_CHANCE + (speDiff / 10)
+        if(Random.nextFloat() > sneakChance) return challenge(true)
+
+        val origin = session.game.board.tiles.firstOrNull { it.character == gameUI.state.playerCharacter }
+            ?: return null.also { ui.update { it.copy(errorMessage = "Your character couldn't be found on the board.") } }
+
+        val enemyTile = session.game.board.tiles.firstOrNull { it.character == gameUI.state.enemyCharacter }
+            ?: return null.also { ui.update { it.copy(errorMessage = "The enemy character couldn't be found on the board.") } }
+
+        val targets = session.game.board
+            .connectedNeighbours(enemyTile)
+            .filter{ it.character == null }
+
 
         return viewModelScope.launch {
-
-            ui.update { it.copy(isLoading = true, errorMessage = null) }
-
-            clientApi.sneak(user.id, game.id, token, gameUI.state.movingCharacter, gameUI.state.staticCharacter).fold(
-                onSuccess = { newGame ->
-                    ui.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = null,
-                            session = session.copy(game = newGame),
-                            gameUI = it.gameUI.copy(state = GameUIState.Idle)
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    ui.update { it.copy(isLoading = false, errorMessage = error.message) }
-                }
-            )
+            ui.update { it.copy(errorMessage = null, gameUI = it.gameUI.copy(state = GameUIState.SneakDestination(origin, targets))) }
         }
-
     }
     fun drawItem(): Job? {
 
@@ -1112,7 +1099,98 @@ class AppViewModel(
                     ui.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = error.message ?: "Couldn't draw Item."
+                            errorMessage = error.message ?: "Couldn't apply Effect."
+                        )
+                    }
+                }
+            )
+        }
+    }
+    fun attackMode(): Job? {
+
+        val session = ui.value.session
+        val gameUI = ui.value.gameUI
+        if(session !is SessionState.InGame) return null
+        if(gameUI.state !is GameUIState.InBattle) return null
+
+        val firstCharacter = gameUI.state.battle.characters.firstOrNull{
+            it.name != gameUI.state.battle.currentTurn.name
+        } ?: return null.also{
+            ui.update { it.copy(errorMessage = "No other character found.") }
+        }
+
+        return viewModelScope.launch {
+            ui.update {
+                it.copy(
+                    errorMessage = null,
+                    gameUI = gameUI.copy(state = GameUIState.Attacking(gameUI.state.battle, firstCharacter))
+                )
+            }
+        }
+    }
+    fun chooseTarget(target: Character): Job? {
+
+        val session = ui.value.session
+        val gameUI = ui.value.gameUI
+        if(session !is SessionState.InGame) return null
+        if(gameUI.state !is GameUIState.Attacking) return null
+
+        return viewModelScope.launch {
+            ui.update {
+                it.copy(
+                    errorMessage = null,
+                    gameUI = gameUI.copy(state = GameUIState.Attacking(gameUI.state.battle, target))
+                )
+            }
+        }
+    }
+    fun backToBattle(): Job? {
+
+        val session = ui.value.session
+        val gameUI = ui.value.gameUI
+        if(session !is SessionState.InGame) return null
+        if(gameUI.state !is GameUIState.Attacking) return null
+
+        return viewModelScope.launch {
+            ui.update {
+                it.copy(
+                    errorMessage = null,
+                    gameUI = gameUI.copy(state = GameUIState.InBattle(gameUI.state.battle))
+                )
+            }
+        }
+    }
+    fun attack(): Job? {
+
+        val session = ui.value.session
+        val gameUI = ui.value.gameUI
+        if(session !is SessionState.InGame) return null
+        if(gameUI.state !is GameUIState.Attacking) return null
+
+        val user = session.user
+        val game = session.game
+        val token = user.auth?.token ?: return null.also {
+            ui.update { it.copy(errorMessage = "No token found.") }
+        }
+
+        return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
+
+            clientApi.attack(user.id, game.id, token, gameUI.state.target).fold(
+                onSuccess = { newGame ->
+                    ui.update{
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = session.copy(game = newGame)
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Couldn't Attack."
                         )
                     }
                 }

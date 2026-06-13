@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.domain.game.character
 
+import isel.pt.cbdcg.MAX_STAT_VALUE
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.component3
@@ -26,3 +27,16 @@ operator fun Stats.plus(other: Stats): Stats =
         def = def + other.def,
         spe = spe + other.spe,
     )
+
+fun Stats.bounded(
+    minHp: Int = 1,
+    minDmg: Int = 0,
+    minDef: Int = 0,
+    minSpe: Int = 1,
+    max: Int = MAX_STAT_VALUE
+) = copy(
+    hp = hp.coerceIn(minHp, max),
+    dmg = dmg.coerceIn(minDmg, max),
+    def = def.coerceIn(minDef, max),
+    spe = spe.coerceIn(minSpe, max),
+)

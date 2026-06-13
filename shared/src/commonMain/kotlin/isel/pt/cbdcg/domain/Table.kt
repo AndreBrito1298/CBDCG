@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.domain
 
+import isel.pt.cbdcg.MAX_PLAYERS_TO_START
 import isel.pt.cbdcg.dto.TableDTO
 
 /**
@@ -19,7 +20,7 @@ data class Table(
 /**
  * Function to check if there are any available 'player' seats in a table.
  */
-fun Table.checkAvailability(): Boolean = participants.size < 4
+fun Table.checkAvailability(): Boolean = participants.size < MAX_PLAYERS_TO_START
 
 fun Table.toTableDTO(): TableDTO = TableDTO(
     id = id.toInt(),

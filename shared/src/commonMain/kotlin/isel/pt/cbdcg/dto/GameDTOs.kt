@@ -76,6 +76,7 @@ data class SpectatorDTO(
 data class ModifierDTO(
     val stats: String,
     val duration: Int,
+    val type: String
 )
 
 @Serializable
@@ -343,4 +344,12 @@ data class UpdateModifiersDTO(
     val gameId: Int,
     val token: String,
     val origin: BoardTileDTO,
+)
+
+@Serializable
+data class BattleAttackDTO(
+    val userId: Int,
+    val gameId: Int,
+    val token: String,
+    val target: CharacterDTO,
 )
