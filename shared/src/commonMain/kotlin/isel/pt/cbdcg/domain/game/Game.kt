@@ -1,10 +1,10 @@
 package isel.pt.cbdcg.domain.game
 
-import isel.pt.cbdcg.ATTACKER_INITIATIVE_BONUS
 import isel.pt.cbdcg.MAX_TILES_IN_HAND
 import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.connectedNeighbours
 import isel.pt.cbdcg.domain.game.board.tile.Tile
 import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
 import isel.pt.cbdcg.domain.game.board.equipItem
@@ -19,21 +19,29 @@ import isel.pt.cbdcg.domain.game.board.tile.toTile
 import isel.pt.cbdcg.domain.game.board.tile.toTileDTO
 import isel.pt.cbdcg.domain.game.board.unequip
 import isel.pt.cbdcg.domain.game.character.Character
+import isel.pt.cbdcg.domain.game.character.Grade
 import isel.pt.cbdcg.domain.game.character.Item
+import isel.pt.cbdcg.domain.game.character.ModifierType
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
+import isel.pt.cbdcg.domain.game.character.StatModifier
+import isel.pt.cbdcg.domain.game.character.Stats
 import isel.pt.cbdcg.domain.game.character.adjustStats
-import isel.pt.cbdcg.domain.game.character.resolveStatModifiers
 import isel.pt.cbdcg.domain.game.character.toItem
 import isel.pt.cbdcg.domain.game.character.toItemDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.ItemDeckDTO
 import isel.pt.cbdcg.dto.TileDeckDTO
+import isel.pt.cbdcg.error.BattleError
 import isel.pt.cbdcg.error.BoardError
 import isel.pt.cbdcg.error.CharacterError
 import isel.pt.cbdcg.error.GameError
 import kotlin.collections.component1
 import kotlin.collections.component2
+import kotlin.collections.contains
 import kotlin.collections.ifEmpty
+
+// Contador da versão estado
+// Histórico de Operações?
 
 data class Game(
     val id: UInt,
@@ -187,12 +195,14 @@ fun Game.startTurnDraw(): Game {
         else player
     }
 
-    val player = players.find{ player -> player.user.id == nextPlayer }!!
+    val player = players.find{ player -> player.user.id == nextPlayer }
+        ?: throw GameError.PlayerNotFound("???", id.toInt())
 
     val updatedCharacterModifiers = board.copy(tiles =
         board.tiles.map{ boardTile ->
-            if((boardTile.character as? PlayableCharacter) != null && player.currentCharacter == boardTile.character.name)
-                boardTile.copy(character = boardTile.character.resolveStatModifiers())
+            val character = boardTile.character
+            if(character != null && player.currentCharacter == character.name)
+                boardTile.copy(character = character.decreaseTileEffectModifiers())
             else boardTile
         }
     )
@@ -410,23 +420,196 @@ fun Game.updateStatModifiers(player: Player, boardTile: BoardTile): Game {
 fun Game.battle(attacker: Character, defender: Character): Game {
 
     if(battle != null) throw GameError.BattleNotConcluded()
-    val attackerGoesFirst = attacker.adjustStats().spe + ATTACKER_INITIATIVE_BONUS >= defender.adjustStats().spe
+    if(turn.phase != TurnPhase.MOVEMENT)
+        throw GameError.MoveToBattleRestriction()
 
-    return copy(battle =
-        Battle(
-            listOf(attacker, defender),
-            1u,
-            if(attackerGoesFirst) attacker else defender
+    val mainCharacters = listOf(attacker, defender)
+    val mainPlayers = players.filter{
+        it.currentCharacter in mainCharacters.map{ character -> character.name }
+    }
+    val mainCharactersReady = mainCharacters.map{ character ->
+        BattleAction(
+            origin = character,
+            target = null,
+            action = PossibleBattleActions.FLEE,
+            stats = Stats()
+        )
+    }
+    val itemBet = mainPlayers.mapNotNull{ player ->
+
+        val itemCards = player.hand.mapNotNull{ card -> (card.value as? ItemCard) }
+        val keyItems = itemCards.filter{ itemCard -> itemCard.item.grade == Grade.KEY }
+
+        if(keyItems.isNotEmpty()) BattleBet(player, keyItems.random().item)
+        else if(itemCards.isNotEmpty()) BattleBet(player, itemCards.random().item)
+        else null
+    }
+
+    val participatingCharacterTiles = board.tiles.filter{ boardTile ->
+        val characterInTile = boardTile.character
+        characterInTile != null && mainCharacters.any{ it.name == characterInTile.name }
+    }
+
+
+    val adjacentCharacters = participatingCharacterTiles
+        .flatMap{ boardTile -> board.connectedNeighbours(boardTile) }
+        .mapNotNull{ neighbour -> neighbour.character }
+        .filter{ character -> character.name !in mainCharacters.map{ it.name } }
+        .distinct()
+
+
+    val charactersInBattle = mainCharacters + adjacentCharacters
+
+    return copy(
+        battle =
+            Battle(
+                characters = charactersInBattle,
+                itemBet = itemBet,
+                pending = mainCharactersReady
+            )
+    )
+}
+fun Game.joinBattle(player: Player, character: Character): Game {
+
+    if(battle == null) throw GameError.NoBattleOngoing()
+
+    val ready = BattleAction(
+        origin = character,
+        target = null,
+        action = PossibleBattleActions.FLEE,
+        stats = Stats()
+    )
+
+    val itemCards = player.hand.mapNotNull{ card -> (card.value as? ItemCard) }
+    val keyItems = itemCards.filter{ itemCard -> itemCard.item.grade == Grade.KEY }
+
+    val bet = if(keyItems.isNotEmpty()) BattleBet(player, keyItems.random().item)
+              else if(itemCards.isNotEmpty()) BattleBet(player, itemCards.random().item)
+              else null
+
+    return copy(
+        battle = battle.copy(
+            pending = battle.pending + ready,
+            itemBet = if(bet != null) battle.itemBet + bet else battle.itemBet
         )
     )
 }
-fun Game.attack(player: Player, target: Character): Game {
+fun Game.leaveBattle(character: Character): Game {
+
+    if(battle == null) throw GameError.NoBattleOngoing()
+
+    val idx = battle.characters.indexOf(character)
+    if(idx == 0 || idx == 1) throw BattleError.CantLeaveBattle()
+
+    return copy(
+        battle = battle.copy(
+            characters = battle.characters - character,
+        )
+    )
+}
+fun Game.addActionToPending(action: BattleAction): Game {
 
     if(battle == null)
         throw GameError.NoBattleOngoing()
 
-    if(battle.currentTurn.name != player.currentCharacter)
-        throw GameError.NotYourTurn()
+    if(battle.pending.any{ it.origin == action.origin })
+        throw BattleError.ActionAlreadyQueued()
 
-    return copy(battle = battle.attack(target))
+    return copy(battle = battle.copy(pending = battle.pending + action))
+}
+fun Game.removeActionFromPending(character: Character): Game {
+
+    if(battle == null)
+        throw GameError.NoBattleOngoing()
+
+    val action = battle.pending.find{ it.origin == character }
+        ?: throw BattleError.ActionNotQueued()
+
+    return copy(battle = battle.copy(pending = battle.pending - action))
+}
+fun Game.resolvePending(): Game {
+
+    if(battle == null)
+        throw GameError.NoBattleOngoing()
+
+    if(battle.pending.size < battle.characters.size) return this
+    if(battle.currentTurn == 0u) return copy(battle = battle.copy(pending = emptyList(), currentTurn = 1u))
+
+    val availableCharacters = battle.characters
+        .filter{ it.adjustStats().hp > 0 }
+        .sortedByDescending { it.adjustStats().spe }
+
+    val orderOfActions: List<BattleAction> = availableCharacters.map{ character ->
+        val action = battle.pending.find{ it.origin == character }
+        requireNotNull(action) { "Action not found for character ${character.name}" }
+    }
+
+    val updatedBattle = orderOfActions.fold<BattleAction, Battle>(battle.incrementModifiers()){ currentBattle, pending ->
+        val character = currentBattle.characters.find{ it.name == pending.origin.name }
+
+        if(character != null && character.adjustStats().hp > 0){
+            when(pending.action){
+                PossibleBattleActions.HOLD -> currentBattle.hold(pending)
+                PossibleBattleActions.FLEE -> currentBattle.flee(pending)
+                PossibleBattleActions.ATTACK -> {
+                    if(currentBattle.characters.find{ it.name == pending.target?.name } == null)
+                        throw BattleError.CharacterNotFound(pending.target?.name ?: "")
+
+                    currentBattle.attack(pending)
+                }
+            }
+        } else currentBattle
+    }
+
+    val winner = updatedBattle.characters.filter{ it.adjustStats().hp > 0 }
+
+    return if(winner.size == 1) resolveBattleEnd(updatedBattle, winner.first())
+           else copy(battle = updatedBattle.copy(pending = emptyList(), currentTurn = battle.currentTurn + 1u))
+}
+fun Game.resolveBattleEnd(battle: Battle, winner: Character): Game {
+
+    val fled = battle.characters.filter{ character ->
+        character.activeStatModifiers.any{ mod -> mod.type == ModifierType.BATTLE_FLEE && mod.stats.hp != 0 }
+    }
+
+    val updatedPlayers = players.map{ player ->
+        if(player.currentCharacter == winner.name)
+            battle.itemBet.fold(player){ currentPlayer, bet ->
+                val item = bet.item
+                if(bet.player != player) currentPlayer.addToHand(ItemCard(item))
+                else currentPlayer
+            }
+        else {
+            val item = battle.itemBet.find{ it.player == player }?.item
+            if(item == null) return@map player
+
+            val itemIdx = player.hand.filterValues { (it as? ItemCard)?.item == item }.keys.firstOrNull()
+            if(itemIdx == null) return@map player
+
+            player.removeFromHand(itemIdx)
+        }
+    }
+    val updatedBoardTiles = board.tiles.map{ boardTile ->
+        val character = boardTile.character
+        if(character != null){
+            val defaultCharacter = character.removeAllBattleMods()
+            val newCharacter =
+                if(character != winner && character !in fled)
+                    defaultCharacter.addModifier(
+                        newStatModifier = StatModifier(
+                            stats = Stats(-1,0,0,0),
+                            duration = 0u,
+                            type = ModifierType.PERMANENT
+                        )
+                    )
+                else defaultCharacter
+            boardTile.copy(character = newCharacter)
+        } else boardTile
+    }
+
+    return copy(
+        battle = battle,
+        players = updatedPlayers,
+        board = board.copy(tiles = updatedBoardTiles)
+    )
 }

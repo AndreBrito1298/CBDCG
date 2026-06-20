@@ -17,12 +17,30 @@ data class PlayableCharacter(
 
     override val role: CharacterRole = CharacterRole.PLAYABLE
 
-    override fun addModifier(newStatModifier: StatModifier): Character {
-        return copy(activeStatModifiers = activeStatModifiers.plus(newStatModifier))
-    }
-    override fun removeModifier(statModifier: StatModifier): Character {
-        return copy(activeStatModifiers = activeStatModifiers.minus(statModifier))
-    }
+    override fun addModifier(newStatModifier: StatModifier): Character =
+        copy(activeStatModifiers = activeStatModifiers.plus(newStatModifier))
+    override fun removeModifier(statModifier: StatModifier): Character =
+        copy(activeStatModifiers = activeStatModifiers.minus(statModifier))
+    override fun decreaseTileEffectModifiers(): Character =
+        copy(activeStatModifiers =
+            activeStatModifiers.mapNotNull{ mod ->
+                if(mod.type != ModifierType.TILE_EFFECT) mod
+                else{
+                    val newDuration = mod.duration - 1u
+                    if(newDuration <= 0u) null
+                    else mod.copy(duration = newDuration)
+                }
+            }
+        )
+    override fun increaseInBattleModifierTurn(): Character =
+        copy(
+            activeStatModifiers = activeStatModifiers.map { mod ->
+                if (mod.type.isBattleMod()) mod.copy(duration = mod.duration + 1u)
+                else mod
+            }
+        )
+    override fun removeAllBattleMods(): Character =
+        copy(activeStatModifiers = activeStatModifiers.filterNot { it.type.isBattleMod() })
 
     override fun toCharacterDTO(): CharacterDTO =
         CharacterDTO(
@@ -31,7 +49,8 @@ data class PlayableCharacter(
             baseStats = baseStats.toString(),
             activeModifiers = activeStatModifiers.map{ it.toModifierDTO() }.toTypedArray(),
             grade = grade.code(),
-            items = items.map{ it.toItemDTO() }.toTypedArray()
+            items = items.map{ it.toItemDTO() }.toTypedArray(),
+            maxItems = maxItems
         )
 
     override fun applyToGame(game: Game): Game {
@@ -55,25 +74,15 @@ fun PlayableCharacter.equipItem(item: Item): PlayableCharacter {
     return copy(items = items + item)
 }
 fun PlayableCharacter.unequip(item: Item): PlayableCharacter = copy(items = items - item)
-fun PlayableCharacter.resolveStatModifiers(): PlayableCharacter =
-    copy(activeStatModifiers =
-        activeStatModifiers.mapNotNull{ mod ->
-            if(mod.duration == -1) mod
-            else{
-                val newDuration = mod.duration - 1
-                if(newDuration <= 0) null
-                else mod.copy(duration = newDuration)
-            }
-        }
-    )
 
 fun CharacterDTO.toPlayableCharacter(): PlayableCharacter =
     PlayableCharacter(
         name = name,
         baseStats = baseStats.toStats(),
         activeStatModifiers = activeModifiers.map{ it.toStatModifier() },
+        grade = grade.toGrade(),
         items = items.map{ it.toItem() },
-        grade = grade.toGrade()
+        maxItems = maxItems
     )
 
 fun getPlayableCharacterByName(name: String): PlayableCharacter? = PlayableCharacterCatalog.playableCharacters.find { it.name == name }

@@ -11,7 +11,8 @@ import isel.pt.cbdcg.domain.game.board.toPosition
 import isel.pt.cbdcg.domain.game.character.toCharacter
 import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.domain.game.toGameDTO
-import isel.pt.cbdcg.dto.BattleAttackDTO
+import isel.pt.cbdcg.domain.game.toPossibleBattleAction
+import isel.pt.cbdcg.dto.ActInBattleDTO
 import isel.pt.cbdcg.dto.StartBattleDTO
 import isel.pt.cbdcg.dto.UpdateModifiersDTO
 import isel.pt.cbdcg.dto.BoardTileEffectDTO
@@ -20,6 +21,7 @@ import isel.pt.cbdcg.dto.DrawItemDTO
 import isel.pt.cbdcg.dto.GameUpdaterDTO
 import isel.pt.cbdcg.dto.LeaveGameDTO
 import isel.pt.cbdcg.dto.NextPhaseDTO
+import isel.pt.cbdcg.dto.ParticipateInBattleDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RotatePieceDTO
 import isel.pt.cbdcg.dto.UnequipItemDTO
@@ -191,21 +193,51 @@ fun Route.gameWebApi(gameService: GameService) {
                 call.respond(HttpStatusCode.OK, result.toGameDTO())
             }
 
-            post("/attack"){
+            post("/participate"){
 
+                val input = call.receive<ParticipateInBattleDTO>()
 
-                val input = call.receive<BattleAttackDTO>()
-
-                val result = gameService.attack(
+                val result = gameService.participateInBattle(
                     userId = input.userId.toUInt(),
                     gameId = input.gameId.toUInt(),
                     token = input.token,
-                    target = input.target.toCharacter(),
+                    character = input.character.toCharacter(),
+                    accept = input.accept,
+                ).getOrThrow()
+
+                call.respond(HttpStatusCode.OK, result.toGameDTO())
+
+            }
+
+            post("/act"){
+
+                val input = call.receive<ActInBattleDTO>()
+
+                val result = gameService.actInBattle(
+                    userId = input.userId.toUInt(),
+                    gameId = input.gameId.toUInt(),
+                    token = input.token,
+                    action = input.action.toPossibleBattleAction(),
+                    origin = input.origin.toCharacter(),
+                    target = input.target?.toCharacter(),
                 ).getOrThrow()
 
                 call.respond(HttpStatusCode.OK, result.toGameDTO())
             }
 
+            post("/undo"){
+
+                val input = call.receive<ActInBattleDTO>()
+
+                val result = gameService.undoBattleAction(
+                    userId = input.userId.toUInt(),
+                    gameId = input.gameId.toUInt(),
+                    token = input.token,
+                    origin = input.origin.toCharacter(),
+                ).getOrThrow()
+
+                call.respond(HttpStatusCode.OK, result.toGameDTO())
+            }
         }
     }
 }

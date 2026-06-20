@@ -1,6 +1,7 @@
 package isel.pt.cbdcg.viewmodel
 
 import isel.pt.cbdcg.domain.game.Battle
+import isel.pt.cbdcg.domain.game.BattleBet
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.board.BoardTile
@@ -10,7 +11,8 @@ import isel.pt.cbdcg.domain.game.character.Character
 data class GameUI(
     val state: GameUIState,
     val boardZoom: Float = 1.0f,
-    val movementUsed: Int = 0
+    val movementUsed: Int = 0,
+    val charactersBattled: List<String> = emptyList(),
 )
 sealed interface GameUIState {
 
@@ -56,13 +58,26 @@ sealed interface GameUIState {
         val targets: List<BoardTile>
     ) : GameUIState
 
+    data class StartBattle(
+        val battle: Battle,
+        val character: Character
+    ) : GameUIState
+
     data class InBattle(
+        val player: Player,
         val battle: Battle,
     ) : GameUIState
 
     data class Attacking(
+        val player: Player,
         val battle: Battle,
         val target: Character
+    ) : GameUIState
+
+    data class EndBattle(
+        val winner: Player,
+        val losers: List<Player>,
+        val bet: List<BattleBet>
     ) : GameUIState
 
     data class GameOver(

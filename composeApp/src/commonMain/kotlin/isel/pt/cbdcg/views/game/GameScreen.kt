@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import isel.pt.cbdcg.domain.game.PossibleBattleActions
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
@@ -33,11 +34,12 @@ import isel.pt.cbdcg.views.game.utils.board.ZoomButtons
 import isel.pt.cbdcg.views.game.utils.dialog.CardStatsDialog
 import isel.pt.cbdcg.views.game.utils.dialog.TileEffectDialog
 import isel.pt.cbdcg.domain.game.character.adjustStats
-import isel.pt.cbdcg.views.game.utils.dialog.BattleAction
 import isel.pt.cbdcg.views.game.utils.dialog.BattleDialog
 import isel.pt.cbdcg.views.game.utils.dialog.CharacterCollisionDialog
 import isel.pt.cbdcg.views.game.utils.dialog.ChooseTargetDialog
 import isel.pt.cbdcg.views.game.utils.dialog.CollisionOption
+import isel.pt.cbdcg.views.game.utils.dialog.EndBattleDialog
+import isel.pt.cbdcg.views.game.utils.dialog.StartBattleDialog
 
 @Composable
 fun GameScreen(
@@ -59,8 +61,10 @@ fun GameScreen(
     zoom: (Boolean) -> Unit,
     nextPhase: () -> Unit,
     closeDialog: (Boolean) -> Unit,
+    endBattle: () -> Unit,
     attackTarget: (Character?) -> Unit,
-    battleAction: (BattleAction) -> Unit,
+    battleAction: (PossibleBattleActions?) -> Unit,
+    participateInBattle: (Boolean) -> Unit,
     leaveGame: () -> Unit,
 ) {
 
@@ -134,6 +138,7 @@ fun GameScreen(
                     Board(
                         player = player,
                         gameState = gameUI.state,
+                        battledCharacterNames = gameUI.charactersBattled,
                         gameBoard = game.board.tiles,
                         tileSize = 128.dp * gameUI.boardZoom,
                         placeCard = { pos -> placeOnBoard(pos) },
@@ -213,6 +218,13 @@ fun GameScreen(
                 },
                 onDismiss = { closeDialog(false) }
             )
+        is GameUIState.StartBattle -> {
+            StartBattleDialog(
+                battle = gameUI.state.battle,
+                myCharacter = gameUI.state.character,
+                confirm = { accept -> participateInBattle(accept) }
+            )
+        }
         is GameUIState.InBattle -> {
             BattleDialog(
                 battle = gameUI.state.battle,
@@ -220,9 +232,10 @@ fun GameScreen(
                 attackTarget = { attackTarget(null) },
                 onClick = { action ->
                     when(action) {
-                        BattleAction.HOLD -> battleAction(BattleAction.HOLD)
-                        BattleAction.FLEE -> battleAction(BattleAction.FLEE)
-                        BattleAction.ATTACK -> return@BattleDialog
+                        PossibleBattleActions.HOLD -> battleAction(PossibleBattleActions.HOLD)
+                        PossibleBattleActions.FLEE -> battleAction(PossibleBattleActions.FLEE)
+                        PossibleBattleActions.ATTACK -> return@BattleDialog
+                        null -> battleAction(null)
                     }
                 },
                 onDismiss = {  }
@@ -230,14 +243,21 @@ fun GameScreen(
         }
         is GameUIState.Attacking -> {
             ChooseTargetDialog(
-                characters = gameUI.state.battle.characters,
-                playerCharacter = gameUI.state.battle.currentTurn,
+                characters = gameUI.state.battle.characters.filter{ it.name != player.currentCharacter && it.adjustStats().hp > 0 },
+                targetCharacter = gameUI.state.target,
                 target = { target -> attackTarget(target) },
-                attack = { battleAction(BattleAction.ATTACK) },
+                attack = { battleAction(PossibleBattleActions.ATTACK) },
                 onDismiss = { closeDialog(true) }
             )
         }
-
+        is GameUIState.EndBattle -> {
+            EndBattleDialog(
+                player = currentPlayer,
+                isWinner = currentPlayer == gameUI.state.winner,
+                bet = gameUI.state.bet,
+                confirm = { endBattle() }
+            )
+        }
         else -> {  }
     }
 }

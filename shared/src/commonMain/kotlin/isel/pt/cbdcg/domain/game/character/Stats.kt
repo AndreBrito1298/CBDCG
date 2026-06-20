@@ -7,10 +7,10 @@ import kotlin.collections.component3
 import kotlin.collections.component4
 
 data class Stats(
-    val hp: Int,
-    val dmg: Int,
-    val def: Int,
-    val spe: Int
+    val hp: Int = 0,
+    val dmg: Int = 0,
+    val def: Int = 0,
+    val spe: Int = 0
 ) {
     override fun toString() = "$hp&$dmg&$def&$spe"
 }
@@ -29,7 +29,7 @@ operator fun Stats.plus(other: Stats): Stats =
     )
 
 fun Stats.bounded(
-    minHp: Int = 1,
+    minHp: Int = 0,
     minDmg: Int = 0,
     minDef: Int = 0,
     minSpe: Int = 1,

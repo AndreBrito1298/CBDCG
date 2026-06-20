@@ -19,25 +19,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import isel.pt.cbdcg.domain.game.character.Character
-import isel.pt.cbdcg.views.game.utils.misc.info.BattleInfo
+import isel.pt.cbdcg.domain.game.BattleBet
+import isel.pt.cbdcg.domain.game.Player
+import isel.pt.cbdcg.views.game.utils.misc.info.ItemInfoPanel
 
 @Composable
-fun ChooseTargetDialog(
-    characters: List<Character>,
-    targetCharacter: Character,
-    target: (Character) -> Unit,
-    attack: () -> Unit,
-    onDismiss: () -> Unit,
-){
+fun EndBattleDialog(
+    player: Player?,
+    isWinner: Boolean,
+    bet: List<BattleBet>,
+    confirm : () -> Unit,
+) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {  },
         title = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Choose a Target",
+                    text = if(isWinner) "You won!" else "You lost!",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = if(isWinner) "Check the spoils from this battle" else "You lost an Item",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Light
                 )
             }
         },
@@ -47,23 +52,33 @@ fun ChooseTargetDialog(
                 contentAlignment = Alignment.Center
             ){
                 Column(
-                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
                 ){
-                    BattleInfo(
-                        modifier = Modifier.fillMaxWidth().height(348.dp),
-                        characters = characters,
-                        targetCharacter = targetCharacter,
-                        target = { character -> target(character) }
-                    )
+                    if (isWinner) {
+                        bet.filter{ it.player.user.id != player?.user?.id }.forEach { (_, item) ->
+                            ItemInfoPanel(
+                                item = item,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    } else {
+                        val item = bet.find { it.player.user.id == player?.user?.id }?.item
+                        if (item != null)
+                            ItemInfoPanel(
+                                item = item,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth().height(40.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
                     ) {
-                        Button(onClick = { attack() }) { Text("Confirm Attack") }
-                        Button(onClick = { onDismiss() }) { Text("Cancel") }
+                        Button(onClick = { confirm() }) { Text("Confirm") }
                     }
                 }
             }

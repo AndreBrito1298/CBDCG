@@ -9,7 +9,7 @@ import isel.pt.cbdcg.domain.game.character.Stats
 import isel.pt.cbdcg.dto.TileEffectDTO
 import isel.pt.cbdcg.error.GameError
 
-enum class StatType { Hp, Dmg, Def, Spe }
+enum class StatType { Dmg, Def, Spe }
 
 sealed interface TileEffectTypes {
     data object None : TileEffectTypes
@@ -77,7 +77,7 @@ fun TileEffect.getStatModifier(): StatModifier {
 
     return StatModifier(
         stats = Stats(
-            hp = if (statType == StatType.Hp) statChange else 0,
+            hp = 0,
             dmg = if (statType == StatType.Dmg) statChange else 0,
             def = if (statType == StatType.Def) statChange else 0,
             spe = if (statType == StatType.Spe) statChange else 0

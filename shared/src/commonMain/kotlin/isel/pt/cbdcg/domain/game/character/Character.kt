@@ -22,6 +22,9 @@ interface Character: Entity {
 
     fun addModifier(newStatModifier: StatModifier): Character
     fun removeModifier(statModifier: StatModifier): Character
+    fun decreaseTileEffectModifiers(): Character
+    fun increaseInBattleModifierTurn(): Character
+    fun removeAllBattleMods(): Character
     fun toCharacterDTO(): CharacterDTO
 }
 

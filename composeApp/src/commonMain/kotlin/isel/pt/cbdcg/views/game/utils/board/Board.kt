@@ -47,6 +47,7 @@ data class BoardTileDDM(
 fun Board(
     player: Player?,
     gameState: GameUIState,
+    battledCharacterNames: List<String>,
     gameBoard: BoardTiles,
     tileSize: Dp,
     placeCard: (BoardPosition) -> Unit,
@@ -120,9 +121,11 @@ fun Board(
                             else null
 
                         BoardTile(
+                            battledCharacterNames = battledCharacterNames,
                             actions = actions,
                             boardTile = currentBoardTile,
                             tileName = tileName,
+                            myCharacter = character != null && character.name == player?.currentCharacter,
                             tileSize = tileSize,
                             tilePath = tilePath,
                             onClick = { action ->

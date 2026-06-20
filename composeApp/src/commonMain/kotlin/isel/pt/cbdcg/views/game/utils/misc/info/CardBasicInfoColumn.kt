@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views.game.utils.cardInfo
+package isel.pt.cbdcg.views.game.utils.misc.info
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box

@@ -4,13 +4,13 @@ import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import isel.pt.cbdcg.domain.game.PossibleBattleActions
 import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
 import isel.pt.cbdcg.viewmodel.AppViewModel
 import isel.pt.cbdcg.viewmodel.GameUIState
 import isel.pt.cbdcg.viewmodel.SessionState
 import isel.pt.cbdcg.views.game.GameScreen
 import isel.pt.cbdcg.views.game.SpectatorScreen
-import isel.pt.cbdcg.views.game.utils.dialog.BattleAction
 import isel.pt.cbdcg.views.lobby.SearchTablesScreen
 import isel.pt.cbdcg.views.lobby.WaitingTableScreen
 import isel.pt.cbdcg.views.startMenu.CreateUserScreen
@@ -187,14 +187,17 @@ fun AppNavHost(vm: AppViewModel) {
                     zoom = { option -> vm.zoom(option) },
                     nextPhase = vm::nextPhase,
                     closeDialog = { inBattle -> if(inBattle) vm.backToBattle() else vm.idle() },
+                    endBattle = vm::endBattle,
                     attackTarget = { target -> if(target == null) vm.attackMode() else vm.chooseTarget(target) },
                     battleAction = { action ->
                         when(action){
-                            BattleAction.HOLD -> TODO()
-                            BattleAction.FLEE -> TODO()
-                            BattleAction.ATTACK -> vm.attack()
+                            PossibleBattleActions.HOLD -> vm.actInBattle(PossibleBattleActions.HOLD)
+                            PossibleBattleActions.FLEE -> vm.actInBattle(PossibleBattleActions.FLEE)
+                            PossibleBattleActions.ATTACK -> vm.attack()
+                            null -> vm.undoBattleAction()
                         }
                     },
+                    participateInBattle = { accept -> vm.participateInBattle(accept) },
                     leaveGame = vm::leaveGame,
                 )
             }

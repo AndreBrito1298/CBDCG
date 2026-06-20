@@ -27,9 +27,11 @@ import isel.pt.cbdcg.views.game.utils.ZoomedImage
 
 @Composable
 fun BoardTile(
+    battledCharacterNames: List<String>,
     actions: BoardTileDDM,
     boardTile: BoardTile,
     tileName: String,
+    myCharacter: Boolean,
     tileSize: Dp,
     tilePath: TilePathSegment?,
     onClick: (BoardTilePossibleActions) -> Unit,
@@ -105,11 +107,17 @@ fun BoardTile(
 
         // Draw the Character
         if(characterName != null){
-            ZoomedImage(
-                fileName = characterName,
-                zoom = 1.0f,
-                modifier = Modifier.size(tileSize)
-            )
+            Box(
+                modifier =
+                    if(myCharacter) Modifier.border(1.dp, Color.Cyan, shape = CircleShape)
+                    else Modifier
+            ){
+                ZoomedImage(
+                    fileName = characterName,
+                    zoom = 1.0f,
+                    modifier = Modifier.size(tileSize)
+                )
+            }
         }
 
         DropdownMenu(

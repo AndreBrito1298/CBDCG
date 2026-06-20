@@ -23,12 +23,13 @@ import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Game
+import isel.pt.cbdcg.domain.game.PossibleBattleActions
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.toGame
-import isel.pt.cbdcg.dto.BattleAttackDTO
+import isel.pt.cbdcg.dto.ActInBattleDTO
 import isel.pt.cbdcg.dto.StartBattleDTO
 import isel.pt.cbdcg.dto.UpdateModifiersDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
@@ -41,6 +42,7 @@ import isel.pt.cbdcg.dto.LeaveGameDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
 import isel.pt.cbdcg.dto.NextPhaseDTO
+import isel.pt.cbdcg.dto.ParticipateInBattleDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RoleChangeInput
 import isel.pt.cbdcg.dto.RotatePieceDTO
@@ -300,15 +302,42 @@ class ClientApi(private val client: HttpClient) {
                 defender = defender.toCharacterDTO()
             )
         ).map{ it.toGame() }
-    suspend fun attack(userId: UInt, gameId: UInt, token: String, target: Character): Result<Game> =
+    suspend fun actInBattle(userId: UInt, gameId: UInt, token: String, action: PossibleBattleActions, origin: Character, target: Character? = null): Result<Game> =
         fetch<GameDTO>(
-            path = "game/battle/attack",
+            path = "game/battle/act",
             method = HttpMethod.Post,
-            body = BattleAttackDTO(
+            body = ActInBattleDTO(
                 userId = userId.toInt(),
                 gameId = gameId.toInt(),
                 token = token,
-                target = target.toCharacterDTO(),
+                action = action.name,
+                origin = origin.toCharacterDTO(),
+                target = target?.toCharacterDTO(),
+            )
+        ).map{ it.toGame() }
+    suspend fun undoBattleAction(userId: UInt, gameId: UInt, token: String, origin: Character): Result<Game> =
+        fetch<GameDTO>(
+            path = "game/battle/undo",
+            method = HttpMethod.Post,
+            body = ActInBattleDTO(
+                userId = userId.toInt(),
+                gameId = gameId.toInt(),
+                token = token,
+                action = "",
+                origin = origin.toCharacterDTO(),
+                target = null,
+            )
+        ).map{ it.toGame() }
+    suspend fun participateInBattle(userId: UInt, gameId: UInt, token: String, character: Character, accept: Boolean): Result<Game> =
+        fetch<GameDTO>(
+            path = "game/battle/participate",
+            method = HttpMethod.Post,
+            body = ParticipateInBattleDTO(
+                userId = userId.toInt(),
+                gameId = gameId.toInt(),
+                token = token,
+                character = character.toCharacterDTO(),
+                accept = accept,
             )
         ).map{ it.toGame() }
 

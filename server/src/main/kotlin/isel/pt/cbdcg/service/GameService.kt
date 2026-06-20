@@ -11,6 +11,7 @@ import isel.pt.cbdcg.NUM_COPIES_CHARACTER
 import isel.pt.cbdcg.NUM_COPIES_ITEM
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.addToGame
+import isel.pt.cbdcg.domain.game.BattleAction
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CharacterCard
 import isel.pt.cbdcg.domain.game.Game
@@ -24,7 +25,8 @@ import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.Direction
 import isel.pt.cbdcg.domain.game.Entity
-import isel.pt.cbdcg.domain.game.attack
+import isel.pt.cbdcg.domain.game.PossibleBattleActions
+import isel.pt.cbdcg.domain.game.addActionToPending
 import isel.pt.cbdcg.domain.game.battle
 import isel.pt.cbdcg.domain.game.board.tile.Tile
 import isel.pt.cbdcg.domain.game.gameUpdateByName
@@ -35,9 +37,13 @@ import isel.pt.cbdcg.domain.game.character.ItemCatalog
 import isel.pt.cbdcg.domain.game.character.PlayableCharacterCatalog
 import isel.pt.cbdcg.domain.game.draw
 import isel.pt.cbdcg.domain.game.drawItem
+import isel.pt.cbdcg.domain.game.joinBattle
+import isel.pt.cbdcg.domain.game.leaveBattle
 import isel.pt.cbdcg.domain.game.leaveGame
 import isel.pt.cbdcg.domain.game.nextPhase
 import isel.pt.cbdcg.domain.game.placeOnBoard
+import isel.pt.cbdcg.domain.game.removeActionFromPending
+import isel.pt.cbdcg.domain.game.resolvePending
 import isel.pt.cbdcg.domain.game.resolveTurnZero
 import isel.pt.cbdcg.domain.game.unequip
 import isel.pt.cbdcg.domain.verifyToken
@@ -303,7 +309,27 @@ class GameService(
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())
 
-        val newGame = game.battle(attacker, defender)
+        val newGame = game.battle(attacker, defender).resolvePending()
+
+        gameRepo.save(newGame)
+        events.publishGameUpdated(newGame)
+        newGame
+    }
+    suspend fun participateInBattle(userId: UInt, gameId: UInt, token: String, character: Character, accept: Boolean): Result<Game> = runCatching {
+
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
+        token.verifyToken(user, gameId, this.userRepo)
+
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
+
+        val player = game.players.find{ it.user.id == user.id }
+            ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
+
+        val newGame =
+            if(accept) game.joinBattle(player, character).resolvePending()
+            else game.leaveBattle(character).resolvePending()
 
         gameRepo.save(newGame)
         events.publishGameUpdated(newGame)
@@ -327,8 +353,7 @@ class GameService(
         events.publishGameUpdated(newGame)
         newGame
     }
-
-    suspend fun attack(userId: UInt, gameId: UInt, token: String, target: Character): Result<Game> = runCatching {
+    suspend fun actInBattle(userId: UInt, gameId: UInt, token: String, action: PossibleBattleActions, origin: Character, target: Character?): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
@@ -337,10 +362,31 @@ class GameService(
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())
 
-        val player = game.players.find{ it.user.id == user.id }
-            ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
+        val battleAction =
+            BattleAction(
+                origin = origin,
+                target = target,
+                action = action
+            )
 
-        val newGame = game.attack(player, target)
+        val newGame = game
+            .addActionToPending(battleAction)
+            .resolvePending()
+
+        gameRepo.save(newGame)
+        events.publishGameUpdated(newGame)
+        newGame
+    }
+    suspend fun undoBattleAction(userId: UInt, gameId: UInt, token: String, origin: Character): Result<Game> = runCatching {
+
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
+        token.verifyToken(user, gameId, this.userRepo)
+
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
+
+        val newGame = game.removeActionFromPending(origin)
 
         gameRepo.save(newGame)
         events.publishGameUpdated(newGame)

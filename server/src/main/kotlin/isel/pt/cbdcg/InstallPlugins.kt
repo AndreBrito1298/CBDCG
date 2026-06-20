@@ -27,6 +27,7 @@ import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 import io.ktor.http.HttpHeaders
 import io.ktor.server.plugins.cors.routing.CORS
+import isel.pt.cbdcg.error.BattleError
 import isel.pt.cbdcg.error.CardError
 import isel.pt.cbdcg.error.CharacterError
 
@@ -169,11 +170,19 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is GameError.TilePlacementRestriction -> HttpStatusCode.Conflict
         is GameError.BattleNotConcluded -> HttpStatusCode.Conflict
         is GameError.NoBattleOngoing -> HttpStatusCode.NotFound
+        is GameError.MustSelectATarget -> HttpStatusCode.BadRequest
+        is GameError.MoveToBattleRestriction -> HttpStatusCode.Conflict
 
         is CardError.InvalidCardFormat -> HttpStatusCode.BadRequest
         
         is CharacterError.ItemCapacityLimit -> HttpStatusCode.Conflict
         is CharacterError.ItemDoesNotExist -> HttpStatusCode.NotFound
+
+        is BattleError.CharacterNotFound -> HttpStatusCode.NotFound
+        is BattleError.InvalidAction -> HttpStatusCode.BadRequest
+        is BattleError.ActionAlreadyQueued -> HttpStatusCode.Conflict
+        is BattleError.ActionNotQueued -> HttpStatusCode.NotFound
+        is BattleError.CantLeaveBattle -> HttpStatusCode.Conflict
     }
 
     return code to message

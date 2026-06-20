@@ -9,10 +9,14 @@ import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
+import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.domain.game.Battle
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CardType
 import isel.pt.cbdcg.domain.game.CharacterCard
+import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
+import isel.pt.cbdcg.domain.game.PossibleBattleActions
 import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
@@ -28,6 +32,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.collections.contains
 import kotlin.random.Random
 
 data class AppUIState(
@@ -49,64 +54,115 @@ class AppViewModel(
         // Viewmodel must be ready to react to updates in the clientApi
 
         viewModelScope.launch {
-            clientApi.tables.collect { tables ->
-                ui.update { ui ->
-                    val session = ui.session
-
-                    if(session is SessionState.InLobby)
-                        ui.copy(session= session.copy(tables = tables))
-                    else ui
-                }
-            }
+            clientApi.tables.collect { tables -> updateLobby(tables) }
         }
         viewModelScope.launch {
-            clientApi.currentTable.collect { table ->
-                ui.update { ui ->
-                    when (val session = ui.session) {
-                        is SessionState.InTable if table != null && table.participants.any { it.user.id == session.user.id } ->
-                            ui.copy(session = session.copy(table = table))
-
-                        is SessionState.InTable ->
-                            ui.copy(session = SessionState.InLobby(session.user))
-
-                        else -> ui
-                    }
-
-                }
-            }
+            clientApi.currentTable.collect { table -> if(table == null) updateTableRemoved() else updateTable(table) }
         }
         viewModelScope.launch {
-            clientApi.game.collect { game ->
-                ui.update { ui ->
-                    when (val session = ui.session) {
-                        is SessionState.InGame if game != null -> {
-
-                            val winner = game.winner
-                            val battle = game.battle
-
-                            val updateSession = session.copy(game = game)
-                            val updateGameUI = ui.gameUI.copy(
-                                state =
-                                    if(winner != null) GameUIState.GameOver(winner)
-                                    else if(battle != null) GameUIState.InBattle(battle)
-                                    else ui.gameUI.state
-                            )
-
-                            ui.copy(session = updateSession, gameUI = updateGameUI)
-                        }
-
-                        is SessionState.InTable if game != null ->
-                            ui.copy(session = SessionState.InGame(session.user, game))
-
-                        else -> ui
-                    }
-                }
-            }
+            clientApi.game.collect { game -> if(game == null) updateGameRemoved() else updateGame(game) }
         }
     }
 
+    private fun updateLobby(newTables: List<Table>) =
+        ui.update { ui ->
+            val session = ui.session
+            if(session is SessionState.InLobby)
+                ui.copy(session= session.copy(tables = newTables))
+            else ui
+        }
+    private fun updateTableRemoved() =
+        ui.update{ ui ->
+            val session = ui.session
+            if(session is SessionState.InTable)
+                ui.copy(session = SessionState.InLobby(session.user))
+            else ui
+        }
+    private fun updateTable(table: Table) =
+        ui.update{ ui ->
+            val session = ui.session
+            if(session is SessionState.InTable && table.participants.any{ it.user.id == session.user.id })
+                ui.copy(session = session.copy(table = table))
+            else ui
+        }
+    private fun updateGameRemoved() =
+        ui.update{ ui ->
+            val session = ui.session
+            if(session is SessionState.InGame)
+                ui.copy(session = SessionState.InLobby(session.user))
+            else ui
+        }
+    private fun updateGame(game: Game) =
+        ui.update{ ui ->
+            when (val session = ui.session) {
+                is SessionState.InTable ->
+                    ui.copy(session = SessionState.InGame(session.user, game))
+                is SessionState.InGame ->
+                    ui.copy(
+                        session = session.copy(game = game),
+                        gameUI = updateInGameState(session.user, game, ui.gameUI)
+                    )
+                else ->
+                    ui
+            }
+        }
+    private fun updateInGameState(user: User, game: Game, ui: GameUI): GameUI {
+
+        val winner = game.winner
+        if(winner != null) return ui.copy(state = GameUIState.GameOver(winner))
+
+        val battle = game.battle
+        if(battle != null){
+
+            val me = game.players.find{ it.user.id == user.id } ?: return ui
+
+            return when(ui.state){
+
+                is GameUIState.Attacking,
+                is GameUIState.EndBattle,
+                is GameUIState.InBattle -> updateBattleEnd(me, game, battle, ui)
+
+                else -> updateBattleStart(me, game, battle, ui)
+            }
+
+        }
+
+        return ui
+    }
+    private fun updateBattleEnd(player: Player, game: Game, battle: Battle, ui: GameUI): GameUI{
+
+        val remainingCharacters = battle.characters.filter{ it.adjustStats().hp > 0 }
+
+        return if(remainingCharacters.size == 1) {
+            val playersInBattle = game.players.filter { it.currentCharacter in battle.characters.map { it.name } }
+            val winner = playersInBattle.first { it.currentCharacter == remainingCharacters.first().name }
+            val losers = playersInBattle.filter { it.currentCharacter != winner.currentCharacter }
+
+            ui.copy(state = GameUIState.EndBattle(winner, losers, battle.itemBet))
+        }
+        else ui.copy(state = GameUIState.InBattle(player, battle))
+    }
+    private fun updateBattleStart(player: Player, game: Game, battle: Battle, ui: GameUI): GameUI {
+
+        val myCharacter = game.board.tiles.find{ boardTile ->
+            val character = boardTile.character
+            character != null && character.name == player.currentCharacter
+        }?.character ?: return ui
+
+        return if(battle.currentTurn > 0u) ui.copy(state = GameUIState.InBattle(player, battle))
+               else if(myCharacter in battle.characters) ui.copy(state = GameUIState.StartBattle(battle, myCharacter))
+               else ui.copy(state = GameUIState.Idle)
+    }
+
     fun dismissError() {
-        ui.update { it.copy(errorMessage = null, gameUI = it.gameUI.copy(state= GameUIState.Idle)) }
+
+        val nextGameUIState = when(val state = ui.value.gameUI.state) {
+            is GameUIState.MovingCharacter, is GameUIState.PlacingCard,
+            is GameUIState.SelectCard, is GameUIState.SneakDestination -> GameUIState.Idle
+            else -> state
+        }
+
+        ui.update { it.copy(errorMessage = null, gameUI = it.gameUI.copy(state = nextGameUIState)) }
     }
 
     // Websocket-related operations
@@ -872,7 +928,7 @@ class AppViewModel(
                             errorMessage = null,
                             session = session.copy(game = newGame),
                             gameUI = it.gameUI.copy(
-                                state = GameUIState.CharacterCollision(character, enemy)      ,
+                                state = GameUIState.CharacterCollision(character, enemy),
                                 movementUsed = gameUI.movementUsed + gameUI.state.path.size - 2
                             )
                         )
@@ -961,15 +1017,11 @@ class AppViewModel(
             clientApi.challenge(user.id, game.id, token, attacker, defender).fold(
                 onSuccess = { newGame ->
 
-                    val battle = newGame.battle
-                        ?: return@fold ui.update { it.copy(isLoading = false, errorMessage = "The battle couldn't be started.") }
-
                     ui.update {
                         it.copy(
                             isLoading = false,
                             errorMessage = null,
                             session = session.copy(game = newGame),
-                            gameUI = it.gameUI.copy(state = GameUIState.InBattle(battle))
                         )
                     }
                 },
@@ -1114,7 +1166,7 @@ class AppViewModel(
         if(gameUI.state !is GameUIState.InBattle) return null
 
         val firstCharacter = gameUI.state.battle.characters.firstOrNull{
-            it.name != gameUI.state.battle.currentTurn.name
+            it.name != gameUI.state.player.currentCharacter
         } ?: return null.also{
             ui.update { it.copy(errorMessage = "No other character found.") }
         }
@@ -1123,7 +1175,7 @@ class AppViewModel(
             ui.update {
                 it.copy(
                     errorMessage = null,
-                    gameUI = gameUI.copy(state = GameUIState.Attacking(gameUI.state.battle, firstCharacter))
+                    gameUI = gameUI.copy(state = GameUIState.Attacking(gameUI.state.player, gameUI.state.battle, firstCharacter))
                 )
             }
         }
@@ -1139,7 +1191,7 @@ class AppViewModel(
             ui.update {
                 it.copy(
                     errorMessage = null,
-                    gameUI = gameUI.copy(state = GameUIState.Attacking(gameUI.state.battle, target))
+                    gameUI = gameUI.copy(state = gameUI.state.copy(target = target))
                 )
             }
         }
@@ -1155,7 +1207,7 @@ class AppViewModel(
             ui.update {
                 it.copy(
                     errorMessage = null,
-                    gameUI = gameUI.copy(state = GameUIState.InBattle(gameUI.state.battle))
+                    gameUI = gameUI.copy(state = GameUIState.InBattle(gameUI.state.player, gameUI.state.battle))
                 )
             }
         }
@@ -1173,10 +1225,69 @@ class AppViewModel(
             ui.update { it.copy(errorMessage = "No token found.") }
         }
 
+        val origin = gameUI.state.battle.characters.find{ it.name == gameUI.state.player.currentCharacter } ?: return null.also {
+            ui.update { it.copy(errorMessage = "No Character found.") }
+        }
+
         return viewModelScope.launch {
             ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            clientApi.attack(user.id, game.id, token, gameUI.state.target).fold(
+            clientApi.actInBattle(user.id, game.id, token, PossibleBattleActions.ATTACK, origin, gameUI.state.target).fold(
+                onSuccess = { newGame ->
+                    ui.update{
+
+                        val battle = newGame.battle
+                            ?: return@update it.copy(isLoading = false, errorMessage = "The battle couldn't be found.")
+
+                        val remainingCharacters = battle.characters.count{ it.adjustStats().hp > 0 }
+                        val nextState =
+                            if(remainingCharacters != 1) GameUIState.InBattle(gameUI.state.player, battle)
+                            else{
+                                val winnerCharacter = battle.characters.first{ it.adjustStats().hp > 0 }
+                                val winnerPlayer = session.game.players.find{
+                                    it.currentCharacter == winnerCharacter.name
+                                } ?: return@update it.copy(isLoading = false, errorMessage = "The winner couldn't be found.")
+                                val loserPlayers = session.game.players.filter{ it.currentCharacter != winnerCharacter.name }
+
+                                GameUIState.EndBattle(winnerPlayer, loserPlayers, battle.itemBet)
+                            }
+
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = session.copy(game = newGame),
+                            gameUI = gameUI.copy(state = nextState)
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Couldn't ATTACK."
+                        )
+                    }
+                }
+            )
+        }
+    }
+    fun participateInBattle(accept: Boolean): Job? {
+
+        val session = ui.value.session
+        val gameUI = ui.value.gameUI
+        if(session !is SessionState.InGame) return null
+        if(gameUI.state !is GameUIState.StartBattle) return null
+
+        val user = session.user
+        val game = session.game
+        val token = user.auth?.token ?: return null.also {
+            ui.update { it.copy(errorMessage = "No token found.") }
+        }
+
+        return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
+
+            clientApi.participateInBattle(user.id, game.id, token, gameUI.state.character, accept).fold(
                 onSuccess = { newGame ->
                     ui.update{
                         it.copy(
@@ -1190,11 +1301,112 @@ class AppViewModel(
                     ui.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = error.message ?: "Couldn't Attack."
+                            errorMessage = error.message ?: "Couldn't confirm or leave the battle."
                         )
                     }
                 }
             )
+        }
+    }
+    fun actInBattle(action: PossibleBattleActions): Job? {
+
+        val session = ui.value.session
+        val gameUI = ui.value.gameUI
+        if(session !is SessionState.InGame) return null
+        if(gameUI.state !is GameUIState.InBattle) return null
+
+        val user = session.user
+        val game = session.game
+        val token = user.auth?.token ?: return null.also {
+            ui.update { it.copy(errorMessage = "No token found.") }
+        }
+
+        val origin = gameUI.state.battle.characters.find{ it.name == gameUI.state.player.currentCharacter } ?: return null.also {
+            ui.update { it.copy(errorMessage = "No Character found.") }
+        }
+
+        return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
+
+            clientApi.actInBattle(user.id, game.id, token, action, origin).fold(
+                onSuccess = { newGame ->
+                    ui.update{
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = session.copy(game = newGame)
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Couldn't ${action.name}."
+                        )
+                    }
+                }
+            )
+        }
+    }
+    fun undoBattleAction(): Job? {
+
+        val session = ui.value.session
+        val gameUI = ui.value.gameUI
+        if(session !is SessionState.InGame) return null
+        if(gameUI.state !is GameUIState.InBattle) return null
+
+        val user = session.user
+        val game = session.game
+        val token = user.auth?.token ?: return null.also {
+            ui.update { it.copy(errorMessage = "No token found.") }
+        }
+
+        val origin = gameUI.state.battle.characters.find{ it.name == gameUI.state.player.currentCharacter } ?: return null.also {
+            ui.update { it.copy(errorMessage = "No Character found.") }
+        }
+
+        return viewModelScope.launch {
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
+
+            clientApi.undoBattleAction(user.id, game.id, token, origin).fold(
+                onSuccess = { newGame ->
+                    ui.update{
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            session = session.copy(game = newGame)
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Couldn't UNDO your character's action."
+                        )
+                    }
+                }
+            )
+        }
+    }
+    fun endBattle(): Job?{
+
+        val session = ui.value.session
+        val gameUI = ui.value.gameUI
+        if(session !is SessionState.InGame) return null
+        if(gameUI.state !is GameUIState.EndBattle) return null
+
+        return viewModelScope.launch{
+            ui.update{
+                it.copy(
+                    errorMessage = null,
+                    gameUI = it.gameUI.copy(
+                        charactersBattled = (gameUI.state.losers + gameUI.state.winner).mapNotNull{ it.currentCharacter },
+                        state = GameUIState.Idle
+                    )
+                )
+            }
         }
     }
 }

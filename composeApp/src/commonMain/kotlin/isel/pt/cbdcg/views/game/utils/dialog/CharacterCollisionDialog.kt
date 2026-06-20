@@ -24,8 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.adjustStats
-import isel.pt.cbdcg.views.game.utils.cardInfo.CardBasicInfoColumn
-import isel.pt.cbdcg.views.game.utils.cardInfo.CardStatsColumn
+import isel.pt.cbdcg.views.game.utils.misc.info.CardBasicInfoColumn
+import isel.pt.cbdcg.views.game.utils.misc.stats.CardStatsColumn
 
 enum class CollisionOption {
     COMBAT, SNEAK, CANCEL

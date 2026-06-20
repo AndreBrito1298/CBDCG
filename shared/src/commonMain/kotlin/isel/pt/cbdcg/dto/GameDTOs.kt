@@ -87,6 +87,7 @@ data class CharacterDTO(
     val activeModifiers: Array<ModifierDTO>,
     val grade: String,
     val items: Array<ItemDTO>,
+    val maxItems: Int
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -212,8 +213,10 @@ data class GameDTO(
 @Serializable
 data class BattleDTO(
     val characters: Array<CharacterDTO>,
-    val turn: Int,
-    val currentTurn: CharacterDTO
+    val currentTurn: Int,
+    val pending: Array<BattleActionDTO>,
+    val actions: Array<BattleActionDTO>,
+    val itemBet: Array<BattleBetDTO>
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -221,19 +224,38 @@ data class BattleDTO(
 
         other as BattleDTO
 
-        if (turn != other.turn) return false
         if (currentTurn != other.currentTurn) return false
         if (!characters.contentEquals(other.characters)) return false
+        if (!pending.contentEquals(other.pending)) return false
+        if (!actions.contentEquals(other.actions)) return false
+        if (!itemBet.contentEquals(other.itemBet)) return false
 
         return true
     }
     override fun hashCode(): Int {
-        var result = turn
+        var result = currentTurn
         result = 31 * result + characters.contentHashCode()
-        result = 31 * result + currentTurn.hashCode()
+        result = 31 * result + pending.contentHashCode()
+        result = 31 * result + actions.contentHashCode()
+        result = 31 * result + itemBet.contentHashCode()
         return result
     }
 }
+
+@Serializable
+data class BattleBetDTO(
+    val player: PlayerDTO,
+    val item: ItemDTO
+)
+
+@Serializable
+data class BattleActionDTO(
+    val turn: Int,
+    val origin: CharacterDTO,
+    val target: CharacterDTO?,
+    val action: String,
+    val stats: String?
+)
 
 @Serializable
 data class CreateGameDTO(
@@ -347,9 +369,20 @@ data class UpdateModifiersDTO(
 )
 
 @Serializable
-data class BattleAttackDTO(
+data class ActInBattleDTO(
     val userId: Int,
     val gameId: Int,
     val token: String,
-    val target: CharacterDTO,
+    val action: String,
+    val origin: CharacterDTO,
+    val target: CharacterDTO?,
+)
+
+@Serializable
+data class ParticipateInBattleDTO(
+    val userId: Int,
+    val gameId: Int,
+    val token: String,
+    val character: CharacterDTO,
+    val accept: Boolean
 )

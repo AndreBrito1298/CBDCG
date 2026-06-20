@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views.game.utils.cardInfo
+package isel.pt.cbdcg.views.game.utils.misc.extra
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

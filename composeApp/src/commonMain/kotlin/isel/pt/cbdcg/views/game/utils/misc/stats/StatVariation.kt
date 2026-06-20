@@ -1,15 +1,12 @@
-package isel.pt.cbdcg.views.game.utils.cardInfo
+package isel.pt.cbdcg.views.game.utils.misc.stats
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,43 +18,47 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun StatRow(
+fun StatVariation(
+    modifier: Modifier = Modifier,
     label: String,
     value: Int,
+    delta: Int,
     color: Color,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(30.dp)
+        modifier = modifier
+            .fillMaxSize()
             .border(2.dp, color, RoundedCornerShape(6.dp))
             .background(Color.White, RoundedCornerShape(6.dp)),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
-                .width(58.dp)
+                .weight(1f)
                 .fillMaxSize()
                 .background(color, RoundedCornerShape(topStart = 6.dp, bottomStart = 6.dp)),
             contentAlignment = Alignment.Center
         ) {
+
             Text(
                 text = label,
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
-                fontSize = 13.sp
+                fontSize = 6.sp,
             )
         }
 
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
+            modifier = Modifier
+                .weight(4f)
+                .padding(horizontal = 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally)
         ) {
-            statStars(value).forEach { tone ->
+            statVariation(value, delta).forEach { tone ->
                 Text(
                     text = "★",
                     color = tone.color(),
-                    fontSize = 20.sp,
+                    fontSize = 12.sp,
                     letterSpacing = 0.sp
                 )
             }

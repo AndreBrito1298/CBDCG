@@ -83,6 +83,8 @@ sealed class GameError(
     class EquipItemRestriction : GameError("You can only equip/unequip an Item during the Substitution Phase.")
     class BattleNotConcluded : GameError("There can be happening only one battle at a time.")
     class NoBattleOngoing : GameError("There is no battle ongoing.")
+    class MustSelectATarget : GameError("You must select a target.")
+    class MoveToBattleRestriction : GameError("You can only move your character to a battle during the Movement Phase.")
 }
 
 sealed class CharacterError(
@@ -96,4 +98,14 @@ sealed class CardError(
     msg: String,
 ): Error(msg, "Error found in Card-related operation."){
     class InvalidCardFormat(message: String) : CardError("Invalid Card format: $message.")
+}
+
+sealed class BattleError(
+    msg: String,
+): Error(msg, "Error found during a Battle."){
+    class CharacterNotFound(name: String) : BattleError("Character '$name' is not participating in the battle.")
+    class InvalidAction(name: String) : BattleError("Invalid action '$name'.")
+    class ActionAlreadyQueued : BattleError("You already have an action queued for this character.")
+    class ActionNotQueued : BattleError("You don't have an action queued for this character.")
+    class CantLeaveBattle : BattleError("You can't leave the battle if you are directly involved.")
 }
