@@ -31,17 +31,15 @@ import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.toGame
 import isel.pt.cbdcg.dto.ActInBattleDTO
 import isel.pt.cbdcg.dto.StartBattleDTO
-import isel.pt.cbdcg.dto.UpdateModifiersDTO
+import isel.pt.cbdcg.dto.SimpleInGameActionDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.CreateUserDTO
-import isel.pt.cbdcg.dto.DrawItemDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.GameUpdaterDTO
-import isel.pt.cbdcg.dto.LeaveGameDTO
+import isel.pt.cbdcg.dto.SimpleGameRequestDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
-import isel.pt.cbdcg.dto.NextPhaseDTO
 import isel.pt.cbdcg.dto.ParticipateInBattleDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RoleChangeInput
@@ -248,7 +246,7 @@ class ClientApi(private val client: HttpClient) {
         fetch<GameDTO>(
             path = "game/end-turn",
             method = HttpMethod.Post,
-            body = NextPhaseDTO(userId.toInt(), gameId.toInt(), token)
+            body = SimpleGameRequestDTO(userId.toInt(), gameId.toInt(), token)
         ).map{ it.toGame() }
     suspend fun unequipItem(userId: UInt, gameId: UInt, token: String, character: Character, idx: Int): Result<Game> =
         fetch<GameDTO>(
@@ -260,7 +258,7 @@ class ClientApi(private val client: HttpClient) {
         fetch<Unit>(
             path = "game/leave",
             method = HttpMethod.Post,
-            body = LeaveGameDTO(userId.toInt(), gameId.toInt(), token)
+            body = SimpleGameRequestDTO(userId.toInt(), gameId.toInt(), token)
         )
 
 
@@ -277,13 +275,13 @@ class ClientApi(private val client: HttpClient) {
         fetch<GameDTO>(
             path = "game/draw-item",
             method = HttpMethod.Post,
-            body = DrawItemDTO(userId.toInt(), gameId.toInt(), token, boardTile.toBoardTileDTO())
+            body = SimpleInGameActionDTO(userId.toInt(), gameId.toInt(), token, boardTile.toBoardTileDTO())
         ).map{ it.toGame() }
     suspend fun statModifierEffect(userId: UInt, gameId: UInt, token: String, origin: BoardTile): Result<Game> =
         fetch<GameDTO>(
             path = "game/update-modifiers",
             method = HttpMethod.Post,
-            body = UpdateModifiersDTO(
+            body = SimpleInGameActionDTO(
                 userId = userId.toInt(),
                 gameId = gameId.toInt(),
                 token = token,
@@ -338,6 +336,19 @@ class ClientApi(private val client: HttpClient) {
                 token = token,
                 character = character.toCharacterDTO(),
                 accept = accept,
+            )
+        ).map{ it.toGame() }
+    suspend fun leaveBattle(userId: UInt, gameId: UInt, token: String, character: Character): Result<Game> =
+        fetch<GameDTO>(
+            path = "game/battle/leave",
+            method = HttpMethod.Post,
+            body = ActInBattleDTO(
+                userId = userId.toInt(),
+                gameId = gameId.toInt(),
+                token = token,
+                action = "FLEE",
+                origin = character.toCharacterDTO(),
+                target = null,
             )
         ).map{ it.toGame() }
 

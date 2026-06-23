@@ -15,7 +15,7 @@ fun String.toTurnPhase(): TurnPhase =
         else -> throw GameError.InvalidFormat("Turn Phase", this)
     }
 
-class Turn(val gameTurn: UInt, val playerTurn: List<UInt>, val phase: TurnPhase) {
+data class Turn(val gameTurn: UInt, val playerTurn: List<UInt>, val phase: TurnPhase) {
 
     override fun toString(): String {
         val playersString = playerTurn.joinToString(","){ it.toString() }

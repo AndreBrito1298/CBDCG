@@ -33,14 +33,14 @@ object TableRepositoryMem: TableRepository {
 
     override fun removeParticipant(table: Table, user: User): Table {
         tables.removeIf{ it.id == table.id }
-        val newTable = table.copy(participants = table.participants.filter{ it.user != user })
+        val newTable = table.copy(participants = table.participants.filter{ it.user.id != user.id })
         tables.add(newTable)
         return newTable
     }
 
     override fun updateParticipants(table: Table, participant: Participant): Table {
         tables.removeIf{ it.id == table.id }
-        val list = table.participants.filter{ it.user != participant.user }
+        val list = table.participants.filter{ it.user.id != participant.user.id }
         val newTable = table.copy(participants = list.plus(participant))
         tables.add(newTable)
         return newTable

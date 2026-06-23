@@ -14,13 +14,11 @@ import isel.pt.cbdcg.domain.game.toGameDTO
 import isel.pt.cbdcg.domain.game.toPossibleBattleAction
 import isel.pt.cbdcg.dto.ActInBattleDTO
 import isel.pt.cbdcg.dto.StartBattleDTO
-import isel.pt.cbdcg.dto.UpdateModifiersDTO
+import isel.pt.cbdcg.dto.SimpleInGameActionDTO
 import isel.pt.cbdcg.dto.BoardTileEffectDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
-import isel.pt.cbdcg.dto.DrawItemDTO
 import isel.pt.cbdcg.dto.GameUpdaterDTO
-import isel.pt.cbdcg.dto.LeaveGameDTO
-import isel.pt.cbdcg.dto.NextPhaseDTO
+import isel.pt.cbdcg.dto.SimpleGameRequestDTO
 import isel.pt.cbdcg.dto.ParticipateInBattleDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RotatePieceDTO
@@ -78,7 +76,7 @@ fun Route.gameWebApi(gameService: GameService) {
 
         post("/end-turn") {
 
-            val input = call.receive<NextPhaseDTO>()
+            val input = call.receive<SimpleGameRequestDTO>()
 
             val result = gameService.nextPhase(
                 userId = input.userId.toUInt(),
@@ -91,7 +89,7 @@ fun Route.gameWebApi(gameService: GameService) {
 
         post("/leave"){
 
-            val input = call.receive<LeaveGameDTO>()
+            val input = call.receive<SimpleGameRequestDTO>()
 
             gameService.leaveGame(
                 userId = input.userId.toUInt(),
@@ -149,7 +147,7 @@ fun Route.gameWebApi(gameService: GameService) {
 
         post("/draw-item"){
 
-            val input = call.receive<DrawItemDTO>()
+            val input = call.receive<SimpleInGameActionDTO>()
 
             val result = gameService.drawItem(
                 userId = input.userId.toUInt(),
@@ -163,7 +161,7 @@ fun Route.gameWebApi(gameService: GameService) {
 
         post("/update-modifiers"){
 
-            val input = call.receive<UpdateModifiersDTO>()
+            val input = call.receive<SimpleInGameActionDTO>()
 
             val result = gameService.updateStatModifiers(
                 userId = input.userId.toUInt(),
@@ -234,6 +232,21 @@ fun Route.gameWebApi(gameService: GameService) {
                     gameId = input.gameId.toUInt(),
                     token = input.token,
                     origin = input.origin.toCharacter(),
+                ).getOrThrow()
+
+                call.respond(HttpStatusCode.OK, result.toGameDTO())
+            }
+
+            post("/leave"){
+
+                val input = call.receive<ActInBattleDTO>()
+
+                val result = gameService.leaveBattle(
+                    userId = input.userId.toUInt(),
+                    gameId = input.gameId.toUInt(),
+                    token = input.token,
+                    playerCharacter = input.origin.toCharacter(),
+                    action = input.action.toPossibleBattleAction(),
                 ).getOrThrow()
 
                 call.respond(HttpStatusCode.OK, result.toGameDTO())

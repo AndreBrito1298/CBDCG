@@ -50,7 +50,7 @@ fun Board.connectionDistancesFrom(target: BoardTile): Map<BoardTile, Int> {
 }
 
 // Algorítmo BFS - o algoritmo usado pode ser mudado no futuro
-fun Board.findPath(from: BoardTile, to: BoardTile, maxDistance: Int): List<BoardTile> {
+fun Board.findPath(from: BoardTile, to: BoardTile, maxDistance: Int, ignoreCharacters: List<String>): List<BoardTile> {
     val distancesToTarget = connectionDistancesFrom(to)
 
     val queue = ArrayDeque(listOf(listOf(from)))
@@ -79,7 +79,7 @@ fun Board.findPath(from: BoardTile, to: BoardTile, maxDistance: Int): List<Board
         val ignoreTileEffect = current.cooldown != 0u ||
             current.tile.specialEffect.type == TileEffectTypes.None || current.tile.specialEffect.type == TileEffectTypes.Start
 
-        val collision = current.character != null
+        val collision = current.character != null && !ignoreCharacters.contains(current.character.name)
 
         if (current != from && (collision || !ignoreTileEffect)) continue
         // -----------------------------------

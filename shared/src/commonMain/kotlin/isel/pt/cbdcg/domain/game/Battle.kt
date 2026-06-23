@@ -109,17 +109,17 @@ fun Battle.attack(battleAction: BattleAction): Battle {
 
     val dodge = target.adjustStats().spe - origin.adjustStats().spe
     val dodgeChance = (dodge + 1) / 25f
-    if(Random.nextFloat() <= dodgeChance)
-        return copy(actions = actions + (currentTurn to ((actions[currentTurn] ?: emptyList()) + battleAction)))
-
     val damage = origin.adjustStats().dmg - target.adjustStats().def
 
-    val stats = Stats(
-        hp = if(damage > 0) -damage else 0,
-        dmg = 0,
-        def = if(damage > 0) BASE_DEF_LOSS_WHEN_DROPPING_HP else -origin.adjustStats().dmg,
-        spe = 0
-    )
+    val stats =
+        if(Random.nextFloat() > dodgeChance)
+            Stats(
+                hp = if(damage > 0) -damage else 0,
+                dmg = 0,
+                def = if(damage > 0) BASE_DEF_LOSS_WHEN_DROPPING_HP else -origin.adjustStats().dmg,
+                spe = 0
+            )
+        else Stats()
 
     val updatedCharacters = characters.map { character ->
         if (character.name == target.name)
@@ -183,7 +183,8 @@ fun Battle.flee(battleAction: BattleAction): Battle {
     val lostHPRecently = origin.activeStatModifiers
         .filter{ it.type == ModifierType.BATTLE_ATTACK }
         .sortedBy{ it.duration }
-        .first().stats.hp < 0
+        .firstOrNull()
+        .let{ it != null && it.stats.hp < 0 }
 
     val speedDiff = characters
         .map { origin.adjustStats().spe - it.adjustStats().spe }

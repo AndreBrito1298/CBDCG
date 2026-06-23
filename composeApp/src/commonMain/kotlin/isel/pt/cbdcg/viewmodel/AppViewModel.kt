@@ -100,31 +100,39 @@ class AppViewModel(
                 is SessionState.InGame ->
                     ui.copy(
                         session = session.copy(game = game),
-                        gameUI = updateInGameState(session.user, game, ui.gameUI)
+                        gameUI = updateInGameState(session.user, game, ui.session.game, ui.gameUI)
                     )
                 else ->
                     ui
             }
         }
-    private fun updateInGameState(user: User, game: Game, ui: GameUI): GameUI {
+    private fun updateInGameState(user: User, newGame: Game, currentGame: Game, currentUI: GameUI): GameUI {
 
-        val winner = game.winner
-        if(winner != null) return ui.copy(state = GameUIState.GameOver(winner))
+        val ui =
+            if(newGame.turn.playerTurn != currentGame.turn.playerTurn) currentUI.copy(charactersBattled = emptyList())
+            else currentUI
 
-        val battle = game.battle
+        if(newGame.players.size == 1) return ui.copy(state = GameUIState.GameOver(newGame.players.first()))
+
+        val battle = newGame.battle
         if(battle != null){
 
-            val me = game.players.find{ it.user.id == user.id } ?: return ui
+            val me = newGame.players.find{ it.user.id == user.id } ?: return ui
 
             return when(ui.state){
 
                 is GameUIState.Attacking,
                 is GameUIState.EndBattle,
-                is GameUIState.InBattle -> updateBattleEnd(me, game, battle, ui)
+                is GameUIState.InBattle -> updateBattleEnd(me, newGame, battle, ui)
 
-                else -> updateBattleStart(me, game, battle, ui)
+                else -> updateBattleStart(me, newGame, battle, ui)
             }
 
+        }
+        if(currentGame.battle != null){
+            return ui.copy(
+                state = GameUIState.Idle,
+            )
         }
 
         return ui
@@ -135,10 +143,12 @@ class AppViewModel(
 
         return if(remainingCharacters.size == 1) {
             val playersInBattle = game.players.filter { it.currentCharacter in battle.characters.map { it.name } }
+            val playerCharacter = game.board.tiles.first { it.character?.name == player.currentCharacter }.character
             val winner = playersInBattle.first { it.currentCharacter == remainingCharacters.first().name }
             val losers = playersInBattle.filter { it.currentCharacter != winner.currentCharacter }
+            val readyToLeave = game.players.filter{ player -> player.currentCharacter in battle.pending.map{ it.origin.name } }
 
-            ui.copy(state = GameUIState.EndBattle(winner, losers, battle.itemBet))
+            ui.copy(state = GameUIState.EndBattle(requireNotNull(playerCharacter), winner, losers, battle.itemBet, readyToLeave))
         }
         else ui.copy(state = GameUIState.InBattle(player, battle))
     }
@@ -958,7 +968,8 @@ class AppViewModel(
         val path = session.game.board.findPath(
             from = gameUI.state.from,
             to = to,
-            maxDistance = remainingMovement
+            maxDistance = remainingMovement,
+            ignoreCharacters = gameUI.charactersBattled
         )
 
         return viewModelScope.launch {
@@ -1248,8 +1259,9 @@ class AppViewModel(
                                     it.currentCharacter == winnerCharacter.name
                                 } ?: return@update it.copy(isLoading = false, errorMessage = "The winner couldn't be found.")
                                 val loserPlayers = session.game.players.filter{ it.currentCharacter != winnerCharacter.name }
+                                val readyToLeave = newGame.players.filter{ player -> player.currentCharacter in battle.pending.map{ it.origin.name } }
 
-                                GameUIState.EndBattle(winnerPlayer, loserPlayers, battle.itemBet)
+                                GameUIState.EndBattle(origin, winnerPlayer, loserPlayers, battle.itemBet, readyToLeave)
                             }
 
                         it.copy(
@@ -1390,23 +1402,50 @@ class AppViewModel(
             )
         }
     }
-    fun endBattle(): Job?{
+    fun leaveBattle(): Job?{
 
         val session = ui.value.session
         val gameUI = ui.value.gameUI
         if(session !is SessionState.InGame) return null
         if(gameUI.state !is GameUIState.EndBattle) return null
 
+        val user = session.user
+        val game = session.game
+        val token = user.auth?.token ?: return null.also {
+            ui.update { it.copy(errorMessage = "No token found.") }
+        }
+
         return viewModelScope.launch{
-            ui.update{
-                it.copy(
-                    errorMessage = null,
-                    gameUI = it.gameUI.copy(
-                        charactersBattled = (gameUI.state.losers + gameUI.state.winner).mapNotNull{ it.currentCharacter },
-                        state = GameUIState.Idle
-                    )
-                )
-            }
+
+            ui.update { it.copy(isLoading = true, errorMessage = null) }
+
+            clientApi.leaveBattle(user.id, game.id, token, gameUI.state.playerCharacter).fold(
+                onSuccess = { newGame ->
+                    ui.update{
+                        it.copy(
+                            errorMessage = null,
+                            session = session.copy(game = newGame),
+                            gameUI = it.gameUI.copy(
+                                charactersBattled =
+                                    if(gameUI.state.winner.user.id == user.id && newGame.turn.playerTurn.first() == user.id)
+                                        (gameUI.state.losers + gameUI.state.winner).mapNotNull{ player ->
+                                            if(player.user.id != user.id) player.currentCharacter
+                                            else null
+                                        }
+                                    else gameUI.charactersBattled
+                            )
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    ui.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Couldn't leave the battle."
+                        )
+                    }
+                }
+            )
         }
     }
 }

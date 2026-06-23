@@ -27,20 +27,34 @@ import isel.pt.cbdcg.views.game.utils.misc.info.ItemInfoPanel
 fun EndBattleDialog(
     player: Player?,
     isWinner: Boolean,
+    isBattling: Boolean,
     bet: List<BattleBet>,
+    ready: List<Player>,
+    total: Int,
     confirm : () -> Unit,
 ) {
+
+    val clickable = player != null && (player.user.id !in ready.map{ it.user.id })
+    val mainText =
+        if(isBattling && isWinner) "You won!"
+        else if(isBattling && !isWinner) "You lost!"
+        else "End of the Battle."
+    val subText =
+        if(isBattling && isWinner) "Check the spoils from this battle"
+        else if(isBattling && !isWinner) "You lost an Item"
+        else "Wait for the battling players."
+
     AlertDialog(
         onDismissRequest = {  },
         title = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = if(isWinner) "You won!" else "You lost!",
+                    text = mainText,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = if(isWinner) "Check the spoils from this battle" else "You lost an Item",
+                    text = subText,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Light
                 )
@@ -75,10 +89,18 @@ fun EndBattleDialog(
                     }
 
                     Row(
+                        modifier = Modifier.fillMaxWidth().height(24.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("Players Remaining: ${ready.size}/$total")
+                    }
+
+                    Row(
                         modifier = Modifier.fillMaxWidth().height(40.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
                     ) {
-                        Button(onClick = { confirm() }) { Text("Confirm") }
+                        Button(onClick = { confirm() }, enabled = isBattling && clickable) { Text("Confirm") }
                     }
                 }
             }

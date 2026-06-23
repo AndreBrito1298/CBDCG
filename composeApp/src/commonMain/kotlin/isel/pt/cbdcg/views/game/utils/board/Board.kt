@@ -109,6 +109,7 @@ fun Board(
                             battleCharacter = gameState is GameUIState.Idle &&
                                     character != null &&
                                     character.name != player?.currentCharacter &&
+                                    character.name !in battledCharacterNames &&
                                     playerCharacter != null,
                             sneakThrough = gameState is GameUIState.SneakDestination &&
                                     gameState.targets.find { it.pos == currentBoardTile.pos } != null,

@@ -27,7 +27,7 @@ class TableService(
     suspend fun createTable(tableName: Name, userId: UInt): Result<Table> = runCatching {
 
         val owner = userRepo.findById(userId)
-        if(owner!!.auth == null) throw UserError.NotLoggedIn()
+            ?: throw UserError.NotLoggedIn()
 
         val participant = Participant(owner, Role.PLAYER)
 
@@ -45,7 +45,6 @@ class TableService(
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
         if(user.auth == null) throw UserError.NotLoggedIn()
-
 
         val table = tableRepo.findById(tableId)
             ?: throw TableError.TableDoesNotExist(tableId.toString())

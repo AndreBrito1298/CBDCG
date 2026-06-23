@@ -18,13 +18,19 @@ import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TurnPhase
+import isel.pt.cbdcg.domain.game.board.connectionDistancesFrom
+import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.viewmodel.GameUI
 import isel.pt.cbdcg.viewmodel.GameUIState
 import isel.pt.cbdcg.views.game.utils.board.Board
 import isel.pt.cbdcg.views.game.utils.InGameHeader
 import isel.pt.cbdcg.views.game.utils.spectator.SpectatorPlayerSelector
 import isel.pt.cbdcg.views.game.utils.board.ZoomButtons
+import isel.pt.cbdcg.views.game.utils.dialog.BattleDialog
 import isel.pt.cbdcg.views.game.utils.dialog.CardStatsDialog
+import isel.pt.cbdcg.views.game.utils.dialog.EndBattleDialog
+import isel.pt.cbdcg.views.game.utils.dialog.GameOverDialog
+import isel.pt.cbdcg.views.game.utils.dialog.TileEffectDialog
 
 @Composable
 fun SpectatorScreen(
@@ -33,7 +39,9 @@ fun SpectatorScreen(
     gameUI: GameUI,
     togglePlayerHand: (Player) -> Unit,
     toggleCardStats: (Card?, BoardTile?) -> Unit,
+    onEffectInfoClick: () -> Unit,
     zoom: (Boolean) -> Unit,
+    leaveGame: () -> Unit,
 ){
     val currentPlayer = game.players.find {
         it.user.id == game.turn.playerTurn.first()
@@ -86,8 +94,9 @@ fun SpectatorScreen(
                         player = null,
                         inspect = { card, boardTile -> toggleCardStats(card, boardTile) },
                         moveSignal = {},
-                        battleSignal = {_,_ ->},
+                        battleSignal = { _, _ -> },
                         moveCharacter = {},
+                        battledCharacterNames = gameUI.charactersBattled,
                     )
                     ZoomButtons(
                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
@@ -119,11 +128,57 @@ fun SpectatorScreen(
         }
     }
 
-    if(gameUI.state is GameUIState.InspectCard){
-        CardStatsDialog(
-            card = gameUI.state.card,
-            unequip = {  },
-            onDismiss = { toggleCardStats(null, null) }
-        )
+    when(gameUI.state){
+        is GameUIState.InspectCard ->
+            CardStatsDialog(
+                card = gameUI.state.card,
+                unequip = { },
+                onDismiss = { toggleCardStats(null, null) }
+            )
+        is GameUIState.InspectTileEffect -> {
+
+            val affectedCharacters =
+                gameUI.state.boardTile?.let { origin ->
+                    val range = gameUI.state.tile.specialEffect.range.toInt()
+                    val distances = game.board.connectionDistancesFrom(origin)
+
+                    distances.filter { it.value <= range }.keys
+                        .mapNotNull { it.character }
+                        .filterIsInstance<PlayableCharacter>()
+                } ?: emptyList()
+
+            TileEffectDialog(
+                effect = gameUI.state.tile.specialEffect,
+                activate = false,
+                onConfirm = onEffectInfoClick,
+                affectedCharacters = affectedCharacters
+            )
+        }
+        is GameUIState.GameOver ->
+            GameOverDialog(
+                winner = gameUI.state.winner,
+                onDismiss = leaveGame
+            )
+        is GameUIState.InBattle -> {
+            BattleDialog(
+                battle = gameUI.state.battle,
+                playerCharacterName = null,
+                attackTarget = { },
+                onClick = {  },
+                onDismiss = {  }
+            )
+        }
+        is GameUIState.EndBattle -> {
+            EndBattleDialog(
+                player = null,
+                isWinner = false,
+                isBattling = false,
+                bet = gameUI.state.bet,
+                ready = gameUI.state.readyToLeave,
+                total = gameUI.state.losers.size + 1,
+                confirm = { }
+            )
+        }
+        else -> {  }
     }
 }

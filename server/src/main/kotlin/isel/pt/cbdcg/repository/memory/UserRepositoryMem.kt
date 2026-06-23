@@ -24,7 +24,10 @@ object UserRepositoryMem: UserRepository {
     }
 
     override fun findByToken(token: String): User? {
-        return users.find{ it.auth != null && it.auth!!.token == token }
+        return users.find{ user ->
+            val auth = user.auth
+            auth != null && auth.token == token
+        }
     }
 
 

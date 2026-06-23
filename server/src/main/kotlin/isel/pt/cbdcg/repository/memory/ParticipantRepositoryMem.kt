@@ -23,11 +23,11 @@ object ParticipantRepositoryMem: ParticipantRepository {
     }
 
     override fun userAvailability(user: User): Boolean {
-        return participants.find{ it.user == user } == null
+        return participants.find{ it.user.id == user.id } == null
     }
 
     override fun deleteParticipant(user: User) {
-        participants.removeIf{ it.user == user }
+        participants.removeIf{ it.user.id == user.id }
     }
 
     override fun clear() {

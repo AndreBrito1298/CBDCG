@@ -115,7 +115,11 @@ fun BoardTile(
                 ZoomedImage(
                     fileName = characterName,
                     zoom = 1.0f,
-                    modifier = Modifier.size(tileSize)
+                    modifier = Modifier.size(tileSize),
+                    filter =
+                        if(characterName in battledCharacterNames)
+                            ColorFilter.colorMatrix(ColorMatrix().apply{ setToSaturation(0f) })
+                        else null
                 )
             }
         }

@@ -75,9 +75,11 @@ sealed interface GameUIState {
     ) : GameUIState
 
     data class EndBattle(
+        val playerCharacter: Character,
         val winner: Player,
         val losers: List<Player>,
-        val bet: List<BattleBet>
+        val bet: List<BattleBet>,
+        val readyToLeave: List<Player>
     ) : GameUIState
 
     data class GameOver(

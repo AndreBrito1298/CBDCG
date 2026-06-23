@@ -187,7 +187,7 @@ fun AppNavHost(vm: AppViewModel) {
                     zoom = { option -> vm.zoom(option) },
                     nextPhase = vm::nextPhase,
                     closeDialog = { inBattle -> if(inBattle) vm.backToBattle() else vm.idle() },
-                    endBattle = vm::endBattle,
+                    endBattle = vm::leaveBattle,
                     attackTarget = { target -> if(target == null) vm.attackMode() else vm.chooseTarget(target) },
                     battleAction = { action ->
                         when(action){
@@ -209,7 +209,9 @@ fun AppNavHost(vm: AppViewModel) {
                     gameUI = ui.gameUI,
                     togglePlayerHand = { player -> vm.inspectPlayerHand(player) },
                     toggleCardStats = { card, boardTile -> vm.inspectCard(card, boardTile) },
-                    zoom = { option -> vm.zoom(option) }
+                    onEffectInfoClick = vm::idle,
+                    zoom = { option -> vm.zoom(option) },
+                    leaveGame = vm::leaveGame,
                 )
             }
 

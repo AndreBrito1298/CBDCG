@@ -59,6 +59,7 @@ fun StartBattleDialog(
                     BattleInfo(
                         modifier = Modifier.fillMaxWidth().height(348.dp),
                         characters = battle.characters,
+                        playerCharacterName = myCharacter.name,
                         targetCharacter = null
                     )
 

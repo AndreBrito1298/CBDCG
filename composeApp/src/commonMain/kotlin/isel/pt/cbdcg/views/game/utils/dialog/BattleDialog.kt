@@ -92,7 +92,7 @@ fun BattleDialog(
 
                     if (isParticipating) {
 
-                        val canClick = battle.pending.find{ it.origin.name == playerCharacterName } == null
+                        val canClick = battle.pending.find{ it.origin.adjustStats().hp > 0 && it.origin.name == playerCharacterName } == null
                         val actionsQueued = battle.pending.size
                         val availableCharacters = battle.characters.filter{ it.adjustStats().hp > 0 }.size
 

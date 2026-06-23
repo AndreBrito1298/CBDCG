@@ -88,10 +88,11 @@ fun CharacterDTO.toPlayableCharacter(): PlayableCharacter =
 fun getPlayableCharacterByName(name: String): PlayableCharacter? = PlayableCharacterCatalog.playableCharacters.find { it.name == name }
 object PlayableCharacterCatalog {
     val playableCharacters = listOf(
-        PlayableCharacter(name = "trainee", baseStats = Stats(3, 2, 2, 2), grade = Grade.BASIC),
+        // PlayableCharacter(name = "trainee", baseStats = Stats(3, 2, 2, 2), grade = Grade.BASIC),
         PlayableCharacter(name = "thief", baseStats = Stats(2, 2, 2, 3), grade = Grade.BASIC),
         PlayableCharacter(name = "apprentice", baseStats = Stats(2, 3, 2, 2), grade = Grade.BASIC),
         PlayableCharacter(name = "ninja", baseStats = Stats(2, 4, 1, 2), grade = Grade.BASIC),
+        /*
         PlayableCharacter(name = "alchemist", baseStats = Stats(3, 3, 1, 2), grade = Grade.BASIC),
         PlayableCharacter(name = "strange_alien", baseStats = Stats(3, 2, 2, 1), grade = Grade.BASIC, maxItems = 2),
         PlayableCharacter(name = "vampire", baseStats = Stats(3, 3, 1, 2), grade = Grade.BASIC),
@@ -104,5 +105,6 @@ object PlayableCharacterCatalog {
         PlayableCharacter(name = "juggernaut", baseStats = Stats(3, 3, 1, 2), grade = Grade.BASIC),
         PlayableCharacter(name = "necromancer", baseStats = Stats(3, 2, 1, 3), grade = Grade.BASIC),
         PlayableCharacter(name = "taoist", baseStats = Stats(2, 2, 2, 3), grade = Grade.BASIC),
+        */
     )
 }

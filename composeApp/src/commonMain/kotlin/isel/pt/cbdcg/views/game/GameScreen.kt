@@ -106,7 +106,7 @@ fun GameScreen(
                 playerName = player.user.name.string,
                 currentPlayerName = currentPlayer?.user?.name?.string ?: "Unknown",
                 remainingMoves =
-                    if(playingCharacter!= null) "${playingCharacter.adjustStats().spe - gameUI.movementUsed}"
+                    if(playingCharacter!= null) "${(playingCharacter.adjustStats().spe - gameUI.movementUsed).coerceAtLeast(0)}"
                     else null
             )
 
@@ -252,9 +252,12 @@ fun GameScreen(
         }
         is GameUIState.EndBattle -> {
             EndBattleDialog(
-                player = currentPlayer,
-                isWinner = currentPlayer == gameUI.state.winner,
+                player = player,
+                isWinner = player.currentCharacter == gameUI.state.winner.currentCharacter,
+                isBattling = player.user.id in (gameUI.state.losers + gameUI.state.winner).map{ it.user.id },
                 bet = gameUI.state.bet,
+                ready = gameUI.state.readyToLeave,
+                total = gameUI.state.losers.size + 1,
                 confirm = { endBattle() }
             )
         }

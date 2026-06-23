@@ -93,6 +93,10 @@ class WebSocketHub(
         sessions.forEach{ session ->
             session.send(Frame.Text(payload))
         }
+
+        mutex.withLock {
+            tableSessions.remove(table.name.string)
+        }
     }
     override suspend fun publishGameUpdated(game: Game) {
 
