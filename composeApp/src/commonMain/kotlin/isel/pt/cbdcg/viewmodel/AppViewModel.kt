@@ -108,8 +108,9 @@ class AppViewModel(
         }
     private fun updateInGameState(user: User, newGame: Game, currentGame: Game, currentUI: GameUI): GameUI {
 
+        // Remove UI only gray filter for characters
         val ui =
-            if(newGame.turn.playerTurn != currentGame.turn.playerTurn) currentUI.copy(charactersBattled = emptyList())
+            if(newGame.turn.playerTurn != currentGame.turn.playerTurn) currentUI.copy(battledCharactersPosition = emptyList())
             else currentUI
 
         if(newGame.players.size == 1) return ui.copy(state = GameUIState.GameOver(newGame.players.first()))
@@ -129,10 +130,21 @@ class AppViewModel(
             }
 
         }
-        if(currentGame.battle != null){
-            return ui.copy(
-                state = GameUIState.Idle,
-            )
+
+        // If the battle ended between 'currentGame' and 'newGame'
+        if(currentGame.battle != null) {
+
+            // Check if the Player Character evolved
+            val currentCharacterName = currentGame.players.find{ it.user.id == user.id }?.currentCharacter
+            val newCharacterName = newGame.players.find{ it.user.id == user.id }?.currentCharacter
+
+            if(currentCharacterName != null && newCharacterName != null && currentCharacterName != newCharacterName){
+                val character = newGame.board.tiles.find{ it.character?.name == newCharacterName }?.character
+                    ?: return ui.copy(state = GameUIState.Idle)
+
+                return ui.copy(state = GameUIState.CharacterEvolved(character))
+            }
+            else return ui.copy(state = GameUIState.Idle)
         }
 
         return ui
@@ -144,11 +156,19 @@ class AppViewModel(
         return if(remainingCharacters.size == 1) {
             val playersInBattle = game.players.filter { it.currentCharacter in battle.characters.map { it.name } }
             val playerCharacter = game.board.tiles.first { it.character?.name == player.currentCharacter }.character
+
             val winner = playersInBattle.first { it.currentCharacter == remainingCharacters.first().name }
-            val losers = playersInBattle.filter { it.currentCharacter != winner.currentCharacter }
+            val losers = playersInBattle.filter { playerInBattle ->
+                playerInBattle.currentCharacter != winner.currentCharacter &&
+                battle.itemBet.any{ it.player.user.id == playerInBattle.user.id }
+            }
+            val fled = playersInBattle.filter{ playerInBattle ->
+                battle.itemBet.none{ it.player.user.id == playerInBattle.user.id }
+            }
+
             val readyToLeave = game.players.filter{ player -> player.currentCharacter in battle.pending.map{ it.origin.name } }
 
-            ui.copy(state = GameUIState.EndBattle(requireNotNull(playerCharacter), winner, losers, battle.itemBet, readyToLeave))
+            ui.copy(state = GameUIState.EndBattle(requireNotNull(playerCharacter), winner, losers, fled, battle.itemBet, readyToLeave))
         }
         else ui.copy(state = GameUIState.InBattle(player, battle))
     }
@@ -470,7 +490,6 @@ class AppViewModel(
                             isLoading = false,
                             errorMessage = null,
                             session = SessionState.InGame(session.user, game),
-                            gameUI = it.gameUI.copy(state = GameUIState.Idle)
                         )
                     }
                 },
@@ -965,11 +984,15 @@ class AppViewModel(
             ui.update { it.copy(errorMessage = "This character cannot move this turn anymore.") }
         }
 
+        val ignoreCharacters = session.game.board.tiles
+            .filter{ boardTile -> gameUI.battledCharactersPosition.any{ it.equals(boardTile.pos) } }
+            .mapNotNull{ it.character?.name }
+
         val path = session.game.board.findPath(
             from = gameUI.state.from,
             to = to,
             maxDistance = remainingMovement,
-            ignoreCharacters = gameUI.charactersBattled
+            ignoreCharacters = ignoreCharacters
         )
 
         return viewModelScope.launch {
@@ -1250,18 +1273,26 @@ class AppViewModel(
                         val battle = newGame.battle
                             ?: return@update it.copy(isLoading = false, errorMessage = "The battle couldn't be found.")
 
-                        val remainingCharacters = battle.characters.count{ it.adjustStats().hp > 0 }
+                        val remainingCharacters = battle.characters.filter{ it.adjustStats().hp > 0 }
                         val nextState =
-                            if(remainingCharacters != 1) GameUIState.InBattle(gameUI.state.player, battle)
+                            if(remainingCharacters.size != 1) GameUIState.InBattle(gameUI.state.player, battle)
                             else{
-                                val winnerCharacter = battle.characters.first{ it.adjustStats().hp > 0 }
-                                val winnerPlayer = session.game.players.find{
-                                    it.currentCharacter == winnerCharacter.name
-                                } ?: return@update it.copy(isLoading = false, errorMessage = "The winner couldn't be found.")
-                                val loserPlayers = session.game.players.filter{ it.currentCharacter != winnerCharacter.name }
-                                val readyToLeave = newGame.players.filter{ player -> player.currentCharacter in battle.pending.map{ it.origin.name } }
 
-                                GameUIState.EndBattle(origin, winnerPlayer, loserPlayers, battle.itemBet, readyToLeave)
+                                val playersInBattle = newGame.players.filter { it.currentCharacter in battle.characters.map { it.name } }
+                                val playerCharacter = game.board.tiles.first { it.character?.name == gameUI.state.player.currentCharacter }.character
+
+                                val winner = playersInBattle.first { it.currentCharacter == remainingCharacters.first().name }
+                                val losers = playersInBattle.filter { playerInBattle ->
+                                    playerInBattle.currentCharacter != winner.currentCharacter &&
+                                    battle.itemBet.any{ it.player.user.id == playerInBattle.user.id }
+                                }
+                                val fled = playersInBattle.filter{ playerInBattle ->
+                                    battle.itemBet.none{ it.player.user.id == playerInBattle.user.id }
+                                }
+
+                                val readyToLeave = game.players.filter{ player -> player.currentCharacter in battle.pending.map{ it.origin.name } }
+
+                                GameUIState.EndBattle(requireNotNull(playerCharacter), winner, losers, fled, battle.itemBet, readyToLeave)
                             }
 
                         it.copy(
@@ -1426,13 +1457,14 @@ class AppViewModel(
                             errorMessage = null,
                             session = session.copy(game = newGame),
                             gameUI = it.gameUI.copy(
-                                charactersBattled =
-                                    if(gameUI.state.winner.user.id == user.id && newGame.turn.playerTurn.first() == user.id)
-                                        (gameUI.state.losers + gameUI.state.winner).mapNotNull{ player ->
-                                            if(player.user.id != user.id) player.currentCharacter
-                                            else null
-                                        }
-                                    else gameUI.charactersBattled
+                                battledCharactersPosition =
+                                    if(gameUI.state.winner.user.id == user.id && newGame.turn.playerTurn.first() == user.id){
+                                        val loserCharacters = gameUI.state.losers.mapNotNull{ it.currentCharacter   }
+                                        game.board.tiles.filter{ boardTile ->
+                                            boardTile.character?.name in loserCharacters
+                                        }.map{ it.pos }
+                                    }
+                                    else gameUI.battledCharactersPosition
                             )
                         )
                     }

@@ -34,6 +34,7 @@ import isel.pt.cbdcg.views.game.utils.board.ZoomButtons
 import isel.pt.cbdcg.views.game.utils.dialog.CardStatsDialog
 import isel.pt.cbdcg.views.game.utils.dialog.TileEffectDialog
 import isel.pt.cbdcg.domain.game.character.adjustStats
+import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.views.game.utils.dialog.BattleDialog
 import isel.pt.cbdcg.views.game.utils.dialog.CharacterCollisionDialog
 import isel.pt.cbdcg.views.game.utils.dialog.ChooseTargetDialog
@@ -138,7 +139,7 @@ fun GameScreen(
                     Board(
                         player = player,
                         gameState = gameUI.state,
-                        battledCharacterNames = gameUI.charactersBattled,
+                        battledCharacterPositions = gameUI.battledCharactersPosition,
                         gameBoard = game.board.tiles,
                         tileSize = 128.dp * gameUI.boardZoom,
                         placeCard = { pos -> placeOnBoard(pos) },
@@ -254,11 +255,19 @@ fun GameScreen(
             EndBattleDialog(
                 player = player,
                 isWinner = player.currentCharacter == gameUI.state.winner.currentCharacter,
-                isBattling = player.user.id in (gameUI.state.losers + gameUI.state.winner).map{ it.user.id },
+                isBattling = player.user.id in (gameUI.state.losers + gameUI.state.fled + gameUI.state.winner).map { it.user.id },
+                fled = player.user.id in gameUI.state.fled.map { it.user.id },
                 bet = gameUI.state.bet,
                 ready = gameUI.state.readyToLeave,
-                total = gameUI.state.losers.size + 1,
+                total = gameUI.state.losers.size + gameUI.state.fled.size + 1,
                 confirm = { endBattle() }
+            )
+        }
+        is GameUIState.CharacterEvolved -> {
+            CardStatsDialog(
+                card = gameUI.state.character.toCard(),
+                unequip = { idx -> unequip(idx) },
+                onDismiss = { toggleCardStats(null, null) }
             )
         }
         else -> {  }

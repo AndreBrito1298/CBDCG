@@ -4,6 +4,7 @@ import isel.pt.cbdcg.domain.game.Battle
 import isel.pt.cbdcg.domain.game.BattleBet
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Player
+import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.tile.Tile
 import isel.pt.cbdcg.domain.game.character.Character
@@ -12,7 +13,7 @@ data class GameUI(
     val state: GameUIState,
     val boardZoom: Float = 1.0f,
     val movementUsed: Int = 0,
-    val charactersBattled: List<String> = emptyList(),
+    val battledCharactersPosition: List<BoardPosition> = emptyList(),
 )
 sealed interface GameUIState {
 
@@ -78,8 +79,13 @@ sealed interface GameUIState {
         val playerCharacter: Character,
         val winner: Player,
         val losers: List<Player>,
+        val fled: List<Player>,
         val bet: List<BattleBet>,
         val readyToLeave: List<Player>
+    ) : GameUIState
+
+    data class CharacterEvolved(
+        val character: Character
     ) : GameUIState
 
     data class GameOver(

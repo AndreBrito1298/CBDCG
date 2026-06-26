@@ -38,7 +38,7 @@ fun CharacterInfoPanel(
             CardBasicInfoColumn(
                 modifier = Modifier.width(160.dp),
                 mainText = character.name,
-                zoom = 3.0f,
+                zoom = 1.0f,
                 subText = character.grade.name,
             )
             CardStatsColumn(

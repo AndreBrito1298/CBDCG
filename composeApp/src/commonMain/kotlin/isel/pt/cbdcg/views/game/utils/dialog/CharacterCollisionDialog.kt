@@ -92,7 +92,7 @@ fun CharacterCollisionInfo(
                 CardBasicInfoColumn(
                     modifier = Modifier.width(160.dp).fillMaxHeight(),
                     mainText = movingCharacter.name,
-                    zoom = 3f,
+                    zoom = 1f,
                     subText = "Attacker"
                 )
 
@@ -121,7 +121,7 @@ fun CharacterCollisionInfo(
                 CardBasicInfoColumn(
                     modifier = Modifier.width(160.dp).fillMaxHeight(),
                     mainText = staticCharacter.name,
-                    zoom = 3f,
+                    zoom = 1f,
                     subText = "Defender"
                 )
             }

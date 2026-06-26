@@ -19,7 +19,6 @@ import isel.pt.cbdcg.webapi.tableWebApi
 import isel.pt.cbdcg.webapi.userWebApi
 import isel.pt.cbdcg.webapi.websocket.WebSocketHub
 import isel.pt.cbdcg.webapi.websocket.webSocketApi
-import org.jetbrains.exposed.v1.jdbc.Database
 
 fun main() {
     dbInit()

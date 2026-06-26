@@ -149,7 +149,7 @@ object AllTileEffects{
         TileEffect(
             type = TileEffectTypes.BigChest,
             maxCooldown = 3u,
-            info = "Draw two ITEMS cards from the Item Deck.\nCooldown: 3 Dungeon Turns\nRestriction: ---"
+            info = "Draw one regular ITEM card from the Item Deck, and one EVOLVE or KEY ITEM card.\nCooldown: 3 Dungeon Turns\nRestriction: ---"
         ) to 1u
     ) + statUp + statDown + statUpAoE + statDownAoE
 }

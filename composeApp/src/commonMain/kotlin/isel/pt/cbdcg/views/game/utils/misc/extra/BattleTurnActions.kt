@@ -66,7 +66,7 @@ fun BattleTurnActions(
                             origin = origin.name,
                             target = target?.name,
                             stats = target?.adjustStats() ?: origin.adjustStats(),
-                            deltaStats = battleAction.stats ?: Stats()
+                            deltaStats = battleAction.stats
                         )
 
                         when(battleAction.action){
@@ -145,7 +145,7 @@ fun BattleAction(
             ZoomedImage(
                 modifier = Modifier.size(60.dp),
                 fileName = origin,
-                zoom = 2f,
+                zoom = 1f,
             )
 
             ZoomedImage(
@@ -158,7 +158,7 @@ fun BattleAction(
                 ZoomedImage(
                     modifier = Modifier.size(60.dp),
                     fileName = target,
-                    zoom = 2f,
+                    zoom = 1f,
                 )
             }
 

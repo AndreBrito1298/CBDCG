@@ -96,7 +96,7 @@ fun SpectatorScreen(
                         moveSignal = {},
                         battleSignal = { _, _ -> },
                         moveCharacter = {},
-                        battledCharacterNames = gameUI.charactersBattled,
+                        battledCharacterPositions = gameUI.battledCharactersPosition,
                     )
                     ZoomButtons(
                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
@@ -173,9 +173,10 @@ fun SpectatorScreen(
                 player = null,
                 isWinner = false,
                 isBattling = false,
+                fled = false,
                 bet = gameUI.state.bet,
                 ready = gameUI.state.readyToLeave,
-                total = gameUI.state.losers.size + 1,
+                total = gameUI.state.losers.size + gameUI.state.fled.size + 1,
                 confirm = { }
             )
         }

@@ -28,6 +28,7 @@ fun EndBattleDialog(
     player: Player?,
     isWinner: Boolean,
     isBattling: Boolean,
+    fled: Boolean,
     bet: List<BattleBet>,
     ready: List<Player>,
     total: Int,
@@ -36,12 +37,14 @@ fun EndBattleDialog(
 
     val clickable = player != null && (player.user.id !in ready.map{ it.user.id })
     val mainText =
-        if(isBattling && isWinner) "You won!"
-        else if(isBattling && !isWinner) "You lost!"
+        if (isBattling && isWinner) "You won!"
+        else if (fled) "You fled!"
+        else if (isBattling) "You lost!"
         else "End of the Battle."
     val subText =
-        if(isBattling && isWinner) "Check the spoils from this battle"
-        else if(isBattling && !isWinner) "You lost an Item"
+        if (isBattling && isWinner) "Check the spoils from this battle"
+        else if (fled) "You kept all your items"
+        else if (isBattling) "You lost an Item"
         else "Wait for the battling players."
 
     AlertDialog(
@@ -74,10 +77,12 @@ fun EndBattleDialog(
                 ){
                     if (isWinner) {
                         bet.filter{ it.player.user.id != player?.user?.id }.forEach { (_, item) ->
-                            ItemInfoPanel(
-                                item = item,
-                                modifier = Modifier.fillMaxSize()
-                            )
+                            if(item != null){
+                                ItemInfoPanel(
+                                    item = item,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
                         }
                     } else {
                         val item = bet.find { it.player.user.id == player?.user?.id }?.item

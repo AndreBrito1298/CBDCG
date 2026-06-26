@@ -172,11 +172,13 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is GameError.NoBattleOngoing -> HttpStatusCode.NotFound
         is GameError.MustSelectATarget -> HttpStatusCode.BadRequest
         is GameError.MoveToBattleRestriction -> HttpStatusCode.Conflict
+        is GameError.ItemGradeTooHigh -> HttpStatusCode.Conflict
 
         is CardError.InvalidCardFormat -> HttpStatusCode.BadRequest
         
         is CharacterError.ItemCapacityLimit -> HttpStatusCode.Conflict
         is CharacterError.ItemDoesNotExist -> HttpStatusCode.NotFound
+        is CharacterError.CharacterDoesNotExist -> HttpStatusCode.NotFound
 
         is BattleError.CharacterNotFound -> HttpStatusCode.NotFound
         is BattleError.InvalidAction -> HttpStatusCode.BadRequest

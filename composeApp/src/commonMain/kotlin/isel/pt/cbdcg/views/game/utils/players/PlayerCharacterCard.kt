@@ -32,7 +32,7 @@ fun PlayerCharacterCard(
 
         ZoomedImage(
             fileName = character.name,
-            zoom = 2.0f
+            zoom = 1.0f
         )
 
         DropdownMenu(

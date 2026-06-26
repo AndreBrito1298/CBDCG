@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.domain.game.character
 
+import isel.pt.cbdcg.domain.game.Battle
 import isel.pt.cbdcg.domain.game.Entity
 import isel.pt.cbdcg.dto.CharacterDTO
 import isel.pt.cbdcg.error.GameError
@@ -19,12 +20,14 @@ interface Character: Entity {
     val baseStats: Stats
     val activeStatModifiers: List<StatModifier>
     val grade: Grade
+    val evolution: Evolution?
 
     fun addModifier(newStatModifier: StatModifier): Character
     fun removeModifier(statModifier: StatModifier): Character
     fun decreaseTileEffectModifiers(): Character
     fun increaseInBattleModifierTurn(): Character
     fun removeAllBattleMods(): Character
+    fun evolve(battle: Battle? = null): Character
     fun toCharacterDTO(): CharacterDTO
 }
 

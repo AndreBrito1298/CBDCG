@@ -40,14 +40,16 @@ data class BoardTileDDM(
     val moveCharacter: Boolean,
     val battleCharacter: Boolean,
     val sneakThrough: Boolean,
-    val applyMovement: Boolean
+    val applyMovement: Boolean,
+    val wasBattled: Boolean,
+    val myCharacter: Boolean
 )
 
 @Composable
 fun Board(
     player: Player?,
     gameState: GameUIState,
-    battledCharacterNames: List<String>,
+    battledCharacterPositions: List<BoardPosition>,
     gameBoard: BoardTiles,
     tileSize: Dp,
     placeCard: (BoardPosition) -> Unit,
@@ -86,6 +88,7 @@ fun Board(
                             else ""
 
                         val character = currentBoardTile.character
+                        val wasBattled = battledCharacterPositions.none{ it.equals(currentBoardTile.pos) }
 
                         val adjacentCharacters = currentBoardTile.tile
                             .getAdjacent(gameBoard, currentBoardTile.pos)
@@ -96,24 +99,36 @@ fun Board(
                             inspectTileEffect = gameState is GameUIState.Idle &&
                                     currentBoardTile.tile.specialEffect.type.name != "None" &&
                                     currentBoardTile.tile.specialEffect.type.name != "Start",
+
                             inspectCharacter = gameState is GameUIState.Idle &&
                                     character != null,
+
                             placeCharacter = gameState is GameUIState.PlacingCard &&
                                     gameState.card is CharacterCard &&
                                     (character == null || character.name == player?.currentCharacter),
+
                             equipItem = gameState is GameUIState.PlacingCard &&
                                     gameState.card is ItemCard,
+
                             moveCharacter = gameState is GameUIState.Idle &&
                                     character != null &&
                                     character.name == player?.currentCharacter,
+
                             battleCharacter = gameState is GameUIState.Idle &&
                                     character != null &&
-                                    character.name != player?.currentCharacter &&
-                                    character.name !in battledCharacterNames &&
-                                    playerCharacter != null,
+                                    playerCharacter != null &&
+                                    character.name != playerCharacter.name &&
+                                    wasBattled,
+
+
                             sneakThrough = gameState is GameUIState.SneakDestination &&
                                     gameState.targets.find { it.pos == currentBoardTile.pos } != null,
-                            applyMovement = gameState is GameUIState.MovingCharacter
+
+                            applyMovement = gameState is GameUIState.MovingCharacter,
+
+                            wasBattled = wasBattled,
+
+                            myCharacter = character != null && character.name == player?.currentCharacter
                         )
 
                         val tilePath =
@@ -122,11 +137,9 @@ fun Board(
                             else null
 
                         BoardTile(
-                            battledCharacterNames = battledCharacterNames,
                             actions = actions,
                             boardTile = currentBoardTile,
                             tileName = tileName,
-                            myCharacter = character != null && character.name == player?.currentCharacter,
                             tileSize = tileSize,
                             tilePath = tilePath,
                             onClick = { action ->

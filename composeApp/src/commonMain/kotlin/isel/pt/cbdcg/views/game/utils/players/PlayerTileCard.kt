@@ -38,7 +38,7 @@ fun PlayerTileCard(
         if(tile.specialEffect.type.name != "None"){
             ZoomedImage(
                 fileName = tile.specialEffect.type.name,
-                zoom = 0.25f
+                zoom = 0.33f
             )
         }
 

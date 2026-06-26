@@ -27,11 +27,9 @@ import isel.pt.cbdcg.views.game.utils.ZoomedImage
 
 @Composable
 fun BoardTile(
-    battledCharacterNames: List<String>,
     actions: BoardTileDDM,
     boardTile: BoardTile,
     tileName: String,
-    myCharacter: Boolean,
     tileSize: Dp,
     tilePath: TilePathSegment?,
     onClick: (BoardTilePossibleActions) -> Unit,
@@ -109,15 +107,15 @@ fun BoardTile(
         if(characterName != null){
             Box(
                 modifier =
-                    if(myCharacter) Modifier.border(1.dp, Color.Cyan, shape = CircleShape)
+                    if(actions.myCharacter) Modifier.border(1.dp, Color.Cyan, shape = CircleShape)
                     else Modifier
             ){
                 ZoomedImage(
                     fileName = characterName,
-                    zoom = 1.0f,
+                    zoom = 0.33f,
                     modifier = Modifier.size(tileSize),
                     filter =
-                        if(characterName in battledCharacterNames)
+                        if(!actions.wasBattled)
                             ColorFilter.colorMatrix(ColorMatrix().apply{ setToSaturation(0f) })
                         else null
                 )
@@ -139,7 +137,7 @@ fun BoardTile(
             }
             if (actions.battleCharacter) {
                 DropdownMenuItem(
-                    text = { Text("Challange") },
+                    text = { Text("Challenge") },
                     onClick = {
                         expanded = false
                         onClick(BoardTilePossibleActions.Challenge)

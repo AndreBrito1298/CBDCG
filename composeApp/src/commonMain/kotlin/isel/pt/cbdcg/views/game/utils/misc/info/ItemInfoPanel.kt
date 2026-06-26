@@ -33,7 +33,7 @@ fun ItemInfoPanel(
             CardBasicInfoColumn(
                 modifier = Modifier.width(180.dp),
                 mainText = item.name,
-                zoom = 1.25f,
+                zoom = 1.0f,
                 subText = item.grade.name,
             )
 

@@ -54,7 +54,7 @@ fun BattleInfo(
                             else Modifier
                         ),
                     mainText = character.name,
-                    zoom = 2.75f,
+                    zoom = 1f,
                     subText = if(playerCharacterName != null && playerCharacterName == character.name) "YOU" else ""
                 )
                 CardStatsColumn(

@@ -31,7 +31,6 @@ import isel.pt.cbdcg.domain.game.board.tile.Tile
 import isel.pt.cbdcg.domain.game.gameUpdateByName
 import isel.pt.cbdcg.domain.game.board.tile.rotate
 import isel.pt.cbdcg.domain.game.character.Character
-import isel.pt.cbdcg.domain.game.character.Grade
 import isel.pt.cbdcg.domain.game.character.ItemCatalog
 import isel.pt.cbdcg.domain.game.character.PlayableCharacterCatalog
 import isel.pt.cbdcg.domain.game.deleteBattle
@@ -84,15 +83,16 @@ class GameService(
             Tile(listOf(Direction.NORTH, Direction.SOUTH)) to NUM_2_WAY_TILES,
         ).applyRandomSpecialEffects().toMutableMap()
 
-        val availableCharacters = PlayableCharacterCatalog.playableCharacters
+        val availableCharacters = PlayableCharacterCatalog.basicCharacters
             .shuffled()
             .associateWith { NUM_COPIES_CHARACTER }
             .toMutableMap()
 
-        val availableItems = ItemCatalog.items
-            .filter{ it.grade != Grade.KEY }
+        val commonItems = ItemCatalog.commonItems
             .associateWith { NUM_COPIES_ITEM }
             .toMutableMap()
+        val specialItems = ItemCatalog.specialItems
+            .associateWith { NUM_COPIES_ITEM }
 
         val players = table.participants.filter{ it.role == Role.READY }
             .map{ player ->
@@ -109,10 +109,10 @@ class GameService(
                 val lastTileIdx = hand.size.toUInt()
 
                 repeat(INITIAL_ITEM_CARDS){ idx ->
-                    val drawnItem = availableItems.draw()
+                    val drawnItem = commonItems.draw()
                     hand[idx.toUInt() + lastTileIdx] = ItemCard(drawnItem)
-                    val remaining = availableItems[drawnItem] ?: 0u
-                    availableItems[drawnItem] = (remaining - 1u).coerceAtLeast(0u)
+                    val remaining = commonItems[drawnItem] ?: 0u
+                    commonItems[drawnItem] = (remaining - 1u).coerceAtLeast(0u)
                 }
 
                 val lastItemIdx = hand.size.toUInt()
@@ -135,7 +135,7 @@ class GameService(
 
         val turnOrder = players.map{ it.user.id }
 
-        val game = gameRepo.createGame(players, spectators, turnOrder, availableTiles, availableItems)
+        val game = gameRepo.createGame(players, spectators, turnOrder, availableTiles, commonItems + specialItems)
         user.addToGame(game.id, userRepo)
         players.forEach { player ->
             player.user.addToGame(game.id, userRepo)
@@ -143,11 +143,9 @@ class GameService(
 
         events.publishGameStarted(table, game)
 
-        /*
         tableRepo.deleteById(table.id)
         val tables = tableRepo.getAllTables()
         events.publishLobbyTables(tables)
-        */
 
         game
     }
@@ -400,12 +398,9 @@ class GameService(
         val game = gameRepo.findById(gameId)
             ?: throw GameError.GameNotFound(gameId.toInt())
 
-        val player = game.players.find{ it.user.id == user.id }
-            ?: throw GameError.PlayerNotFound(user.email.string, game.id.toInt())
-
         val newGame = game
             .addActionToPending(playerCharacter, null, action)
-            .deleteBattle(player)
+            .deleteBattle()
 
         gameRepo.save(newGame)
         events.publishGameUpdated(newGame)

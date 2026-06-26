@@ -13,8 +13,10 @@ import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.Item
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.domain.game.character.equipItem
+import isel.pt.cbdcg.domain.game.character.isEqualOrHigherThan
 import isel.pt.cbdcg.domain.game.character.unequip
 import isel.pt.cbdcg.error.BoardError
+import isel.pt.cbdcg.error.GameError
 import kotlin.collections.plus
 
 typealias BoardTiles = List<BoardTile>
@@ -150,6 +152,9 @@ fun Board.equipItem(position: BoardPosition, player: Player, item: Item): Board{
 
     if(character !is PlayableCharacter || character.name != player.currentCharacter)
         throw BoardError.ApplyEffectOnYourCharacter()
+
+    if(!character.grade.isEqualOrHigherThan(item.grade))
+        throw GameError.ItemGradeTooHigh(character.grade.name, item.grade.name)
 
     val newBoard = tiles.map{ boardTile ->
         if(boardTile == tile) tile.copy(character = character.equipItem(item))

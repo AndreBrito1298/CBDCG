@@ -80,12 +80,23 @@ data class ModifierDTO(
 )
 
 @Serializable
+data class EvolutionDTO(
+    val type: String,
+    val character: String,
+    val item: String? = null,
+    val condition: String? = null,
+    val value: Int? = null,
+    val currentValue: Int? = null
+)
+
+@Serializable
 data class CharacterDTO(
     val type: String,
     val name: String,
     val baseStats: String,
     val activeModifiers: Array<ModifierDTO>,
     val grade: String,
+    val evolution: EvolutionDTO? = null,
     val items: Array<ItemDTO>,
     val maxItems: Int
 ) {
@@ -242,7 +253,7 @@ data class BattleDTO(
 @Serializable
 data class BattleBetDTO(
     val player: PlayerDTO,
-    val item: ItemDTO
+    val item: ItemDTO?
 )
 
 @Serializable
@@ -251,7 +262,7 @@ data class BattleActionDTO(
     val origin: CharacterDTO,
     val target: CharacterDTO?,
     val action: String,
-    val stats: String?
+    val stats: String
 )
 
 @Serializable

@@ -20,11 +20,11 @@ fun SpectatorCard(
     onSeeStats: () -> Unit,
 ) {
 
-    val (fileName, zoom) =
+    val fileName =
         when(card){
-            is CharacterCard -> card.character.name to 2.0f
-            is TileCard -> card.tile.toString() to 1.0f
-            is ItemCard -> card.item.name to 1.0f
+            is CharacterCard -> card.character.name
+            is TileCard -> card.tile.toString()
+            is ItemCard -> card.item.name
         }
 
     Box(
@@ -40,14 +40,14 @@ fun SpectatorCard(
             is CharacterCard, is ItemCard -> {
                 ZoomedImage(
                     fileName = fileName,
-                    zoom = zoom
+                    zoom = 1.0f
                 )
             }
 
             is TileCard -> {
                 ZoomedImage(
                     fileName = card.tile.toString(),
-                    zoom = zoom,
+                    zoom = 1.0f,
                 )
 
                 if(card.tile.specialEffect.type.name != "None"){

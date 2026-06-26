@@ -85,6 +85,7 @@ sealed class GameError(
     class NoBattleOngoing : GameError("There is no battle ongoing.")
     class MustSelectATarget : GameError("You must select a target.")
     class MoveToBattleRestriction : GameError("You can only move your character to a battle during the Movement Phase.")
+    class ItemGradeTooHigh(character: String, item: String) : GameError("The item grade '$item' is higher than the character grade '$character'.")
 }
 
 sealed class CharacterError(
@@ -92,6 +93,7 @@ sealed class CharacterError(
 ): Error(msg, "Error found in Character-related operation."){
     class ItemCapacityLimit(n: Int) : CharacterError("You can have a maximum of $n items equipped.")
     class ItemDoesNotExist(idx: Int) : CharacterError("This Characters does not have an item in the position $idx.")
+    class CharacterDoesNotExist(name: String) : CharacterError("Character '$name' does not exist or isn't playable.")
 }
 
 sealed class CardError(
