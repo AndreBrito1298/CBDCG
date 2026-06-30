@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.repository.memory
 
+import isel.pt.cbdcg.TURN_DURATION_SECONDS
 import isel.pt.cbdcg.domain.game.Deck
 import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.Game
@@ -9,6 +10,7 @@ import isel.pt.cbdcg.domain.game.board.tile.Tile
 import isel.pt.cbdcg.domain.game.Turn
 import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.character.Item
+import isel.pt.cbdcg.domain.game.newDeadline
 import isel.pt.cbdcg.repository.GameRepository
 
 object GameRepositoryMem: GameRepository {
@@ -24,7 +26,7 @@ object GameRepositoryMem: GameRepository {
             board = Board(),
             tileDeck = startingDeck,
             itemDeck = itemDeck,
-            turn = Turn(0u, turnOrder, phase = TurnPhase.CONSTRUCTION),
+            turn = Turn(0u, turnOrder, phase = TurnPhase.CONSTRUCTION, newDeadline(TURN_DURATION_SECONDS)),
         )
 
         games.add(game)

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -21,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +30,7 @@ import isel.pt.cbdcg.domain.game.Battle
 import isel.pt.cbdcg.domain.game.PossibleBattleActions
 import isel.pt.cbdcg.domain.game.character.ModifierType
 import isel.pt.cbdcg.domain.game.character.adjustStats
+import isel.pt.cbdcg.views.game.utils.misc.extra.SimpleClock
 import isel.pt.cbdcg.views.game.utils.misc.info.ActionsInfo
 import isel.pt.cbdcg.views.game.utils.misc.info.BattleInfo
 import kotlin.collections.filter
@@ -35,6 +38,8 @@ import kotlin.collections.filter
 @Composable
 fun BattleDialog(
     battle: Battle,
+    remainingSeconds: Long,
+    getDrawable: suspend (String) -> ImageBitmap,
     playerCharacterName: String?,
     attackTarget: () -> Unit,
     onClick: (PossibleBattleActions?) -> Unit,
@@ -47,12 +52,24 @@ fun BattleDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Battle - Turn ${battle.currentTurn}",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
+            Row(verticalAlignment = Alignment.CenterVertically){
+                Box(modifier = Modifier.weight(8f)){
+                    Text(
+                        text = "Battle - Turn ${battle.currentTurn}",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Box(modifier = Modifier.weight(2f)){
+                    SimpleClock(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .size(50.dp)
+                            .padding(4.dp),
+                        remainingSeconds = remainingSeconds
+                    )
+                }
             }
         },
         text = {
@@ -76,6 +93,7 @@ fun BattleDialog(
 
                     if(!showActions){
                         BattleInfo(
+                            getDrawable = { getDrawable(it) },
                             modifier = Modifier.fillMaxWidth().height(348.dp),
                             playerCharacterName = playerCharacterName,
                             characters = battle.characters,
@@ -83,6 +101,7 @@ fun BattleDialog(
                         )
                     } else {
                         ActionsInfo(
+                            getDrawable = { getDrawable(it) },
                             modifier = Modifier.fillMaxWidth().height(348.dp).padding(4.dp),
                             characters = battle.characters,
                             currentTurn = battle.currentTurn,

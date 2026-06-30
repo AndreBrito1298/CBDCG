@@ -17,6 +17,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.board.tile.TileEffect
 import isel.pt.cbdcg.domain.game.character.Character
@@ -25,6 +26,7 @@ import isel.pt.cbdcg.views.game.utils.misc.info.CardBasicInfoColumn
 
 @Composable
 fun TileEffectDialog(
+    getDrawable: suspend (String) -> ImageBitmap,
     effect: TileEffect,
     activate: Boolean,
     onConfirm: () -> Unit,
@@ -40,6 +42,7 @@ fun TileEffectDialog(
         text = {
             Box(modifier = Modifier.width(775.dp).height(340.dp)){
                 TileEffectInfo(
+                    getDrawable = { getDrawable(it) },
                     modifier = Modifier.fillMaxSize(),
                     effectName = effect.type.name,
                     description = effect.info,
@@ -56,6 +59,7 @@ fun TileEffectInfo(
     effectName: String,
     description: String,
     affectedCharacters: List<Character> = emptyList(),
+    getDrawable: suspend (String) -> ImageBitmap,
 ) {
     Box(
         modifier = modifier
@@ -70,6 +74,7 @@ fun TileEffectInfo(
             verticalAlignment = Alignment.CenterVertically
         ) {
             CardBasicInfoColumn(
+                getDrawable = { getDrawable(it) },
                 modifier = Modifier.width(150.dp).fillMaxHeight(),
                 mainText = effectName,
                 zoom = 1.0f,
@@ -85,6 +90,7 @@ fun TileEffectInfo(
                 )
             }
             AffectedCharactersColumn(
+                getDrawable = { getDrawable(it) },
                 modifier = Modifier.width(200.dp).fillMaxHeight(),
                 characters = affectedCharacters
             )

@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CharacterCard
@@ -20,6 +21,7 @@ import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 
 @Composable
 fun PlayerHand(
+    getDrawable: suspend (String) -> ImageBitmap,
     hand: Map<UInt, Card>,
     selectCard: (UInt, Card) -> Unit,
     selected: UInt?,
@@ -48,15 +50,18 @@ fun PlayerHand(
             hand.forEach { (index, card) ->
                 when (card) {
                     is TileCard -> PlayerTileCard(
+                        getDrawable = { getDrawable(it) },
                         tile = card.tile,
                         select = { selectCard(index, card) },
                         isSelected = if (selected == null) false else selected == index,
                         place = placeCard,
                         rotateLeft = rotateLeft,
                         rotateRight = rotateRight,
+                        inspect = { inspectCard(card) },
                     )
 
                     is CharacterCard -> PlayerCharacterCard(
+                        getDrawable = { getDrawable(it) },
                         character = card.character as PlayableCharacter,
                         select = { selectCard(index, card) },
                         isSelected = if (selected == null) false else selected == index,
@@ -65,6 +70,7 @@ fun PlayerHand(
                     )
 
                     is ItemCard -> PlayerItemCard(
+                        getDrawable = { getDrawable(it) },
                         item = card.item,
                         select = { selectCard(index, card) },
                         isSelected = if (selected == null) false else selected == index,

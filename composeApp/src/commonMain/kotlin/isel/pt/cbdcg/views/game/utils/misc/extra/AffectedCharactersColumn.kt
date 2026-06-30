@@ -14,17 +14,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import isel.pt.cbdcg.domain.game.character.Character
-import isel.pt.cbdcg.views.game.utils.ZoomedImage
 
 @Composable
 fun AffectedCharactersColumn(
     modifier: Modifier,
     characters: List<Character>,
+    getDrawable: suspend (String) -> ImageBitmap
 ) {
     Column(
         modifier = modifier
@@ -59,6 +60,7 @@ fun AffectedCharactersColumn(
                     ) {
                         ZoomedImage(
                             fileName = character.name,
+                            loadDrawable = { getDrawable(character.name) },
                             zoom = 1.0f,
                             modifier = Modifier.width(64.dp).height(64.dp)
                         )

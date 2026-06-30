@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CharacterCard
@@ -21,17 +22,20 @@ import isel.pt.cbdcg.views.game.utils.misc.info.ItemInfoPanel
 @Composable
 fun CardStatsPanel(
     card: Card,
+    getDrawable: suspend (String) -> ImageBitmap,
     unequip: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (card) {
         is CharacterCard -> CharacterInfoPanel(
+            getDrawable = { getDrawable(it) },
             character = card.character,
             unequip = { idx -> unequip(idx) },
             modifier = modifier
         )
 
         is ItemCard -> ItemInfoPanel(
+            getDrawable = { getDrawable(it) },
             item = card.item,
             modifier = modifier
         )
@@ -42,6 +46,7 @@ fun CardStatsPanel(
 
 @Composable
 fun CardStatsDialog(
+    getDrawable: suspend (String) -> ImageBitmap,
     card: Card,
     unequip: (Int) -> Unit,
     onDismiss: () -> Unit,
@@ -60,6 +65,7 @@ fun CardStatsDialog(
                     .height(340.dp)
             ) {
                 CardStatsPanel(
+                    getDrawable = { getDrawable(it) },
                     card = card,
                     unequip = { idx -> unequip(idx) },
                     modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())

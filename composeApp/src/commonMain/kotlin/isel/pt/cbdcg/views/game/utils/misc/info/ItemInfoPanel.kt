@@ -10,12 +10,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.character.Item
 import isel.pt.cbdcg.views.game.utils.misc.stats.CardStatsColumn
 
 @Composable
 fun ItemInfoPanel(
+    getDrawable: suspend (String) -> ImageBitmap,
     item: Item,
     modifier: Modifier = Modifier,
 ) {
@@ -31,6 +33,7 @@ fun ItemInfoPanel(
             verticalAlignment = Alignment.CenterVertically
         ) {
             CardBasicInfoColumn(
+                getDrawable = { getDrawable(it) },
                 modifier = Modifier.width(180.dp),
                 mainText = item.name,
                 zoom = 1.0f,

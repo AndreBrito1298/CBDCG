@@ -20,10 +20,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.board.BoardTile
-import isel.pt.cbdcg.views.game.utils.ZoomedImage
+import isel.pt.cbdcg.views.game.utils.misc.extra.ZoomedImage
 
 @Composable
 fun BoardTile(
@@ -32,6 +33,7 @@ fun BoardTile(
     tileName: String,
     tileSize: Dp,
     tilePath: TilePathSegment?,
+    getDrawable: suspend (String) -> ImageBitmap,
     onClick: (BoardTilePossibleActions) -> Unit,
 ) {
 
@@ -49,6 +51,7 @@ fun BoardTile(
             .clickable(enabled = isClickable) {
                 when {
                     actions.placeCharacter || actions.equipItem -> onClick(BoardTilePossibleActions.PlaceCard)
+                    actions.myCharacter && actions.applyMovement -> onClick(BoardTilePossibleActions.Idle)
                     actions.applyMovement || actions.sneakThrough -> onClick(BoardTilePossibleActions.ApplyMovement)
                     else -> expanded = true
                 }
@@ -60,6 +63,7 @@ fun BoardTile(
         ZoomedImage(
             fileName = tileName,
             zoom = 1.0f,
+            loadDrawable = { getDrawable(tileName) },
             modifier = Modifier.size(tileSize)
         )
 
@@ -67,6 +71,7 @@ fun BoardTile(
         if(effectName != "None"){
             ZoomedImage(
                 fileName = effectName,
+                loadDrawable = { getDrawable(effectName) },
                 zoom = 0.33f,
                 modifier = Modifier.size(tileSize),
                 filter =
@@ -86,6 +91,26 @@ fun BoardTile(
             )
         }
 
+        // Draw the Character
+        if(characterName != null){
+            Box(
+                modifier =
+                    if(actions.myCharacter) Modifier.border(1.dp, Color.Cyan, shape = CircleShape)
+                    else Modifier.border(1.dp, Color.Red, shape = CircleShape)
+            ){
+                ZoomedImage(
+                    fileName = characterName,
+                    loadDrawable = { getDrawable(characterName) },
+                    zoom = 0.33f,
+                    modifier = Modifier.size(tileSize),
+                    filter =
+                        if(!actions.wasBattled)
+                            ColorFilter.colorMatrix(ColorMatrix().apply{ setToSaturation(0f) })
+                        else null
+                )
+            }
+        }
+
         // Draw the yellow dots
         if (actions.placeCharacter || actions.sneakThrough) {
             Box(
@@ -101,25 +126,6 @@ fun BoardTile(
                         shape = CircleShape
                     )
             )
-        }
-
-        // Draw the Character
-        if(characterName != null){
-            Box(
-                modifier =
-                    if(actions.myCharacter) Modifier.border(1.dp, Color.Cyan, shape = CircleShape)
-                    else Modifier
-            ){
-                ZoomedImage(
-                    fileName = characterName,
-                    zoom = 0.33f,
-                    modifier = Modifier.size(tileSize),
-                    filter =
-                        if(!actions.wasBattled)
-                            ColorFilter.colorMatrix(ColorMatrix().apply{ setToSaturation(0f) })
-                        else null
-                )
-            }
         }
 
         DropdownMenu(

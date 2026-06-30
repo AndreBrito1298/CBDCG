@@ -1,9 +1,13 @@
 package isel.pt.cbdcg.domain.game
 
+import isel.pt.cbdcg.BATTLE_TURN_DURATION_SECONDS
 import isel.pt.cbdcg.MAX_TILES_IN_HAND
+import isel.pt.cbdcg.REMAINING_SECONDS_AFTER_BATTLE
+import isel.pt.cbdcg.TURN_DURATION_SECONDS
 import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.checkBlocked
 import isel.pt.cbdcg.domain.game.board.connectedNeighbours
 import isel.pt.cbdcg.domain.game.board.tile.Tile
 import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
@@ -13,11 +17,14 @@ import isel.pt.cbdcg.domain.game.board.connectionDistancesFrom
 import isel.pt.cbdcg.domain.game.board.placeCharacter
 import isel.pt.cbdcg.domain.game.board.placeTile
 import isel.pt.cbdcg.domain.game.board.reduceCooldown
+import isel.pt.cbdcg.domain.game.board.tile.isPositive
 import isel.pt.cbdcg.domain.game.board.toBoardTile
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.board.tile.toTile
 import isel.pt.cbdcg.domain.game.board.tile.toTileDTO
 import isel.pt.cbdcg.domain.game.board.unequip
+import isel.pt.cbdcg.domain.game.board.possibleUnoccupiedPositions
+import isel.pt.cbdcg.domain.game.board.tile.allRotations
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.Grade
 import isel.pt.cbdcg.domain.game.character.Item
@@ -41,9 +48,6 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.contains
 import kotlin.collections.ifEmpty
-
-// Contador da versão estado
-// Histórico de Operações?
 
 data class Game(
     val id: UInt,
@@ -110,12 +114,27 @@ fun Game.resolveTurnZero() : Game {
         player to board.tiles.find{ it.character != null && it.character.name == player.currentCharacter }?.character
     }.all{ it.second != null }
     
-    return  if(!allTilesPlaced) copy(turn = Turn(0u, nextPlayerTurn, TurnPhase.CONSTRUCTION))
-            else if(allTilesPlaced && !allPlayersPlacedACharacter) copy(turn = Turn(0u, nextPlayerTurn, TurnPhase.SUBSTITUTION))
+    return  if(!allTilesPlaced)
+                copy(
+                    turn = turn.copy(
+                        playerTurn = nextPlayerTurn,
+                        phase = TurnPhase.CONSTRUCTION,
+                        deadline = newDeadline(TURN_DURATION_SECONDS)
+                    )
+                )
+            else if(allTilesPlaced && !allPlayersPlacedACharacter)
+                copy(
+                    turn = turn.copy(
+                        playerTurn = nextPlayerTurn,
+                        phase = TurnPhase.SUBSTITUTION,
+                        deadline = newDeadline(TURN_DURATION_SECONDS)
+                    )
+                )
             else {
-                val newGameTurn = copy(turn = Turn(1u, emptyList(), TurnPhase.CONSTRUCTION))
+                val newGameTurn = copy(turn = turn.copy(gameTurn = 1u, playerTurn = emptyList(), phase = TurnPhase.CONSTRUCTION))
                 val turnOrder = newGameTurn.getTurnOrder()
-                newGameTurn.copy(turn = newGameTurn.turn.copy(playerTurn = turnOrder)).startTurnDraw()
+
+                newGameTurn.copy(turn = newGameTurn.turn.copy(playerTurn = turnOrder)).startNextTurn()
             }
 }
 fun Game.nextPhase(): Game {
@@ -129,12 +148,12 @@ fun Game.nextPhase(): Game {
             if(nrTiles > MAX_TILES_IN_HAND)
                 throw GameError.MustPlaceTile(MAX_TILES_IN_HAND)
 
-            copy(turn = Turn(turn.gameTurn, turn.playerTurn, TurnPhase.SUBSTITUTION))
+            copy(turn = turn.copy(phase = TurnPhase.SUBSTITUTION, deadline = turn.extendDeadline(5)))
         }
         TurnPhase.SUBSTITUTION -> {
             player.currentCharacter ?: throw GameError.NoActiveCharacters()
 
-            copy(turn = Turn(turn.gameTurn, turn.playerTurn, TurnPhase.MOVEMENT))
+            copy(turn = turn.copy(phase = TurnPhase.MOVEMENT, deadline = turn.extendDeadline(5)))
         }
         TurnPhase.MOVEMENT -> nextTurn()
     }
@@ -152,9 +171,9 @@ fun Game.nextTurn(): Game {
 
     val nextTurn = copy(
         board = newBoard,
-        turn = Turn(gameTurn = nextGameTurn, playerTurn = nextPlayerTurn, phase = TurnPhase.CONSTRUCTION)
+        turn = turn.copy(gameTurn = nextGameTurn, playerTurn = nextPlayerTurn)
     )
-    return nextTurn.startTurnDraw()
+    return nextTurn.startNextTurn()
 }
 private fun Game.getTurnOrder(): List<UInt>{
     
@@ -203,22 +222,25 @@ private fun Game.checkWinner(): Game =
 
         }
     }
-fun Game.startTurnDraw(): Game {
+fun Game.startNextTurn(): Game {
 
-    if (turn.gameTurn == 0u || tileDeck.values.all { it == 0u }) return this
+    if (turn.gameTurn == 0u) return this
+
+    val anyRemainingTilesInDeck = tileDeck.values.any{ it > 0u }
 
     val nextPlayerId = turn.playerTurn.first()
 
-    val drawnTile = tileDeck.draw()
-    val updatedDeck = tileDeck.remove(drawnTile)
+    val drawnTile = if(anyRemainingTilesInDeck) tileDeck.draw() else null
+    val updatedDeck = if(drawnTile != null) tileDeck.remove(drawnTile) else tileDeck
 
     val updatedPlayers = players.map { player ->
-        if (player.user.id == nextPlayerId) player.addToHand(TileCard(drawnTile))
+        if (player.user.id == nextPlayerId && player.hand.numTileCards() < MAX_TILES_IN_HAND && drawnTile != null)
+            player.addToHand(TileCard(drawnTile))
         else player
     }
 
     val player = players.find{ player -> player.user.id == nextPlayerId }
-        ?: throw GameError.PlayerNotFound("???", id.toInt())
+        ?: throw GameError.PlayerNotFound(nextPlayerId.toInt(), null, id.toInt())
 
     val updatedCharacterModifiers = board.copy(tiles =
         board.tiles.map{ boardTile ->
@@ -229,7 +251,15 @@ fun Game.startTurnDraw(): Game {
         }
     )
 
-    return copy(players = updatedPlayers, tileDeck = updatedDeck, board = updatedCharacterModifiers)
+    val availableTilePositions = board.possibleUnoccupiedPositions()
+    val nextPhase = if(availableTilePositions.isNotEmpty()) TurnPhase.CONSTRUCTION else TurnPhase.SUBSTITUTION
+
+    return copy(
+        players = updatedPlayers,
+        tileDeck = updatedDeck,
+        board = updatedCharacterModifiers,
+        turn = turn.copy(phase = nextPhase, deadline = newDeadline(TURN_DURATION_SECONDS))
+    )
 }
 fun Game.leaveGame(player: Player, toSpectator: Boolean = false): Game {
 
@@ -299,7 +329,7 @@ fun Game.placeCharacter(player: Player, position: BoardPosition, card: Character
     val playerWithoutCard = player.removeFromHand(idx)
     val characterInTile = board.tiles.find{ it.pos == position }?.character
 
-    return if((characterInTile as? PlayableCharacter) == null || characterInTile.name != player.currentCharacter){
+    return if(characterInTile == null || characterInTile.name != player.currentCharacter){
 
         if(player.currentCharacter != null)
             throw BoardError.CharacterLimitReached()
@@ -313,7 +343,10 @@ fun Game.placeCharacter(player: Player, position: BoardPosition, card: Character
 
     } else {
 
-        val characterItemCards = characterInTile.items.map{ item -> ItemCard(item) }
+        if(characterInTile.name != player.currentCharacter)
+            throw GameError.ReplaceYourCharacter()
+
+        val characterItemCards = (characterInTile as PlayableCharacter).items.map{ item -> ItemCard(item) }
         val characterCard = CharacterCard(characterInTile.copy(items = emptyList()))
 
         val updatedPlayer = (characterItemCards + characterCard)
@@ -432,7 +465,9 @@ fun Game.updateStatModifiers(player: Player, boardTile: BoardTile): Game {
     val range = specialEffect.range.toInt()
 
     val distances = board.connectionDistancesFrom(boardTile)
-    val affectedTiles = distances.filter { it.value <= range }.keys
+    val affectedTiles =
+        if(specialEffect.isPositive()) distances.filter { it.value <= range }.keys
+        else distances.filter{ it.value in 1..range }.keys
 
     val newBoard = board.tiles.map{ tile ->
 
@@ -473,14 +508,14 @@ fun Game.battle(attacker: Character, defender: Character): Game {
             stats = Stats()
         )
     }
-    val itemBet = mainPlayers.mapNotNull{ player ->
+    val itemBet = mainPlayers.map{ player ->
 
         val itemCards = player.hand.mapNotNull{ card -> (card.value as? ItemCard) }
         val keyItems = itemCards.filter{ itemCard -> itemCard.item.grade == Grade.KEY }
 
         if(keyItems.isNotEmpty()) BattleBet(player, keyItems.random().item)
         else if(itemCards.isNotEmpty()) BattleBet(player, itemCards.random().item)
-        else null
+        else BattleBet(player, null)
     }
 
     val participatingCharacterTiles = board.tiles.filter{ boardTile ->
@@ -501,10 +536,12 @@ fun Game.battle(attacker: Character, defender: Character): Game {
     return copy(
         battle =
             Battle(
+                phase = BattlePhase.WAITING,
                 characters = charactersInBattle,
                 itemBet = itemBet,
                 pending = mainCharactersReady
-            )
+            ),
+        turn = turn.copy(deadline = newDeadline(BATTLE_TURN_DURATION_SECONDS))
     )
 }
 fun Game.joinBattle(player: Player, character: Character): Game {
@@ -579,7 +616,8 @@ fun Game.resolvePending(): Game {
         .sortedByDescending { it.adjustStats().spe }
 
     if(battle.pending.size < availableCharacters.size) return this
-    if(battle.currentTurn == 0u) return copy(battle = battle.copy(pending = emptyList(), currentTurn = 1u))
+    if(battle.currentTurn == 0u)
+        return copy(battle = battle.copy(phase = BattlePhase.BATTLING, pending = emptyList(), currentTurn = 1u))
 
     val orderOfActions: List<BattleAction> = availableCharacters.map{ character ->
         val action = battle.pending.find{ it.origin == character }
@@ -607,8 +645,11 @@ fun Game.resolvePending(): Game {
 
     val winner = updatedBattle.characters.filter{ it.adjustStats().hp > 0 }
 
-    return if(winner.size == 1) resolveBattleEnd(updatedBattle, winner.first())
-           else copy(battle = updatedBattle.copy(pending = emptyList(), currentTurn = battle.currentTurn + 1u))
+    return  if(winner.size == 1) resolveBattleEnd(updatedBattle, winner.first())
+            else copy(
+                battle = updatedBattle.copy(pending = emptyList(), currentTurn = battle.currentTurn + 1u),
+                turn = turn.copy(deadline = newDeadline(BATTLE_TURN_DURATION_SECONDS))
+            )
 }
 fun Game.resolveBattleEnd(battle: Battle, winner: Character): Game {
 
@@ -655,9 +696,10 @@ fun Game.resolveBattleEnd(battle: Battle, winner: Character): Game {
     }
 
     return copy(
-        battle = battle.copy(pending = emptyList()),
+        battle = battle.copy(phase = BattlePhase.ENDING, pending = emptyList()),
         players = updatedPlayers,
-        board = board.copy(tiles = updatedBoardTiles)
+        board = board.copy(tiles = updatedBoardTiles),
+        turn = turn.copy(deadline = newDeadline(BATTLE_TURN_DURATION_SECONDS))
     )
 }
 fun Game.deleteBattle(): Game{
@@ -692,5 +734,138 @@ fun Game.deleteBattle(): Game{
 
     }
 
-    return copy(battle = null, players = updatedPlayers, board = board.copy(tiles = updatedTiles)).checkWinner()
+    return copy(
+        battle = null,
+        players = updatedPlayers,
+        board = board.copy(tiles = updatedTiles),
+        turn = turn.copy(deadline = newDeadline(REMAINING_SECONDS_AFTER_BATTLE))
+    ).checkWinner()
+}
+fun Game.handleTimeOutTurnZero(): Game {
+
+    val player = players.find{ it.user.id == turn.playerTurn.first() }
+        ?: throw GameError.PlayerNotFound(turn.playerTurn.first().toInt(), null, id.toInt())
+
+    val nrTilesInHand = player.hand.numTileCards()
+
+    return if(nrTilesInHand > 0) {
+        handleTimeOutConstructionPhase(player).resolveTurnZero()
+    } else {
+        handleTimeOutSubstitutionPhase(player).resolveTurnZero()
+    }
+}
+fun Game.handleTimeOutOutsideOfBattle(): Game {
+
+    val player = players.find{ it.user.id == turn.playerTurn.first() }
+        ?: throw GameError.PlayerNotFound(turn.playerTurn.first().toInt(), null, id.toInt())
+
+    val nrTilesInHand = player.hand.numTileCards()
+    val constructionPhase =
+        if(turn.phase == TurnPhase.CONSTRUCTION && nrTilesInHand >= MAX_TILES_IN_HAND){
+            handleTimeOutConstructionPhase(player)
+        } else this
+
+    val substitutionPhase =
+        if(constructionPhase.turn.phase == TurnPhase.SUBSTITUTION && player.currentCharacter == null)
+            handleTimeOutSubstitutionPhase(player)
+        else constructionPhase
+
+    return if(substitutionPhase.turn.playerTurn != turn.playerTurn) substitutionPhase
+           else substitutionPhase.nextTurn()
+}
+private fun Game.handleTimeOutConstructionPhase(player: Player): Game {
+
+    val randomTileCard = player.hand
+        .filterValues { it.type == CardType.TILE }
+        .entries
+        .random()
+
+    val tile = (randomTileCard.value as TileCard).tile
+    val unoccupiedPositions = board
+        .possibleUnoccupiedPositions()
+        .shuffled()
+
+    val placement = unoccupiedPositions.firstNotNullOfOrNull{ position ->
+        tile.allRotations().firstOrNull{ rotation -> !board.checkBlocked(position, rotation) }
+            ?.let{ rotation -> position to rotation }
+    }
+
+    val newGame =
+        if(placement != null){
+            val (pos, tile) = placement
+
+            val updatedPlayers = players.map {
+                if (it.user.id == player.user.id) player.removeFromHand(randomTileCard.key)
+                else it
+            }
+
+            copy(
+                board = board.placeTile(pos, tile),
+                players = updatedPlayers
+            )
+        }
+        else this
+
+    return newGame.copy(turn = turn.copy(phase = TurnPhase.SUBSTITUTION))
+}
+private fun Game.handleTimeOutSubstitutionPhase(player: Player): Game {
+
+    val anyCharacterInHand = player.hand.numCharacterCards() > 0
+    val randomTile = board.tiles
+        .filter{ it.character == null }
+        .shuffled()
+        .firstOrNull()
+
+    return if(!anyCharacterInHand || randomTile == null) leaveGame(player, true)
+    else{
+
+        val randomCharacterCard = player.hand
+            .filterValues{ it.type == CardType.CHARACTER }
+            .entries
+            .random()
+
+        val character = (randomCharacterCard.value as CharacterCard).character
+
+        val updatedPlayers = players.map {
+            if (it.user.id == player.user.id) player.removeFromHand(randomCharacterCard.key)
+            else it
+        }
+        val updatedBoard = board.placeCharacter(randomTile.pos, character)
+
+        copy(
+            board = updatedBoard,
+            players = updatedPlayers,
+        )
+    }
+}
+fun Game.handleTimeOutStartingBattle(): Game {
+
+    if(battle == null) throw GameError.NoBattleOngoing()
+
+    val charactersReady = battle.pending.map{ it.origin.name }
+    val charactersNotReady = battle.characters.filter{ character ->
+        character.name !in charactersReady
+    }
+
+    val newGame = charactersNotReady.fold(this){ currentGame, character ->
+        currentGame.leaveBattle(character)
+    }
+
+    return newGame.resolvePending()
+}
+fun Game.handleTimeOutDuringOrAfterBattle(): Game {
+
+    if(battle == null) throw GameError.NoBattleOngoing()
+
+    val charactersReady = battle.pending.map{ it.origin.name }
+    val charactersNotReady = battle.characters.filter{ character ->
+        character.name !in charactersReady
+    }
+
+    val newGame = charactersNotReady.fold(this){ currentGame, character ->
+        currentGame.addActionToPending(character, null, PossibleBattleActions.FLEE)
+    }
+
+    return  if(battle.phase == BattlePhase.BATTLING) newGame.resolvePending()
+            else newGame.deleteBattle()
 }

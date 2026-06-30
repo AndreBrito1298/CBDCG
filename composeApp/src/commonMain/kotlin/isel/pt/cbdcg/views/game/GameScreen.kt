@@ -7,12 +7,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.PossibleBattleActions
 import isel.pt.cbdcg.domain.game.Card
@@ -22,13 +29,14 @@ import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.connectionDistancesFrom
+import isel.pt.cbdcg.domain.game.board.tile.isPositive
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.viewmodel.GameUI
 import isel.pt.cbdcg.viewmodel.GameUIState
 import isel.pt.cbdcg.views.game.utils.dialog.GameOverDialog
 import isel.pt.cbdcg.views.game.utils.board.Board
-import isel.pt.cbdcg.views.game.utils.InGameHeader
+import isel.pt.cbdcg.views.game.utils.misc.extra.InGameHeader
 import isel.pt.cbdcg.views.game.utils.players.PlayerHand
 import isel.pt.cbdcg.views.game.utils.board.ZoomButtons
 import isel.pt.cbdcg.views.game.utils.dialog.CardStatsDialog
@@ -41,6 +49,10 @@ import isel.pt.cbdcg.views.game.utils.dialog.ChooseTargetDialog
 import isel.pt.cbdcg.views.game.utils.dialog.CollisionOption
 import isel.pt.cbdcg.views.game.utils.dialog.EndBattleDialog
 import isel.pt.cbdcg.views.game.utils.dialog.StartBattleDialog
+import isel.pt.cbdcg.views.game.utils.misc.extra.SimpleClock
+import kotlinx.coroutines.delay
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun GameScreen(
@@ -66,6 +78,7 @@ fun GameScreen(
     attackTarget: (Character?) -> Unit,
     battleAction: (PossibleBattleActions?) -> Unit,
     participateInBattle: (Boolean) -> Unit,
+    getDrawable: suspend (String) -> ImageBitmap,
     leaveGame: () -> Unit,
 ) {
 
@@ -81,6 +94,18 @@ fun GameScreen(
         TurnPhase.CONSTRUCTION -> "Next: Substitution"
         TurnPhase.SUBSTITUTION -> "Next: Movement"
         TurnPhase.MOVEMENT -> "End Turn"
+    }
+
+    var remainingSeconds by remember(game.turn.deadline) {
+        mutableStateOf(((game.turn.deadline - Clock.System.now().toEpochMilliseconds()) / 1000).coerceAtLeast(0))
+    }
+
+    LaunchedEffect(game.turn.deadline) {
+        while (true) {
+            remainingSeconds = ((game.turn.deadline - Clock.System.now().toEpochMilliseconds()) / 1000).coerceAtLeast(0)
+            if (remainingSeconds <= 0) break
+            delay(1000.milliseconds)
+        }
     }
 
     Column(
@@ -146,8 +171,21 @@ fun GameScreen(
                         inspect = { card, boardTile -> toggleCardStats(card, boardTile) },
                         moveSignal = { boardTile -> moveSignal(boardTile) },
                         battleSignal = { current, target -> battleSignal(current, target) },
-                        moveCharacter = { pos -> moveCharacter(pos) }
+                        moveCharacter = { pos -> moveCharacter(pos) },
+                        idle = { closeDialog(false) },
+                        getDrawable = { getDrawable(it) },
                     )
+
+                    if(game.battle == null){
+                        SimpleClock(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .size(50.dp)
+                                .padding(4.dp),
+                            remainingSeconds = remainingSeconds
+                        )
+                    }
+
                     ZoomButtons(
                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                         amplify = { zoom(true) },
@@ -161,6 +199,7 @@ fun GameScreen(
                         .fillMaxWidth()
                 ) {
                     PlayerHand(
+                        getDrawable = { getDrawable(it) },
                         hand = player.hand,
                         selectCard = { idx, card -> selectCard(idx, card) },
                         selected = (gameUI.state as? GameUIState.SelectCard)?.idx,
@@ -177,6 +216,7 @@ fun GameScreen(
     when(gameUI.state){
         is GameUIState.InspectCard ->
             CardStatsDialog(
+                getDrawable = { getDrawable(it) },
                 card = gameUI.state.card,
                 unequip = { idx -> unequip(idx) },
                 onDismiss = { toggleCardStats(null, null) }
@@ -185,15 +225,18 @@ fun GameScreen(
 
             val affectedCharacters =
                 gameUI.state.boardTile?.let { origin ->
-                    val range = gameUI.state.tile.specialEffect.range.toInt()
+                    val specialEffect = gameUI.state.tile.specialEffect
+                    val range = specialEffect.range.toInt()
                     val distances = game.board.connectionDistancesFrom(origin)
 
-                    distances.filter { it.value <= range }.keys
+                    distances
+                        .filter { if(specialEffect.isPositive()) it.value <= range else it.value in 1..range }.keys
                         .mapNotNull { it.character }
                         .filterIsInstance<PlayableCharacter>()
                 } ?: emptyList()
 
             TileEffectDialog(
+                getDrawable = { getDrawable(it) },
                 effect = gameUI.state.tile.specialEffect,
                 activate = gameUI.state.activateInTile,
                 onConfirm = onEffectInfoClick,
@@ -207,20 +250,32 @@ fun GameScreen(
             )
         is GameUIState.CharacterCollision ->
             CharacterCollisionDialog(
-                movingCharacter = gameUI.state.playerCharacter,
-                staticCharacter = gameUI.state.enemyCharacter,
-                canSneak = gameUI.state.playerCharacter.adjustStats().spe - gameUI.movementUsed >= 2,
-                onClick = { option ->
-                    when(option) {
-                        CollisionOption.COMBAT -> { challenge()}
-                        CollisionOption.SNEAK -> { sneak() }
-                        CollisionOption.CANCEL -> { closeDialog(false) }
-                    }
-                },
-                onDismiss = { closeDialog(false) }
-            )
+                    getDrawable = { getDrawable(it) },
+                    remainingSeconds = remainingSeconds,
+                    movingCharacter = gameUI.state.playerCharacter,
+                    staticCharacter = gameUI.state.enemyCharacter,
+                    canSneak = gameUI.state.playerCharacter.adjustStats().spe - gameUI.movementUsed >= 2,
+                    onClick = { option ->
+                        when (option) {
+                            CollisionOption.COMBAT -> {
+                                challenge()
+                            }
+
+                            CollisionOption.SNEAK -> {
+                                sneak()
+                            }
+
+                            CollisionOption.CANCEL -> {
+                                closeDialog(false)
+                            }
+                        }
+                    },
+                    onDismiss = { closeDialog(false) }
+                )
         is GameUIState.StartBattle -> {
             StartBattleDialog(
+                getDrawable = { getDrawable(it) },
+                remainingSeconds = remainingSeconds,
                 battle = gameUI.state.battle,
                 myCharacter = gameUI.state.character,
                 confirm = { accept -> participateInBattle(accept) }
@@ -228,6 +283,8 @@ fun GameScreen(
         }
         is GameUIState.InBattle -> {
             BattleDialog(
+                getDrawable = { getDrawable(it) },
+                remainingSeconds = remainingSeconds,
                 battle = gameUI.state.battle,
                 playerCharacterName = player.currentCharacter,
                 attackTarget = { attackTarget(null) },
@@ -244,6 +301,7 @@ fun GameScreen(
         }
         is GameUIState.Attacking -> {
             ChooseTargetDialog(
+                getDrawable = { getDrawable(it) },
                 characters = gameUI.state.battle.characters.filter{ it.name != player.currentCharacter && it.adjustStats().hp > 0 },
                 targetCharacter = gameUI.state.target,
                 target = { target -> attackTarget(target) },
@@ -253,6 +311,8 @@ fun GameScreen(
         }
         is GameUIState.EndBattle -> {
             EndBattleDialog(
+                getDrawable = { getDrawable(it) },
+                remainingSeconds = remainingSeconds,
                 player = player,
                 isWinner = player.currentCharacter == gameUI.state.winner.currentCharacter,
                 isBattling = player.user.id in (gameUI.state.losers + gameUI.state.fled + gameUI.state.winner).map { it.user.id },
@@ -265,6 +325,7 @@ fun GameScreen(
         }
         is GameUIState.CharacterEvolved -> {
             CardStatsDialog(
+                getDrawable = { getDrawable(it) },
                 card = gameUI.state.character.toCard(),
                 unequip = { idx -> unequip(idx) },
                 onDismiss = { toggleCardStats(null, null) }

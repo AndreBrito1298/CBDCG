@@ -37,6 +37,10 @@ data class TileEffect(
     val info: String = ""
 )
 
+fun TileEffect.isPositive(): Boolean =
+    type is TileEffectTypes.StatUp || type is TileEffectTypes.StatUpAoE ||
+    type is TileEffectTypes.Chest || type is TileEffectTypes.BigChest
+
 fun String.effectType(): TileEffectTypes {
 
     if (this == "None") return TileEffectTypes.None
@@ -117,6 +121,7 @@ object AllTileEffects{
     val statDown = StatType.entries.associate { stat ->
         TileEffect(
             type = TileEffectTypes.StatDown(stat),
+            range = 1u,
             maxCooldown = 2u,
             info = "Until the end of your next turn, this character has -★ in ${stat.name}."
         ) to 1u

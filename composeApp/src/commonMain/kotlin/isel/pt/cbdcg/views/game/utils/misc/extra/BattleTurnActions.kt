@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -25,7 +26,6 @@ import isel.pt.cbdcg.domain.game.character.ModifierType
 import isel.pt.cbdcg.domain.game.character.StatModifier
 import isel.pt.cbdcg.domain.game.character.Stats
 import isel.pt.cbdcg.domain.game.character.adjustStats
-import isel.pt.cbdcg.views.game.utils.ZoomedImage
 import isel.pt.cbdcg.views.game.utils.misc.stats.StatsVariation
 
 @Composable
@@ -33,7 +33,8 @@ fun BattleTurnActions(
     modifier: Modifier = Modifier,
     turn: Int,
     characters: List<Character>,
-    actions: List<BattleAction>
+    actions: List<BattleAction>,
+    getDrawable: suspend (String) -> ImageBitmap,
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
@@ -62,6 +63,7 @@ fun BattleTurnActions(
 
                         BattleAction(
                             modifier = Modifier.fillMaxSize(),
+                            getDrawable = getDrawable,
                             action = battleAction.action,
                             origin = origin.name,
                             target = target?.name,
@@ -116,6 +118,7 @@ fun BattleTurnActions(
 fun BattleAction(
     modifier: Modifier = Modifier,
     action: PossibleBattleActions,
+    getDrawable: suspend (String) -> ImageBitmap,
     origin: String,
     target: String? = null,
     stats: Stats,
@@ -143,21 +146,24 @@ fun BattleAction(
         ){
 
             ZoomedImage(
-                modifier = Modifier.size(60.dp),
                 fileName = origin,
+                modifier = Modifier.size(60.dp),
+                loadDrawable = { getDrawable(origin) },
                 zoom = 1f,
             )
 
             ZoomedImage(
-                modifier = Modifier.size(30.dp),
                 fileName = action,
+                modifier = Modifier.size(30.dp),
+                loadDrawable = { getDrawable(action) },
                 zoom = 1f,
             )
 
             if(target != null){
                 ZoomedImage(
-                    modifier = Modifier.size(60.dp),
                     fileName = target,
+                    modifier = Modifier.size(60.dp),
+                    loadDrawable = { getDrawable(target) },
                     zoom = 1f,
                 )
             }

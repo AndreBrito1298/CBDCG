@@ -10,9 +10,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.board.tile.Tile
-import isel.pt.cbdcg.views.game.utils.ZoomedImage
+import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
+import isel.pt.cbdcg.views.game.utils.misc.extra.ZoomedImage
 
 @Composable
 fun PlayerTileCard(
@@ -22,6 +24,8 @@ fun PlayerTileCard(
     place: () -> Unit,
     rotateLeft: () -> Unit,
     rotateRight: () -> Unit,
+    inspect: () -> Unit,
+    getDrawable: suspend (String) -> ImageBitmap,
 ) {
     Box(
         modifier= Modifier
@@ -32,12 +36,14 @@ fun PlayerTileCard(
 
         ZoomedImage(
             fileName = tile.toString(),
+            loadDrawable = { getDrawable(tile.toString()) },
             zoom = 1.0f
         )
 
         if(tile.specialEffect.type.name != "None"){
             ZoomedImage(
                 fileName = tile.specialEffect.type.name,
+                loadDrawable = { getDrawable(tile.specialEffect.type.name) },
                 zoom = 0.33f
             )
         }
@@ -60,6 +66,13 @@ fun PlayerTileCard(
                 text = { Text("Rotate Right") },
                 onClick = rotateRight
             )
+
+            if(tile.specialEffect.type != TileEffectTypes.None && tile.specialEffect.type != TileEffectTypes.Start){
+                DropdownMenuItem(
+                    text = { Text("Inspect Tile Effect") },
+                    onClick = inspect
+                )
+            }
         }
 
     }

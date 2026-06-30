@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.Dp
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CardType
@@ -29,7 +30,8 @@ enum class BoardTilePossibleActions{
     PlaceCard,
     MoveCharacter,
     Challenge,
-    ApplyMovement
+    ApplyMovement,
+    Idle
 }
 
 data class BoardTileDDM(
@@ -49,6 +51,7 @@ data class BoardTileDDM(
 fun Board(
     player: Player?,
     gameState: GameUIState,
+    getDrawable: suspend (String) -> ImageBitmap,
     battledCharacterPositions: List<BoardPosition>,
     gameBoard: BoardTiles,
     tileSize: Dp,
@@ -57,6 +60,7 @@ fun Board(
     moveSignal: (BoardTile) -> Unit,
     battleSignal: (Character, Character) -> Unit,
     moveCharacter: (BoardTile) -> Unit,
+    idle: () -> Unit
 ) {
 
     val positions = gameBoard.map { it.pos }
@@ -150,8 +154,10 @@ fun Board(
                                     BoardTilePossibleActions.MoveCharacter -> moveSignal(currentBoardTile)
                                     BoardTilePossibleActions.Challenge -> battleSignal(requireNotNull(playerCharacter), requireNotNull(character))
                                     BoardTilePossibleActions.ApplyMovement -> moveCharacter(currentBoardTile)
+                                    BoardTilePossibleActions.Idle -> idle()
                                 }
-                            }
+                            },
+                            getDrawable = { getDrawable(it) },
                         )
                     }
                     else EmptyBoardTile(

@@ -45,6 +45,11 @@ fun Tile.getAdjacent(tiles: BoardTiles, targetPos: BoardPosition): List<Pair<Dir
         if(neighbourTile != null) dir to neighbourTile
         else null
     }
+fun Tile.allRotations(): List<Tile> =
+    generateSequence(this) { it.rotate(right = true) }
+        .take(4)
+        .distinctBy { it.connections.toSet() }
+        .toList()
 
 fun Tile.toTileDTO(): TileDTO =
     TileDTO(

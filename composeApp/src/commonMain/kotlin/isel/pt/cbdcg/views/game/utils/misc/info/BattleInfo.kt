@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.adjustStats
@@ -22,6 +23,7 @@ import isel.pt.cbdcg.views.game.utils.misc.stats.CardStatsColumn
 
 @Composable
 fun BattleInfo(
+    getDrawable: suspend (String) -> ImageBitmap,
     modifier: Modifier = Modifier,
     playerCharacterName: String? = null,
     characters: List<Character>,
@@ -45,6 +47,7 @@ fun BattleInfo(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 CardBasicInfoColumn(
+                    getDrawable = { getDrawable(it) },
                     modifier = Modifier
                         .height(180.dp)
                         .clickable(target != null){ if(target != null) target(character) }

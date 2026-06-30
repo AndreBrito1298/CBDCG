@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -17,12 +18,12 @@ import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.ItemEvolution
 import isel.pt.cbdcg.domain.game.character.MultipleBattlesEvolution
 import isel.pt.cbdcg.domain.game.character.description
-import isel.pt.cbdcg.views.game.utils.ZoomedImage
 
 @Composable
 fun CharacterEvolutionColumn(
     modifier: Modifier,
     character: Character,
+    getDrawable: suspend (String) -> ImageBitmap,
 ) {
     val evolution = character.evolution
 
@@ -55,6 +56,7 @@ fun CharacterEvolutionColumn(
             is ItemEvolution -> {
                 ZoomedImage(
                     fileName = evolution.item,
+                    loadDrawable = { getDrawable(evolution.item) },
                     zoom = 0.5f
                 )
 

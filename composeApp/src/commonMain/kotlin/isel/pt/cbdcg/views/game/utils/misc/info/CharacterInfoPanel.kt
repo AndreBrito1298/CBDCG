@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.adjustStats
@@ -20,6 +21,7 @@ import isel.pt.cbdcg.views.game.utils.misc.stats.CardStatsColumn
 @Composable
 fun CharacterInfoPanel(
     character: Character,
+    getDrawable: suspend (String) -> ImageBitmap,
     unequip: (idx: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -36,6 +38,7 @@ fun CharacterInfoPanel(
 
         ) {
             CardBasicInfoColumn(
+                getDrawable = { getDrawable(it) },
                 modifier = Modifier.width(160.dp),
                 mainText = character.name,
                 zoom = 1.0f,
@@ -46,10 +49,12 @@ fun CharacterInfoPanel(
                 stats = character.adjustStats(),
             )
             CharacterEvolutionColumn(
+                getDrawable = { getDrawable(it) },
                 modifier = Modifier.width(160.dp),
                 character = character,
             )
             CharacterEquippedItemsColumn(
+                getDrawable = { getDrawable(it) },
                 modifier = Modifier.width(160.dp),
                 unequip = { idx -> unequip(idx) },
                 character = character,
