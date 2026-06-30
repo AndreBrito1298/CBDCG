@@ -1,0 +1,241 @@
+package isel.pt.cbdcg.domain.game
+
+import isel.pt.cbdcg.domain.game.board.Board
+import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.board.connectedNeighbours
+import isel.pt.cbdcg.domain.game.board.connectionDistancesFrom
+import isel.pt.cbdcg.domain.game.board.replaceBoardTile
+import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
+import isel.pt.cbdcg.domain.game.board.tile.getStatModifier
+import isel.pt.cbdcg.error.BoardError
+import isel.pt.cbdcg.error.GameError
+import org.reflections.Reflections
+import org.reflections.scanners.Scanners
+import isel.pt.cbdcg.domain.game.character.Character
+import isel.pt.cbdcg.domain.game.character.Grade
+import isel.pt.cbdcg.domain.game.character.ItemEvolution
+import isel.pt.cbdcg.domain.game.character.PlayableCharacter
+import isel.pt.cbdcg.domain.game.character.Stats
+import isel.pt.cbdcg.domain.game.character.special
+import java.lang.reflect.Field
+import java.lang.reflect.Modifier
+import javax.swing.border.Border
+
+@Retention(AnnotationRetention.RUNTIME)
+@Target(AnnotationTarget.FIELD, AnnotationTarget.CLASS)
+annotation class RegisterUpdater(val name: String)
+private val funToNameMap: Map<String, UpdaterE<*, *>> by lazy {
+    val reflections = Reflections("isel.pt.cbdcg.domain.game", Scanners.TypesAnnotated, Scanners.FieldsAnnotated)
+    reflections.getFieldsAnnotatedWith(RegisterUpdater::class.java)
+        .mapNotNull { field: Field ->
+            if (!Modifier.isStatic(field.modifiers)) return@mapNotNull null
+            field.isAccessible = true
+            val instance = field.get(null) as? UpdaterE<*, *> ?: return@mapNotNull null
+            val name = field.getAnnotation(RegisterUpdater::class.java).name
+            name to instance
+        }.toMap()
+}
+
+fun interface GameUpdater<T : Entity> {
+    fun apply(game: Game, entity: Entity): Game
+}
+@Suppress("UNCHECKED_CAST")
+private fun interface UpdaterE<T : Entity, R : Entity> {
+    fun Game.apply(origin: T, targets: List<R>): Game
+    fun Game.applyWithEntity(origin: Entity, targets: List<Entity>): Game {
+
+        val list = targets.map { it as R }
+        val result = this@UpdaterE.run { this@applyWithEntity.apply(origin as T, list) }
+        return result
+    }
+}
+
+fun Game.gameUpdateByName(name: String, origin: Entity, targets: List<Entity>): Game {
+    val updater = funToNameMap[name] ?: throw IllegalArgumentException("Updater not found")
+    return updater.run { this@gameUpdateByName.applyWithEntity(origin, targets) }
+}
+
+
+object CharacterMovement2 : UpdaterE<BoardTile, BoardTile> {
+    override fun Game.apply(origin: BoardTile, targets: List<BoardTile>): Game {
+        if (this.turn.phase != TurnPhase.MOVEMENT) throw GameError.CharacterMovementRestriction()
+        val newStartingTile = origin.copy(character = null)
+        val endTile = targets.first() ?: throw BoardError.NoTargetFound()
+        if (endTile.character != null) throw BoardError.TileOccupied()
+        val newEndingTile = targets.first().copy(character = origin.character)
+        return this.copy(board = board
+            .replaceBoardTile(newStartingTile)
+            .replaceBoardTile(newEndingTile))
+    }
+}
+
+@field:RegisterUpdater("CharacterMovement")
+private val CharacterMovement = UpdaterE<BoardTile, BoardTile> { origin, targets ->
+    if (this.turn.phase != TurnPhase.MOVEMENT) throw GameError.CharacterMovementRestriction()
+    val newStartingTile = origin.copy(character = null)
+    val endTile = targets.firstOrNull() ?: throw BoardError.NoTargetFound()
+    if (endTile.character != null) throw BoardError.TileOccupied()
+    val newEndingTile = targets.first().copy(character = origin.character)
+    this.copy(
+        board = board
+            .replaceBoardTile(newStartingTile)
+            .replaceBoardTile(newEndingTile)
+    )
+}
+
+@field:RegisterUpdater("DrawItem")
+private val DrawItem = UpdaterE<Player, BoardTile> { player, targets ->
+    val boardTile = targets.firstOrNull() ?: throw BoardError.NoTargetFound()
+
+    if (player.user.id != turn.playerTurn.first())
+        throw GameError.NotYourTurn()
+
+    if (boardTile.cooldown != 0u)
+        throw BoardError.EffectInCooldown(boardTile.tile.specialEffect.type.name, boardTile.cooldown!!.toInt())
+
+    val newBoard = board.tiles.map {
+        if (it == boardTile) boardTile.copy(cooldown = boardTile.tile.specialEffect.maxCooldown)
+        else it
+    }
+
+    val items = when (boardTile.tile.specialEffect.type) {
+        TileEffectTypes.Chest -> listOf(itemDeck.filter { (item, _) -> !item.grade.special() }.draw())
+        TileEffectTypes.BigChest -> {
+            val commonItem = itemDeck
+                .filter { (item, _) -> !item.grade.special() }
+                .draw()
+
+            val charactersOnBoard = board.tiles.mapNotNull { it.character }
+            val evolveItems = charactersOnBoard
+                .filter { it.evolution != null && it.evolution is ItemEvolution }
+                .map { (it.evolution as ItemEvolution).item }
+
+            val specialItem = itemDeck
+                .filter { (item, _) -> item.grade.special() && (item.grade == Grade.KEY || item.name in evolveItems) }
+                .draw()
+
+            listOf(commonItem, specialItem)
+        }
+
+        else -> throw GameError.InvalidFormat("Draw Item", boardTile.tile.specialEffect.type.name)
+    }
+
+    val updatedPlayers = players.map {
+        if (it == player) items.fold(player) { p, item -> p.addToHand(ItemCard(item)) }
+        else it
+    }
+
+    val updatedItemDeck = items.fold(itemDeck) { deck, item -> deck.remove(item) }
+
+    this.copy(
+        players = updatedPlayers,
+        board = board.copy(tiles = newBoard),
+        itemDeck = updatedItemDeck,
+    )
+}
+
+@field:RegisterUpdater("UpdateStatModifiers")
+private val UpdateStatModifiers = UpdaterE<Player, BoardTile> { player, targets ->
+    val boardTile = targets.firstOrNull() ?: throw BoardError.NoTargetFound()
+
+    if (player.user.id != turn.playerTurn.first())
+        throw GameError.NotYourTurn()
+
+    if (boardTile.cooldown != 0u)
+        throw BoardError.EffectInCooldown(boardTile.tile.specialEffect.type.name, boardTile.cooldown!!.toInt())
+
+    val character = (boardTile.character as? PlayableCharacter)
+        ?: throw BoardError.EmptyTile()
+
+    if (character.name != player.currentCharacter)
+        throw BoardError.ApplyEffectOnYourCharacter()
+
+    val specialEffect = boardTile.tile.specialEffect
+    val statModifier = specialEffect.getStatModifier()
+    val range = specialEffect.range.toInt()
+
+    val distances = board.connectionDistancesFrom(boardTile)
+    val affectedTiles = distances.filter { it.value <= range }.keys
+
+    val newBoard = board.tiles.map { tile ->
+        val isOrigin = tile.pos == boardTile.pos
+        val affectedTile = affectedTiles.find { it.pos == tile.pos }
+        val newCooldown = if (isOrigin) specialEffect.maxCooldown else tile.cooldown
+
+        val updatedCharacter = if (affectedTile != null && tile.character is PlayableCharacter) {
+            tile.character.copy(activeStatModifiers = tile.character.activeStatModifiers + statModifier)
+        } else tile.character
+
+        tile.copy(cooldown = newCooldown, character = updatedCharacter)
+    }
+
+    this.copy(board = board.copy(tiles = newBoard))
+}
+
+@field:RegisterUpdater("BattleStart")
+
+private val BattleStart = UpdaterE<Character, Character> { attacker, targets ->
+    val defender = targets.firstOrNull() ?: throw BoardError.NoTargetFound()
+
+    if (this.battle != null) throw GameError.BattleNotConcluded()
+    if (this.turn.phase != TurnPhase.MOVEMENT) throw GameError.MoveToBattleRestriction()
+
+    val mainCharacters = listOf(attacker, defender)
+    val mainPlayers = players.filter {
+        it.currentCharacter in mainCharacters.map { character -> character.name }
+    }
+    val mainCharactersReady = mainCharacters.map { character ->
+        BattleAction(origin = character, target = null, action = PossibleBattleActions.FLEE, stats = Stats())
+    }
+    val itemBet = mainPlayers.mapNotNull { player ->
+        val itemCards = player.hand.mapNotNull { card -> (card.value as? ItemCard) }
+        val keyItems = itemCards.filter { itemCard -> itemCard.item.grade == Grade.KEY }
+
+        if (keyItems.isNotEmpty()) BattleBet(player, keyItems.random().item)
+        else if (itemCards.isNotEmpty()) BattleBet(player, itemCards.random().item)
+        else null
+}
+
+    val participatingCharacterTiles = board.tiles.filter { boardTile ->
+        val characterInTile = boardTile.character
+        characterInTile != null && mainCharacters.any { it.name == characterInTile.name }
+    }
+
+    val adjacentCharacters = participatingCharacterTiles
+        .flatMap { boardTile -> board.connectedNeighbours(boardTile) }
+        .mapNotNull { neighbour -> neighbour.character }
+        .filter { character -> character.name !in mainCharacters.map { it.name } }
+        .distinct()
+
+    val charactersInBattle = mainCharacters + adjacentCharacters
+
+    this.copy(
+        battle = Battle(
+            characters = charactersInBattle,
+            itemBet = itemBet,
+            pending = mainCharactersReady
+        )
+    )
+}
+
+@field:RegisterUpdater("JoinBattle")
+private val JoinBattle = UpdaterE<Player, Character> { player, targets ->
+    val character = targets.firstOrNull() ?: throw BoardError.NoTargetFound()
+    val currentBattle = this.battle ?: throw GameError.NoBattleOngoing()
+
+    val ready = BattleAction(origin = character, target = null, action = PossibleBattleActions.FLEE, stats = Stats())
+
+    val itemCards = player.hand.mapNotNull { card -> (card.value as? ItemCard) }
+    val keyItems = itemCards.filter { itemCard -> itemCard.item.grade == Grade.KEY }
+
+    val bet = if (keyItems.isNotEmpty()) BattleBet(player, keyItems.random().item)
+    else if (itemCards.isNotEmpty()) BattleBet(player, itemCards.random().item)
+    else BattleBet(player, null)
+
+    this.copy(
+        battle = currentBattle.copy(
+            pending = currentBattle.pending + ready,
+            itemBet = currentBattle.itemBet + bet
+        )
+    )
+}
