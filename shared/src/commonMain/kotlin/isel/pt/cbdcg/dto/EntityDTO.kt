@@ -1,28 +1,59 @@
 package isel.pt.cbdcg.dto
 
-import isel.pt.cbdcg.domain.game.Player
-import isel.pt.cbdcg.domain.game.board.BoardTile
+import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Entity
+import isel.pt.cbdcg.domain.game.Player
+import isel.pt.cbdcg.domain.game.board.Board
+import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.toBoardTile
-import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
+import isel.pt.cbdcg.domain.game.character.Character
+import isel.pt.cbdcg.domain.game.character.toCharacter
+import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.domain.game.toPlayer
-import isel.pt.cbdcg.domain.game.toPlayerDTO
 import kotlinx.serialization.Serializable
-
 @Serializable
 data class EntityDTO(
-    val type: String,
     val player: PlayerDTO? = null,
     val boardTile: BoardTileDTO? = null,
+    val board: Array<BoardTileDTO>? = null,
+    val character: CharacterDTO? = null,
+    val card: CardDTO? = null,
 ){
-    fun toType(): Entity =
-        when(type){
-            "Player" -> player!!.toPlayer()
-            "BoardTile" -> boardTile!!.toBoardTile()
-            else -> throw Exception("Invalid Entity Type")
-        }
+    fun toType(): Entity{
+        return player?.toPlayer()?.toEntity<Player>()
+            ?: (boardTile?.toBoardTile()?.toEntity<BoardTile>()
+                ?: if(board != null) Board(board.map{ it.toBoardTile() }).toEntity<Board>()
+                else character?.toCharacter()?.toEntity<Character>()
+                    ?: (card?.toCard()?.toEntity<Card>() ?: throw Exception("Invalid Entity Type")))
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as EntityDTO
+
+        if (player != other.player) return false
+        if (boardTile != other.boardTile) return false
+        if (!board.contentEquals(other.board)) return false
+        if (character != other.character) return false
+        if (card != other.card) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = player?.hashCode() ?: 0
+        result = 31 * result + (boardTile?.hashCode() ?: 0)
+        result = 31 * result + (board?.contentHashCode() ?: 0)
+        result = 31 * result + (character?.hashCode() ?: 0)
+        result = 31 * result + (card?.hashCode() ?: 0)
+        return result
+    }
+
 
 }
+
 
 @Serializable
 data class GameUpdaterDTO(
@@ -60,6 +91,7 @@ data class GameUpdaterDTO(
     }
 }
 
+/*
 inline fun <reified T: Entity>toEntityDTO(entity: T): EntityDTO{
     return when(T::class){
         BoardTile::class -> EntityDTO("BoardTile", null, (entity as BoardTile).toBoardTileDTO())
@@ -67,3 +99,8 @@ inline fun <reified T: Entity>toEntityDTO(entity: T): EntityDTO{
         else -> throw Exception("Invalid Entity Type")
     }
 }
+
+ */
+
+
+fun Entity.toEntityDTO(): EntityDTO = this.toEntityDTO()

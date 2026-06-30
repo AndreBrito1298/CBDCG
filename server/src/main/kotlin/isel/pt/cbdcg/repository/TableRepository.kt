@@ -7,17 +7,17 @@ import isel.pt.cbdcg.domain.User
 
 interface TableRepository: Repository<Table> {
 
-    fun getAllTables(): List<Table>
+    suspend fun getAllTables(): List<Table>
 
-    fun createTable(name: Name, owner: User, participant: Participant): Table
+    suspend fun createTable(name: Name, owner: User, participant: Participant): Table
 
-    fun findByName(name: Name): Table?
+    suspend fun findByName(name: Name): Table?
 
-    fun removeParticipant(table: Table, user: User): Table
+    suspend fun removeParticipant(table: Table, user: User): Table
 
-    fun updateParticipants(table: Table, participant: Participant): Table
+    suspend fun updateParticipants(table: Table, participant: Participant): Table
 
    // fun getAllParticipants(tableName: Name): List<Participant>
-   fun getAllParticipants(tableId: UInt): List<Participant>
+    suspend fun getAllParticipants(tableId: UInt): List<Participant>
 
 }

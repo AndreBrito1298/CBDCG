@@ -9,6 +9,7 @@ import isel.pt.cbdcg.domain.game.character.toItem
 import isel.pt.cbdcg.domain.game.character.toItemDTO
 import isel.pt.cbdcg.domain.game.character.toPlayableCharacter
 import isel.pt.cbdcg.dto.CardDTO
+import isel.pt.cbdcg.dto.EntityDTO
 import isel.pt.cbdcg.error.CardError
 import isel.pt.cbdcg.error.GameError
 
@@ -25,7 +26,7 @@ fun String.toCardType(): CardType =
         else -> throw GameError.InvalidFormat("Card Type", this)
     }
 
-sealed interface Card {
+sealed interface Card:Entity {
     val type: CardType
 
     fun toCardDTO(): CardDTO
@@ -42,6 +43,11 @@ data class TileCard(
             character = null,
             item = null
         )
+
+    override fun Entity.toEntityDTO() = EntityDTO(card = toCardDTO())
+
+    override fun <T : Entity> toEntity() = this as Entity
+
 }
 
 data class CharacterCard(
@@ -55,6 +61,10 @@ data class CharacterCard(
             character = character.toCharacterDTO(),
             item = null
         )
+
+    override fun Entity.toEntityDTO() = EntityDTO(card = toCardDTO())
+    override fun <T : Entity> toEntity() = this as Entity
+
 }
 
 fun Character?.toCard() = CharacterCard(checkNotNull(this){ "Character should not be null for card conversion" })
@@ -70,6 +80,10 @@ data class ItemCard(
             character = null,
             item = item.toItemDTO()
         )
+
+    override fun Entity.toEntityDTO() = EntityDTO(card = toCardDTO())
+    override fun <T : Entity> toEntity() = this as Entity
+
 }
 
 fun CardDTO.toCard(): Card =

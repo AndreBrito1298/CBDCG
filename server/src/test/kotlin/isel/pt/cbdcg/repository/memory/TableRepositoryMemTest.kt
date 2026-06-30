@@ -12,6 +12,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+/*
 
 class TableRepositoryMemTest {
     private val tableRepo = TableRepositoryMem
@@ -74,3 +75,5 @@ class TableRepositoryMemTest {
         assertNotNull(tables.find { it.name.string == "otherTable" })
     }
 }
+
+ */

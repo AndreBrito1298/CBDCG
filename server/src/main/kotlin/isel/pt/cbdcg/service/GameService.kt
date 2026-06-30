@@ -66,7 +66,6 @@ import kotlin.math.max
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 
-
 class GameService(
     private val gameRepo: GameRepository,
     private val tableRepo: TableRepository,
@@ -218,7 +217,7 @@ class GameService(
         savePublishAndSchedule(game)
     }
 
-    fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> = runCatching {
+    suspend fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()

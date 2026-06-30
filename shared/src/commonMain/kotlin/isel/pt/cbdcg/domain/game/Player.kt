@@ -4,6 +4,7 @@ import isel.pt.cbdcg.NUM_KEY_ITEMS
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.game.character.Grade
 import isel.pt.cbdcg.domain.toUserDTO
+import isel.pt.cbdcg.dto.EntityDTO
 import isel.pt.cbdcg.dto.PlayerDTO
 import isel.pt.cbdcg.dto.toUser
 import kotlin.collections.component1
@@ -25,11 +26,9 @@ data class Player(
     val hand: PlayerHand,
     val currentCharacter: String?,
 ) : Entity {
-    override fun applyToGame(game: Game): Game {
-        val newPlayerList = game.players.filter { it.user != this.user }.toMutableList()
-        newPlayerList.add(this)
-        return game.copy(players = newPlayerList)
-    }
+    override fun Entity.toEntityDTO() = EntityDTO(player = toPlayerDTO())
+
+    override fun <T : Entity> toEntity() = this as Entity
 }
 
 

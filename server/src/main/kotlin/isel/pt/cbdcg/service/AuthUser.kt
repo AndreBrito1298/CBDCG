@@ -11,7 +11,7 @@ import kotlin.time.Instant
 import kotlin.time.toDuration
 
 val sessionIncrements = 5000.toDuration(DurationUnit.MILLISECONDS)
-fun String.verifyToken(user: User, currGame: UInt?, userRepository: UserRepository) {
+suspend fun String.verifyToken(user: User, currGame: UInt?, userRepository: UserRepository) {
     if(user.auth == null)
         throw UserError.TokenNotFound()
     var newToken = user.auth!!.token
@@ -25,11 +25,11 @@ fun String.verifyToken(user: User, currGame: UInt?, userRepository: UserReposito
     userRepository.save(user.copy(auth = user.auth!!.copy(token = encrypt(newToken), tokenExpiration = getNextTokenRefresh())))
 }
 
-fun User.addToGame(gameId: UInt, userRepository: UserRepository) {
+suspend fun User.addToGame(gameId: UInt, userRepository: UserRepository) {
     val newUser = copy(auth = auth?.copy(gameId = gameId))
     userRepository.save(newUser)
 }
-fun User.removeFromGame(userRepository: UserRepository) {
+suspend fun User.removeFromGame(userRepository: UserRepository) {
     val newUser = copy(auth = auth?.copy(gameId = null))
     userRepository.save(newUser)
 }

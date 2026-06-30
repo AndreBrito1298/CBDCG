@@ -28,7 +28,7 @@ class TablesDao(id: EntityID<Int>) : IntEntity(id) {
         return "Table(id=$id, name=$name, owner=$owner, capacity=$capacity)"
     }
 
-    fun toTable() = Table(
+    suspend fun toTable() = Table(
         id = id.value.toUInt(),
         name = Name(name),
         owner = UsersDao.findById(owner)?.toUser()!!,

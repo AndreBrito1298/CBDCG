@@ -22,6 +22,7 @@ import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.game.Card
+import isel.pt.cbdcg.domain.game.Entity
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.PossibleBattleActions
 import isel.pt.cbdcg.domain.game.board.BoardPosition
@@ -268,8 +269,8 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = GameUpdaterDTO(userId.toInt(), gameId.toInt(), token,
                 "CharacterMovement",
-                toEntityDTO(origin),
-                arrayOf(toEntityDTO( target)))
+                origin.toEntityDTO(),
+                arrayOf((target.toEntityDTO())))
         ).map{ it.toGame() }
     suspend fun drawItem(userId: UInt, gameId: UInt, token: String, boardTile: BoardTile): Result<Game> =
         fetch<GameDTO>(
