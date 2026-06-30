@@ -11,7 +11,7 @@ object ParticipantRepositoryMem: ParticipantRepository {
 
     val participants = mutableListOf<Participant>()
 
-    override fun createParticipant(
+    override suspend fun createParticipant(
         user: User,
         table: Table,
         role: Role
@@ -22,15 +22,27 @@ object ParticipantRepositoryMem: ParticipantRepository {
         return participant
     }
 
-    override fun userAvailability(user: User): Boolean {
+    override suspend fun userAvailability(user: User): Boolean {
         return participants.find{ it.user.id == user.id } == null
     }
 
-    override fun deleteParticipant(user: User) {
+    override suspend fun deleteParticipant(user: User) {
         participants.removeIf{ it.user.id == user.id }
     }
 
-    override fun clear() {
+    override suspend fun findById(id: UInt): Participant? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun save(element: Participant) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun deleteById(id: UInt) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun clear() {
         participants.clear()
     }
 

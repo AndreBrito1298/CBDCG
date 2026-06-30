@@ -7,6 +7,9 @@ import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.error.UserError
+import isel.pt.cbdcg.repository.database.ParticipantRepositoryDB
+import isel.pt.cbdcg.repository.database.TableRepositoryDB
+import isel.pt.cbdcg.repository.database.UserRepositoryDB
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
 import isel.pt.cbdcg.repository.memory.TableRepositoryMem
 import isel.pt.cbdcg.repository.memory.UserRepositoryMem
@@ -15,17 +18,16 @@ import kotlin.collections.plus
 import kotlin.runCatching
 
 class TableService(
-    private val userRepo: UserRepositoryMem,
-    private val tableRepo: TableRepositoryMem,
-    private val participantRepo: ParticipantRepositoryMem,
+    private val userRepo: UserRepositoryDB,
+    private val tableRepo: TableRepositoryDB,
+    private val participantRepo: ParticipantRepositoryDB,
     private val events: EventsPublisher,
 ) {
 
-    fun getTables(): Result<List<Table>> = runCatching {
+    suspend fun getTables(): Result<List<Table>> = runCatching {
         tableRepo.getAllTables()
     }
     suspend fun createTable(tableName: Name, userId: UInt): Result<Table> = runCatching {
-
         val owner = userRepo.findById(userId)
             ?: throw UserError.NotLoggedIn()
 

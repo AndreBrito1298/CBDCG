@@ -2,10 +2,12 @@ package isel.pt.cbdcg.domain.game.character
 
 import isel.pt.cbdcg.ITEM_CAPACITY
 import isel.pt.cbdcg.domain.game.Battle
+import isel.pt.cbdcg.domain.game.Entity
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.PossibleBattleActions
 import isel.pt.cbdcg.domain.game.board.replaceBoardTile
 import isel.pt.cbdcg.dto.CharacterDTO
+import isel.pt.cbdcg.dto.EntityDTO
 import isel.pt.cbdcg.error.CharacterError
 import isel.pt.cbdcg.error.CharacterError.*
 import kotlin.math.abs
@@ -158,17 +160,10 @@ data class PlayableCharacter(
             maxItems = maxItems
         )
 
-    override fun applyToGame(game: Game): Game {
-        game.board.tiles.forEach { tile ->
-            if(tile.character != null){
-                if(tile.character.name == this.name){
-                    val tile = tile.copy(character =  this)
-                    return game.copy(board = game.board.replaceBoardTile(tile))
-                }
-            }
-        }
-        return game
-    }
+    override fun Entity.toEntityDTO() = EntityDTO( character = toCharacterDTO())
+    override fun <T : Entity> toEntity() = this as Entity
+
+
 }
 
 fun PlayableCharacter.equipItem(item: Item): PlayableCharacter {

@@ -13,17 +13,17 @@ object UserRepositoryMem: UserRepository {
      */
     val users = mutableListOf<User>()
 
-    override fun findByEmail(email: Email): User? {
+    override suspend fun findByEmail(email: Email): User? {
         return users.find{ it.email.string == email.string }
     }
 
-    override fun createUser(name: Name, email: Email, password: Password): User {
+    override suspend fun createUser(name: Name, email: Email, password: Password): User {
         val user = User(users.size.toUInt(), name, email, password)
         users.add(user)
         return user
     }
 
-    override fun findByToken(token: String): User? {
+    override suspend fun findByToken(token: String): User? {
         return users.find{ user ->
             val auth = user.auth
             auth != null && auth.token == token
@@ -33,20 +33,20 @@ object UserRepositoryMem: UserRepository {
 
     // Generic Operations
 
-    override fun findById(id: UInt): User? {
+    override suspend fun findById(id: UInt): User? {
         return users.find{ it.id == id}
     }
 
-    override fun save(element: User) {
+    override suspend fun save(element: User) {
         users.removeIf{ it.id == element.id }
         users.add(element)
     }
 
-    override fun deleteById(id: UInt) {
+    override suspend fun deleteById(id: UInt) {
         users.removeIf{ it.id == id}
     }
 
-    override fun clear() {
+    override suspend fun clear() {
         users.clear()
     }
 }

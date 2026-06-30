@@ -14,7 +14,7 @@ class UserService(
     private val userRepo: UserRepository,
 ) {
 
-    fun createUser(name: Name, email: Email, password: Password): Result<User> = runCatching {
+    suspend fun createUser(name: Name, email: Email, password: Password): Result<User> = runCatching {
         if(userRepo.findByEmail(email) != null)
             throw UserError.DuplicateEmail(email.string)
 
@@ -29,7 +29,7 @@ class UserService(
         user.copy(auth = AuthUser(plainToken, user.id, null, newSessionEnd))
     }
 
-    fun login(email: Email, password: Password): Result<User> = runCatching {
+    suspend fun login(email: Email, password: Password): Result<User> = runCatching {
 
         val user = userRepo.findByEmail(email)
             ?: throw UserError.EmailNotFound(email.string)
@@ -49,7 +49,7 @@ class UserService(
         auth.copy(auth = AuthUser(plainToken, user.id, null, getNextTokenRefresh()))
     }
 
-    fun logout(token: String) = runCatching {
+    suspend fun logout(token: String) = runCatching {
         val user = userRepo.findByToken(SimpleCrypto.encrypt(token))
             ?: throw UserError.TokenNotFound()
 

@@ -30,6 +30,7 @@ import isel.pt.cbdcg.domain.game.character.adjustStats
 import isel.pt.cbdcg.domain.game.character.special
 import isel.pt.cbdcg.domain.game.character.toItem
 import isel.pt.cbdcg.domain.game.character.toItemDTO
+import isel.pt.cbdcg.dto.EntityDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.ItemDeckDTO
 import isel.pt.cbdcg.dto.TileDeckDTO
@@ -55,9 +56,11 @@ data class Game(
     val turn: Turn,
     val battle : Battle? = null,
 ): Entity {
-    override fun applyToGame(game: Game): Game {
-        TODO("Not yet implemented")
+    override fun Entity.toEntityDTO(): EntityDTO {
+        return EntityDTO()
     }
+
+    override fun <T : Entity> toEntity() = this as Entity
 }
 
 fun Game.toGameDTO(): GameDTO {

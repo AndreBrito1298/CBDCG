@@ -15,6 +15,7 @@ import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.domain.game.character.equipItem
 import isel.pt.cbdcg.domain.game.character.isEqualOrHigherThan
 import isel.pt.cbdcg.domain.game.character.unequip
+import isel.pt.cbdcg.dto.EntityDTO
 import isel.pt.cbdcg.error.BoardError
 import isel.pt.cbdcg.error.GameError
 import kotlin.collections.plus
@@ -108,9 +109,11 @@ data class Board(
         )
     )
 ): Entity {
-    override fun applyToGame(game: Game): Game {
-        TODO("Not yet implemented")
-    }
+    override fun Entity.toEntityDTO() =
+        EntityDTO(board = tiles.map { it.toBoardTileDTO() }.toTypedArray())
+
+    override fun <T : Entity> toEntity() = this as Entity
+
 }
 
 fun Board.checkBlocked(position: BoardPosition, tile: Tile){

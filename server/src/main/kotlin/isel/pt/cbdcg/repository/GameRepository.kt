@@ -9,6 +9,6 @@ import isel.pt.cbdcg.domain.game.character.Item
 
 interface GameRepository: Repository<Game> {
 
-    fun createGame(players: List<Player>, spectators: List<Spectator>, turnOrder: List<UInt>, startingDeck: Deck<Tile>, itemDeck: Deck<Item>): Game
-    fun getAllGames(): List<Game>
+    suspend fun createGame(players: List<Player>, spectators: List<Spectator>, turnOrder: List<UInt>, startingDeck: Deck<Tile>, itemDeck: Deck<Item>): Game
+    suspend fun getAllGames(): List<Game>
 }

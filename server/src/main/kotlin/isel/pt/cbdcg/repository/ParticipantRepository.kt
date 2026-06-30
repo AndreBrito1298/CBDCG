@@ -5,13 +5,11 @@ import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
 
-interface ParticipantRepository {
-    fun createParticipant(user: User, table: Table, role: Role):Participant
+interface ParticipantRepository: Repository<Participant> {
+    suspend fun createParticipant(user: User, table: Table, role: Role):Participant
 
-    fun userAvailability(user: User): Boolean
+    suspend fun userAvailability(user: User): Boolean
 
-    fun deleteParticipant(user: User)
-
-    fun clear()
+    suspend fun deleteParticipant(user: User)
 
 }

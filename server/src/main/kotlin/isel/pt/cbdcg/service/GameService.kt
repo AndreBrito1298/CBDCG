@@ -54,7 +54,6 @@ import isel.pt.cbdcg.repository.TableRepository
 import isel.pt.cbdcg.repository.UserRepository
 import isel.pt.cbdcg.webapi.websocket.EventsPublisher
 
-
 class GameService(
     private val gameRepo: GameRepository,
     private val tableRepo: TableRepository,
@@ -150,7 +149,7 @@ class GameService(
         game
     }
 
-    fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> = runCatching {
+    suspend fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> = runCatching {
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()

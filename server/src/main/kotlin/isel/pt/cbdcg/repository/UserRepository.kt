@@ -7,13 +7,13 @@ import isel.pt.cbdcg.domain.User
 
 interface UserRepository: Repository<User> {
 
-    fun findByEmail(email: Email): User?
+    suspend fun findByEmail(email: Email): User?
 
-    fun createUser(name: Name, email: Email, password: Password): User
+    suspend fun createUser(name: Name, email: Email, password: Password): User
 
     // fun login(user: User): User
 
-    fun findByToken(token: String): User?
+    suspend fun findByToken(token: String): User?
 
     // fun logout(user: User)
 
