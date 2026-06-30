@@ -26,12 +26,15 @@ import isel.pt.cbdcg.error.UserError
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 import io.ktor.http.HttpHeaders
+import io.ktor.server.plugins.conditionalheaders.ConditionalHeaders
 import io.ktor.server.plugins.cors.routing.CORS
 import isel.pt.cbdcg.error.BattleError
 import isel.pt.cbdcg.error.CardError
 import isel.pt.cbdcg.error.CharacterError
 
 fun Application.installPlugins(httpclient: HttpClient) {
+
+    install(ConditionalHeaders) {}
 
     install(WebSockets) {
         pingPeriod = 15.seconds
@@ -173,6 +176,7 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is GameError.MustSelectATarget -> HttpStatusCode.BadRequest
         is GameError.MoveToBattleRestriction -> HttpStatusCode.Conflict
         is GameError.ItemGradeTooHigh -> HttpStatusCode.Conflict
+        is GameError.ReplaceYourCharacter -> HttpStatusCode.Conflict
 
         is CardError.InvalidCardFormat -> HttpStatusCode.BadRequest
         
@@ -185,6 +189,7 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is BattleError.ActionAlreadyQueued -> HttpStatusCode.Conflict
         is BattleError.ActionNotQueued -> HttpStatusCode.NotFound
         is BattleError.CantLeaveBattle -> HttpStatusCode.Conflict
+        is BattleError.InvalidPhase -> HttpStatusCode.BadRequest
     }
 
     return code to message

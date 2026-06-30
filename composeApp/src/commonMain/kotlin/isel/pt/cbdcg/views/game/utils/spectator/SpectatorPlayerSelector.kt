@@ -10,12 +10,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Player
 
 @Composable
 fun SpectatorPlayerSelector(
+    getDrawable: suspend (String) -> ImageBitmap,
     players: List<Player>,
     selected: Player?,
     select: (Player) -> Unit,
@@ -36,6 +38,7 @@ fun SpectatorPlayerSelector(
             if(selected == null){
                 players.forEach { player ->
                     SpectatorPlayerIcons(
+                        getDrawable = { getDrawable(it) },
                         characterName = player.currentCharacter,
                         isSelected = false,
                         onClick = { select(player) }
@@ -44,6 +47,7 @@ fun SpectatorPlayerSelector(
             }
             else{
                 SpectatorPlayerIcons(
+                    getDrawable = { getDrawable(it) },
                     characterName = selected.currentCharacter,
                     isSelected = true,
                     onClick = { select(selected) }
@@ -51,6 +55,7 @@ fun SpectatorPlayerSelector(
                 selected.hand.forEach { (_, card) ->
                     SpectatorCard(
                         card = card,
+                        getDrawable = { getDrawable(it) },
                         onSeeStats = { onSeeStats(card) }
                     )
                 }

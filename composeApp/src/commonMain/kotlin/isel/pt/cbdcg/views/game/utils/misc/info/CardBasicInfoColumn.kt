@@ -10,11 +10,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import isel.pt.cbdcg.views.game.utils.ZoomedImage
+import isel.pt.cbdcg.views.game.utils.misc.extra.ZoomedImage
 
 @Composable
 fun CardBasicInfoColumn(
@@ -22,6 +23,7 @@ fun CardBasicInfoColumn(
     mainText: String,
     zoom: Float,
     subText: String,
+    getDrawable: suspend (String) -> ImageBitmap,
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
@@ -37,6 +39,7 @@ fun CardBasicInfoColumn(
             ) {
                 ZoomedImage(
                     fileName = mainText,
+                    loadDrawable = { getDrawable(mainText) },
                     zoom = zoom
                 )
             }

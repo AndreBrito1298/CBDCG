@@ -40,6 +40,8 @@ dependencies {
     implementation(libs.ktor.clientCore)
     implementation(libs.ktor.clientCio)
     implementation(libs.ktor.clientContentNegotiation)
+    implementation(libs.ktor.serverCachingHeaders)
+    implementation(libs.ktor.serverConditionalHeaders)
 
     implementation(libs.ktor.serializationKotlinxJson)
     implementation(libs.kotlinx.serializationJson)

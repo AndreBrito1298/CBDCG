@@ -14,19 +14,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
-import isel.pt.cbdcg.views.game.utils.ZoomedImage
 
 @Composable
 fun CharacterEquippedItemsColumn(
     modifier: Modifier,
     unequip: (Int) -> Unit,
     character: Character,
+    getDrawable: suspend (String) -> ImageBitmap,
 ) {
     Column(
         modifier = modifier
@@ -53,6 +54,7 @@ fun CharacterEquippedItemsColumn(
                     ) {
                         ZoomedImage(
                             fileName = item.name,
+                            loadDrawable = { getDrawable(item.name) },
                             zoom = 1.0f,
                         )
 

@@ -3,6 +3,7 @@ package isel.pt.cbdcg
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.cache.HttpCache
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.websocket.WebSockets
@@ -20,6 +21,7 @@ fun main() {
         }
 
         install(WebSockets)
+        install(HttpCache)
 
         defaultRequest {
             headers.append(HttpHeaders.Accept, ContentType.Application.Json.toString())

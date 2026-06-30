@@ -199,6 +199,7 @@ fun AppNavHost(vm: AppViewModel) {
                     },
                     participateInBattle = { accept -> vm.participateInBattle(accept) },
                     leaveGame = vm::leaveGame,
+                    getDrawable = { vm.getDrawable(it) },
                 )
             }
 
@@ -212,6 +213,7 @@ fun AppNavHost(vm: AppViewModel) {
                     onEffectInfoClick = vm::idle,
                     zoom = { option -> vm.zoom(option) },
                     leaveGame = vm::leaveGame,
+                    getDrawable = { vm.getDrawable(it) },
                 )
             }
 

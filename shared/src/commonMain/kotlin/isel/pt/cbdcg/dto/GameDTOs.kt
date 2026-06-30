@@ -155,7 +155,8 @@ data class ItemDeckDTO(
 data class TurnDTO(
     val gameTurn: Int,
     val playerTurn: Array<Int>,
-    val phase: String
+    val phase: String,
+    val deadline: Long
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -222,6 +223,7 @@ data class GameDTO(
 data class BattleDTO(
     val characters: Array<CharacterDTO>,
     val currentTurn: Int,
+    val phase: String,
     val pending: Array<BattleActionDTO>,
     val actions: Array<BattleActionDTO>,
     val itemBet: Array<BattleBetDTO>

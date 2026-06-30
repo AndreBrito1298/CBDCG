@@ -46,6 +46,8 @@ identity-jvm = { group = "com.android.identity", name = "identity-jvm", version.
 ktor-serverAuth = { module = "io.ktor:ktor-server-auth-jvm", version.ref = "ktor" }
 ktor-serverAuthJwt = { module = "io.ktor:ktor-server-auth-jwt-jvm", version.ref = "ktor" }
 ktor-serverCors = { module = "io.ktor:ktor-server-cors", version.ref = "ktor" }
+ktor-serverCachingHeaders = { module = "io.ktor:ktor-server-caching-headers-jvm", version.ref = "ktor" }
+ktor-serverConditionalHeaders = { module = "io.ktor:ktor-server-conditional-headers-jvm", version.ref = "ktor" }
 
 ##exposed
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }

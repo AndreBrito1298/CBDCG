@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.viewmodel
 
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import isel.pt.cbdcg.MIN_SNEAK_CHANCE
@@ -44,6 +45,7 @@ data class AppUIState(
 
 class AppViewModel(
     val clientApi: ClientApi,
+    val assetRepository: AssetRepository,
 ): ViewModel() {
 
     val ui: StateFlow<AppUIState>
@@ -154,7 +156,7 @@ class AppViewModel(
         val remainingCharacters = battle.characters.filter{ it.adjustStats().hp > 0 }
 
         return if(remainingCharacters.size == 1) {
-            val playersInBattle = game.players.filter { it.currentCharacter in battle.characters.map { it.name } }
+            val playersInBattle = game.players.filter { player -> player.currentCharacter in battle.characters.map { it.name } }
             val playerCharacter = game.board.tiles.first { it.character?.name == player.currentCharacter }.character
 
             val winner = playersInBattle.first { it.currentCharacter == remainingCharacters.first().name }
@@ -194,6 +196,9 @@ class AppViewModel(
 
         ui.update { it.copy(errorMessage = null, gameUI = it.gameUI.copy(state = nextGameUIState)) }
     }
+
+    suspend fun getDrawable(name: String): ImageBitmap =
+        assetRepository.getDrawable(name)
 
     // Websocket-related operations
 

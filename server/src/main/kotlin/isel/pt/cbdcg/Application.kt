@@ -2,8 +2,10 @@ package isel.pt.cbdcg
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.http.CacheControl
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
+import io.ktor.server.http.content.staticResources
 import io.ktor.server.netty.*
 import io.ktor.server.routing.*
 import isel.pt.cbdcg.configs.dbInit
@@ -19,6 +21,9 @@ import isel.pt.cbdcg.webapi.tableWebApi
 import isel.pt.cbdcg.webapi.userWebApi
 import isel.pt.cbdcg.webapi.websocket.WebSocketHub
 import isel.pt.cbdcg.webapi.websocket.webSocketApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 fun main() {
     dbInit()
@@ -37,12 +42,25 @@ fun Application.module() {
 
     val userService = UserService(UserRepositoryMem)
     val tableService = TableService(UserRepositoryMem, TableRepositoryMem, ParticipantRepositoryMem, webSocketHub)
-    val gameService = GameService(GameRepositoryMem, TableRepositoryMem, UserRepositoryMem, webSocketHub)
+    val gameService =
+        GameService(
+            GameRepositoryMem,
+            TableRepositoryMem,
+            UserRepositoryMem,
+            webSocketHub,
+            CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        )
 
     routing {
         userWebApi(userService, httpClient)
         tableWebApi(tableService)
         gameWebApi(gameService)
         webSocketApi(webSocketHub)
+
+        staticResources("/assets", "game-assets") {
+            cacheControl {
+                listOf(CacheControl.MaxAge(maxAgeSeconds = 60 * 60 * 24 * 30))
+            }
+        }
     }
 }

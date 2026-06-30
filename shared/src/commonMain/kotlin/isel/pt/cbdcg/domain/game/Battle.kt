@@ -19,6 +19,17 @@ import isel.pt.cbdcg.error.BattleError
 import kotlin.math.min
 import kotlin.random.Random
 
+enum class BattlePhase{
+    WAITING, BATTLING, ENDING
+}
+fun String.toBattlePhase(): BattlePhase =
+    when(this){
+        "WAITING" -> BattlePhase.WAITING
+        "BATTLING" -> BattlePhase.BATTLING
+        "ENDING" -> BattlePhase.ENDING
+        else -> throw BattleError.InvalidAction(this)
+    }
+
 enum class PossibleBattleActions {
     HOLD, FLEE, ATTACK
 }
@@ -75,6 +86,7 @@ fun BattleBetDTO.toBattleBet(): BattleBet =
 data class Battle(
     val characters: List<Character>,
     val currentTurn: UInt = 0u,
+    val phase: BattlePhase,
     val pending: List<BattleAction> = emptyList(),
     val actions: Map<UInt, List<BattleAction>> = emptyMap(),
     val itemBet: List<BattleBet>
@@ -85,6 +97,7 @@ fun Battle.toBattleDTO(): BattleDTO =
     BattleDTO(
         characters = characters.map{ it.toCharacterDTO() }.toTypedArray(),
         currentTurn = currentTurn.toInt(),
+        phase = phase.name,
         pending = pending.map{ it.toBattleActionDTO(currentTurn) }.toTypedArray(),
         actions = actions.flatMap{ (key, value) -> value.map{ it.toBattleActionDTO(key)} }.toTypedArray(),
         itemBet = itemBet.map{ it.toBattleBetDTO() }.toTypedArray()
@@ -93,6 +106,7 @@ fun BattleDTO.toBattle(): Battle =
     Battle(
         characters = characters.map { it.toCharacter() },
         currentTurn = currentTurn.toUInt(),
+        phase = phase.toBattlePhase(),
         pending = pending.map { it.toBattleAction() },
         actions = actions
             .groupBy{ it.turn.toUInt() }

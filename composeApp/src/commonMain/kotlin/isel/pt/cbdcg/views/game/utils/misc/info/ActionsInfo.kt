@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.BattleAction
 import isel.pt.cbdcg.domain.game.character.Character
@@ -19,6 +20,7 @@ import isel.pt.cbdcg.views.game.utils.misc.extra.BattleTurnActions
 @Composable
 fun ActionsInfo(
     modifier: Modifier = Modifier,
+    getDrawable: suspend (String) -> ImageBitmap,
     characters: List<Character>,
     currentTurn: UInt,
     actions: Map<UInt, List<BattleAction>>,
@@ -44,6 +46,7 @@ fun ActionsInfo(
             }
 
             BattleTurnActions(
+                getDrawable = { getDrawable(it) },
                 modifier = Modifier.fillMaxSize(),
                 turn = previewTurn.toInt(),
                 characters = charactersThisTurn,

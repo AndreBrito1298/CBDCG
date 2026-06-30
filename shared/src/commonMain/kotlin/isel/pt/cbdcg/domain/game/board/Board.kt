@@ -115,21 +115,20 @@ data class Board(
     override fun <T : Entity> toEntity() = this as Entity
 
 }
-
-fun Board.checkBlocked(position: BoardPosition, tile: Tile){
+fun Board.checkBlocked(position: BoardPosition, tile: Tile): Boolean{
 
     val adjTiles = tile.getAdjacent(tiles, position)
     val blocked = tile.getBlocked(adjTiles)
 
-    if(adjTiles.all{ (dir,_) -> blocked.contains(dir) })
-        throw BoardError.TileConnectionMismatch()
+    return adjTiles.all{ (dir,_) -> blocked.contains(dir) }
 }
 fun Board.placeTile(position: BoardPosition, tile: Tile): Board {
 
     if (tiles.any { it.pos == position })
         throw BoardError.PositionTaken(position.x, position.y)
 
-    checkBlocked(position, tile)
+    if(checkBlocked(position, tile))
+        throw BoardError.TileConnectionMismatch()
 
     return copy(tiles = tiles + BoardTile(position, tile, 0u, null))
 }
@@ -177,10 +176,18 @@ fun Board.unequip(character: PlayableCharacter, item: Item): Board {
 }
 fun Board.reduceCooldown(): Board =
     copy(tiles = tiles.map{ it.copy(cooldown = (it.cooldown!!.toInt() - 1).coerceAtLeast(0).toUInt()) })
-
-
 fun Board.replaceBoardTile(updatedTile: BoardTile): Board {
     val newTiles = tiles.filterNot { it.pos == updatedTile.pos }.toMutableList()
     newTiles.add(updatedTile)
     return copy(tiles = newTiles)
+}
+
+fun Board.possibleUnoccupiedPositions(): List<BoardPosition>{
+
+    val occupiedPos = tiles.map{ it.pos }.toSet()
+
+    return tiles
+        .flatMap{ boardTile -> Direction.entries.map{ boardTile.pos.neighbour(it) } }
+        .filter{ position -> position !in occupiedPos }
+        .distinct()
 }

@@ -10,9 +10,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
-import isel.pt.cbdcg.views.game.utils.ZoomedImage
+import isel.pt.cbdcg.views.game.utils.misc.extra.ZoomedImage
 
 
 @Composable
@@ -22,6 +23,7 @@ fun PlayerCharacterCard(
     isSelected: Boolean,
     place: () -> Unit,
     inspect: () -> Unit,
+    getDrawable: suspend (String) -> ImageBitmap,
 ) {
     Box(
         modifier= Modifier
@@ -32,6 +34,7 @@ fun PlayerCharacterCard(
 
         ZoomedImage(
             fileName = character.name,
+            loadDrawable = { getDrawable(character.name) },
             zoom = 1.0f
         )
 

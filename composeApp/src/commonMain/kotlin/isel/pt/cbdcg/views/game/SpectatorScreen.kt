@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.views.game
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,11 +8,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.board.BoardTile
@@ -23,7 +34,7 @@ import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.viewmodel.GameUI
 import isel.pt.cbdcg.viewmodel.GameUIState
 import isel.pt.cbdcg.views.game.utils.board.Board
-import isel.pt.cbdcg.views.game.utils.InGameHeader
+import isel.pt.cbdcg.views.game.utils.misc.extra.InGameHeader
 import isel.pt.cbdcg.views.game.utils.spectator.SpectatorPlayerSelector
 import isel.pt.cbdcg.views.game.utils.board.ZoomButtons
 import isel.pt.cbdcg.views.game.utils.dialog.BattleDialog
@@ -31,6 +42,9 @@ import isel.pt.cbdcg.views.game.utils.dialog.CardStatsDialog
 import isel.pt.cbdcg.views.game.utils.dialog.EndBattleDialog
 import isel.pt.cbdcg.views.game.utils.dialog.GameOverDialog
 import isel.pt.cbdcg.views.game.utils.dialog.TileEffectDialog
+import kotlinx.coroutines.delay
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun SpectatorScreen(
@@ -42,6 +56,7 @@ fun SpectatorScreen(
     onEffectInfoClick: () -> Unit,
     zoom: (Boolean) -> Unit,
     leaveGame: () -> Unit,
+    getDrawable: suspend (String) -> ImageBitmap,
 ){
     val currentPlayer = game.players.find {
         it.user.id == game.turn.playerTurn.first()
@@ -50,6 +65,18 @@ fun SpectatorScreen(
         TurnPhase.CONSTRUCTION -> "Construction"
         TurnPhase.SUBSTITUTION -> "Substitution"
         TurnPhase.MOVEMENT -> "Movement"
+    }
+
+    var remainingSeconds by remember(game.turn.deadline) {
+        mutableStateOf(((game.turn.deadline - Clock.System.now().toEpochMilliseconds()) / 1000).coerceAtLeast(0))
+    }
+
+    LaunchedEffect(game.turn.deadline) {
+        while (true) {
+            remainingSeconds = ((game.turn.deadline - Clock.System.now().toEpochMilliseconds()) / 1000).coerceAtLeast(0)
+            if (remainingSeconds <= 0) break
+            delay(1000.milliseconds)
+        }
     }
 
     Column(
@@ -70,6 +97,23 @@ fun SpectatorScreen(
                 playerName = spectator.user.name.string,
                 currentPlayerName = currentPlayer?.user?.name?.string ?: "Unknown"
             )
+
+            if(game.battle == null){
+                Box(
+                    modifier = Modifier.align(Alignment.Center)
+                        .size(50.dp)
+                        .padding(4.dp)
+                        .background(Color.White, CircleShape)
+                        .border(1.dp, Color.Black, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = remainingSeconds.toString(),
+                        fontSize = 18.sp,
+                        color = Color.Black
+                    )
+                }
+            }
         }
 
         Box(
@@ -97,6 +141,8 @@ fun SpectatorScreen(
                         battleSignal = { _, _ -> },
                         moveCharacter = {},
                         battledCharacterPositions = gameUI.battledCharactersPosition,
+                        idle = { },
+                        getDrawable = { getDrawable(it) },
                     )
                     ZoomButtons(
                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
@@ -118,6 +164,7 @@ fun SpectatorScreen(
                             (gameUI.state as? GameUIState.InspectPlayer)?.player
 
                     SpectatorPlayerSelector(
+                        getDrawable = { getDrawable(it) },
                         players = game.players,
                         selected = selected,
                         select = { player -> togglePlayerHand(player) },
@@ -131,6 +178,7 @@ fun SpectatorScreen(
     when(gameUI.state){
         is GameUIState.InspectCard ->
             CardStatsDialog(
+                getDrawable = { getDrawable(it) },
                 card = gameUI.state.card,
                 unequip = { },
                 onDismiss = { toggleCardStats(null, null) }
@@ -148,6 +196,7 @@ fun SpectatorScreen(
                 } ?: emptyList()
 
             TileEffectDialog(
+                getDrawable = { getDrawable(it) },
                 effect = gameUI.state.tile.specialEffect,
                 activate = false,
                 onConfirm = onEffectInfoClick,
@@ -161,6 +210,8 @@ fun SpectatorScreen(
             )
         is GameUIState.InBattle -> {
             BattleDialog(
+                getDrawable = { getDrawable(it) },
+                remainingSeconds = remainingSeconds,
                 battle = gameUI.state.battle,
                 playerCharacterName = null,
                 attackTarget = { },
@@ -170,6 +221,8 @@ fun SpectatorScreen(
         }
         is GameUIState.EndBattle -> {
             EndBattleDialog(
+                getDrawable = { getDrawable(it) },
+                remainingSeconds = remainingSeconds,
                 player = null,
                 isWinner = false,
                 isBattling = false,

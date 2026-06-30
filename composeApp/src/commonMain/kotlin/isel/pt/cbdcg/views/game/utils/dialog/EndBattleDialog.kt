@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -16,15 +18,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import isel.pt.cbdcg.domain.game.BattleBet
 import isel.pt.cbdcg.domain.game.Player
+import isel.pt.cbdcg.views.game.utils.misc.extra.SimpleClock
 import isel.pt.cbdcg.views.game.utils.misc.info.ItemInfoPanel
 
 @Composable
 fun EndBattleDialog(
+    getDrawable: suspend (String) -> ImageBitmap,
+    remainingSeconds: Long,
     player: Player?,
     isWinner: Boolean,
     isBattling: Boolean,
@@ -50,17 +56,29 @@ fun EndBattleDialog(
     AlertDialog(
         onDismissRequest = {  },
         title = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = mainText,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = subText,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Light
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.weight(8f)){
+                    Text(
+                        text = mainText,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = subText,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Light
+                    )
+                }
+
+                Box(modifier = Modifier.weight(2f)){
+                    SimpleClock(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .size(50.dp)
+                            .padding(4.dp),
+                        remainingSeconds = remainingSeconds
+                    )
+                }
             }
         },
         text = {
@@ -79,6 +97,7 @@ fun EndBattleDialog(
                         bet.filter{ it.player.user.id != player?.user?.id }.forEach { (_, item) ->
                             if(item != null){
                                 ItemInfoPanel(
+                                    getDrawable = { getDrawable(it) },
                                     item = item,
                                     modifier = Modifier.fillMaxSize()
                                 )
@@ -88,6 +107,7 @@ fun EndBattleDialog(
                         val item = bet.find { it.player.user.id == player?.user?.id }?.item
                         if (item != null)
                             ItemInfoPanel(
+                                getDrawable = { getDrawable(it) },
                                 item = item,
                                 modifier = Modifier.fillMaxSize()
                             )

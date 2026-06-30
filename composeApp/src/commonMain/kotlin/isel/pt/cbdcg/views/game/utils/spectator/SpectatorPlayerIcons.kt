@@ -9,14 +9,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
-import isel.pt.cbdcg.views.game.utils.ZoomedImage
+import isel.pt.cbdcg.views.game.utils.misc.extra.ZoomedImage
 
 @Composable
 fun SpectatorPlayerIcons(
     characterName: String?,
     isSelected: Boolean,
     onClick: () -> Unit,
+    getDrawable: suspend (String) -> ImageBitmap,
 ){
     Box(
         modifier = Modifier
@@ -30,13 +32,12 @@ fun SpectatorPlayerIcons(
         contentAlignment = Alignment.Center
     ) {
 
-        val (resourceName, zoom) =
-            if(characterName == null) "missing_texture" to 1.0f
-            else characterName to 2.0f
+        val resourceName = characterName ?: "missing_texture"
 
         ZoomedImage(
             fileName = resourceName,
-            zoom = zoom,
+            loadDrawable = { getDrawable(resourceName) },
+            zoom = 1.0f,
             modifier = Modifier.size(64.dp)
         )
 
