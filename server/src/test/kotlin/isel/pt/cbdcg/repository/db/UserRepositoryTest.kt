@@ -7,6 +7,7 @@ import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Participant
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.Role
+import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.repository.database.TableRepositoryDB
 import isel.pt.cbdcg.repository.database.UserRepositoryDB
 import kotlinx.coroutines.runBlocking
@@ -33,6 +34,7 @@ class UserRepositoryTest {
             userId = userId,
             gameId = gameId,
             tokenExpiration = Instant.fromEpochMilliseconds(1_000_000),
+            tokenRefresh = Instant.fromEpochMilliseconds(1_000_000),
         )
 
     @Test
@@ -50,7 +52,7 @@ class UserRepositoryTest {
 
     @Test
     fun `save inserts explicit user id`() = runBlocking {
-        val user = isel.pt.cbdcg.domain.User(42u, Name("Alice"), Email("alice@email.com"), Password("secret1"))
+        val user = User(42u, Name("Alice"), Email("alice@email.com"), Password("secret1"))
 
         userRepo.save(user)
 

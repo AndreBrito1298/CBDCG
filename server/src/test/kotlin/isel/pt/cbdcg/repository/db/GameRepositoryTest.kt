@@ -25,6 +25,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 class GameRepositoryTest {
 
@@ -120,6 +122,7 @@ class GameRepositoryTest {
                 gameTurn = 5u,
                 playerTurn = listOf(playerTwoUser.id, playerOneUser.id),
                 phase = TurnPhase.MOVEMENT,
+                deadline = Clock.System.now().toEpochMilliseconds(),
             ),
         )
 
