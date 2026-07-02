@@ -4,7 +4,9 @@ import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.UserRepository
+import kotlin.time.Clock
 
 object UserRepositoryMem: UserRepository {
 
@@ -28,6 +30,23 @@ object UserRepositoryMem: UserRepository {
             val auth = user.auth
             auth != null && auth.token == token
         }
+    }
+
+    override suspend fun deleteInactiveUsers() {
+        val now = Clock.System.now()
+
+        for (index in users.indices) {
+            val user = users[index]
+            if (user.auth?.tokenExpiration?.let { it <= now } == true) {
+                users[index] = user.copy(auth = null)
+            }
+        }
+    }
+
+    override suspend fun removeAuthentication(userId: UInt) {
+        val u = users.find { it.id == userId }?:throw UserError.IdNotFound()
+        users.remove(u)
+        users.add(u.copy(auth = null))
     }
 
 

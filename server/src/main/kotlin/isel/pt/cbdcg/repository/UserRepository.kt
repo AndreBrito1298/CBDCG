@@ -15,6 +15,10 @@ interface UserRepository: Repository<User> {
 
     suspend fun findByToken(token: String): User?
 
+    suspend fun deleteInactiveUsers()
+
+    suspend fun removeAuthentication(userId: UInt)
+
     // fun logout(user: User)
 
 }

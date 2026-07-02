@@ -12,6 +12,9 @@ import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.toDirection
 import isel.pt.cbdcg.domain.game.board.tile.Tile
+import isel.pt.cbdcg.domain.game.board.tile.TileEffect
+import isel.pt.cbdcg.domain.game.board.tile.toTileEffect
+import isel.pt.cbdcg.domain.game.board.tile.toTileEffectDTO
 import isel.pt.cbdcg.domain.game.board.tile.toTile
 import isel.pt.cbdcg.domain.game.board.tile.toTileDTO
 import isel.pt.cbdcg.domain.game.character.Character
@@ -30,6 +33,7 @@ import isel.pt.cbdcg.domain.game.toTurn
 import isel.pt.cbdcg.dto.BattleDTO
 import isel.pt.cbdcg.dto.CardDTO
 import isel.pt.cbdcg.dto.TileDTO
+import isel.pt.cbdcg.dto.TileEffectDTO
 import isel.pt.cbdcg.dto.TurnDTO
 import isel.pt.cbdcg.repository.database.Tables.Users
 import isel.pt.cbdcg.repository.database.Tables.UsersDao
@@ -56,15 +60,14 @@ object Games : IntIdTable("games") {
   //  val playerTurnQueue = json<Array<Int>>("player_turn_queue", Json.Default)   // NEW
 }
 
-
-
 @Serializable
 data class ItemJson(val name: String, val quantity: UInt)
 
 @Serializable
 data class TileJson(
     val connections: Array<String>,
-    val quantity: UInt
+    val quantity: UInt,
+    val specialEffect: TileEffectDTO = TileEffect().toTileEffectDTO(),
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -88,8 +91,8 @@ class GamesDao(id: EntityID<Int>) : IntEntity(id) {
     var itemsDeck by Games.itemDeck
     var tileDeck by Games.tileDeck
     var battle by Games.battle
-   /// var playerTurnQueue by Games.playerTurnQueue   // NEW
 }
+
 object GamePlayers : IntIdTable("game_players") {
     val gameId = integer("game_id").references(Games.id, onDelete = ReferenceOption.CASCADE)
     val userId = integer("user_id").references(Users.id, onDelete = ReferenceOption.CASCADE)
@@ -154,17 +157,18 @@ class BoardCharacterModifiersDao(id: EntityID<Int>) : IntEntity(id) {
 
 fun TileJson.toTile(): Tile =
     Tile(
-        connections = connections.map{ it.toDirection() }
+        connections = connections.map{ it.toDirection() },
+        specialEffect = specialEffect.toTileEffect(),
     )
 
-fun Tile.toTileJson(): TileJson = TileJson(connections.map { it.name }.toTypedArray(), 1u)
+fun Tile.toTileJson(): TileJson = TileJson(connections.map { it.name }.toTypedArray(), 1u, specialEffect.toTileEffectDTO())
 
 fun Array<TileJson>.tileDeckFromDb(): Map<Tile, UInt>{
     return this.associate { it.toTile() to it.quantity }
 }
 
 fun Map<Tile, UInt>.tileDeckToDb(): Array<TileJson>{
-    return this.map { TileJson(it.key.connections.map { it.name }.toTypedArray(), it.value) }.toTypedArray()
+    return this.map { TileJson(it.key.connections.map { it.name }.toTypedArray(), it.value, it.key.specialEffect.toTileEffectDTO()) }.toTypedArray()
 }
 
 

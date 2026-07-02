@@ -5,6 +5,7 @@ import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.domain.getGameSessionTime
 import isel.pt.cbdcg.domain.getNextTokenRefresh
 import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.UserRepository
@@ -23,10 +24,11 @@ class UserService(
 
         val plainToken = UUID.randomUUID().toString()
         val encryptedToken = SimpleCrypto.encrypt(plainToken)
-        val newSessionEnd = getNextTokenRefresh()
-        userRepo.save(user.copy(auth = AuthUser(encryptedToken, user.id, null, newSessionEnd)))
+        val nextTokenRefresh = getNextTokenRefresh()
+        val sessionEnd = getGameSessionTime()
+        userRepo.save(user.copy(auth = AuthUser(encryptedToken, user.id, null, nextTokenRefresh, sessionEnd)))
 
-        user.copy(auth = AuthUser(plainToken, user.id, null, newSessionEnd))
+        user.copy(auth = AuthUser(plainToken, user.id, null, nextTokenRefresh, sessionEnd))
     }
 
     suspend fun login(email: Email, password: Password): Result<User> = runCatching {
@@ -42,11 +44,15 @@ class UserService(
 
         val plainToken = UUID.randomUUID().toString()
         val encryptedToken = SimpleCrypto.encrypt(plainToken)
-        val auth = user.copy(auth = AuthUser(encryptedToken, user.id, null, getNextTokenRefresh()))
+        val sessionEnd = getGameSessionTime()
+        val nextTokenRefresh = getNextTokenRefresh()
+
+
+        val auth = user.copy(auth = AuthUser(encryptedToken, user.id, null, nextTokenRefresh,sessionEnd))
 
         userRepo.save(auth)
 
-        auth.copy(auth = AuthUser(plainToken, user.id, null, getNextTokenRefresh()))
+        auth.copy(auth = AuthUser(plainToken, user.id, null, nextTokenRefresh,sessionEnd))
     }
 
     suspend fun logout(token: String) = runCatching {
@@ -54,6 +60,10 @@ class UserService(
             ?: throw UserError.TokenNotFound()
 
         userRepo.save(user.copy(auth = null))
+    }
+
+    suspend fun deleteInactiveUsers() = runCatching {
+        userRepo.deleteInactiveUsers()
     }
 
     /*

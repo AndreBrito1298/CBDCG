@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.domain
 
+import isel.pt.cbdcg.dto.AuthUserDTO
 import isel.pt.cbdcg.dto.UserDTO
 
 
@@ -24,5 +25,13 @@ fun User.toUserDTO(): UserDTO = UserDTO(
     name = name.string,
     email = email.string,
     password = password.string,
-    auth = auth?.token ?: ""
+    auth = auth?.let {
+        AuthUserDTO(
+            token = it.token,
+            userId = it.userId.toInt(),
+            gameId = it.gameId?.toInt(),
+            tokenRefresh = it.tokenRefresh.toEpochMilliseconds(),
+            tokenExpiration = it.tokenExpiration.toEpochMilliseconds(),
+        )
+    }
 )

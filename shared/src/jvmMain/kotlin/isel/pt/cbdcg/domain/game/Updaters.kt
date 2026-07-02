@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.domain.game
 
+import isel.pt.cbdcg.BATTLE_TURN_DURATION_SECONDS
 import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.connectedNeighbours
@@ -219,15 +220,17 @@ private val BattleStart = UpdaterE<Character, Character> { attacker, targets ->
             characters = charactersInBattle,
             itemBet = itemBet,
             pending = mainCharactersReady,
-            phase = BattlePhase.BATTLING
-        )
+            phase = BattlePhase.WAITING
+        ),
+        turn = turn.copy(deadline = newDeadline(BATTLE_TURN_DURATION_SECONDS))
     ).resolvePending()
 }
 
 @field:RegisterUpdater("JoinBattle")
-private val JoinBattle = UpdaterE<Player, Character> { player, targets ->
-    val character = targets.firstOrNull() ?: throw BoardError.NoTargetFound()
+private val JoinBattle = UpdaterE<Character, Character> { character, none ->
     val currentBattle = this.battle ?: throw GameError.NoBattleOngoing()
+    val player = players.find { it.currentCharacter == character.name }
+        ?: throw BattleError.CharacterNotFound(character.name)
 
     val ready = BattleAction(origin = character, target = null, action = PossibleBattleActions.FLEE, stats = Stats(), turn = turn.gameTurn.toInt())
 
@@ -259,12 +262,16 @@ private val AddActionToPending = UpdaterE<BattleAction, BattleAction> { action, 
 
 @field:RegisterUpdater("LeaveBattle")
 private val LeaveBattle= UpdaterE<Character, Character> { character, none->
-    if(battle == null) throw GameError.NoBattleOngoing()
+    val currentBattle = battle ?: throw GameError.NoBattleOngoing()
 
-    val idx = battle.characters.indexOf(character)
+    val idx = currentBattle.characters.indexOfFirst { it.name == character.name }
     if(idx == 0 || idx == 1) throw BattleError.CantLeaveBattle()
 
-    this.copy(battle = battle.copy(characters = battle.characters - character)).deleteBattle()
+    this.copy(battle = currentBattle.copy(
+        characters = currentBattle.characters.filterNot { it.name == character.name },
+        pending = currentBattle.pending.filterNot { it.origin.name == character.name },
+        itemBet = currentBattle.itemBet.filterNot { it.player.currentCharacter == character.name }
+    )).resolvePending()
 }
 
 @field:RegisterUpdater("RemoveActionFromPending")
@@ -289,14 +296,18 @@ fun Game.handleTimeOutStartingBattle(): Game {
         character.name !in charactersReady
     }
 
-    val newGame = charactersNotReady.fold(this){ currentGame, character ->
-        currentGame.gameUpdateByName("LeaveGame", character, emptyList())
-    }
+    if (charactersNotReady.isEmpty()) return resolvePending()
 
-    return newGame.resolvePending()
+    val readyNames = charactersReady.toSet()
+    val newBattle = battle.copy(
+        characters = battle.characters.filter { it.name in readyNames },
+        pending = battle.pending.filter { it.origin.name in readyNames },
+        itemBet = battle.itemBet.filter { it.player.currentCharacter in readyNames }
+    )
+
+    return copy(battle = newBattle).resolvePending()
 }
 fun Game.handleTimeOutDuringOrAfterBattle(): Game {
-
     if(battle == null) throw GameError.NoBattleOngoing()
 
     val charactersReady = battle.pending.map{ it.origin.name }

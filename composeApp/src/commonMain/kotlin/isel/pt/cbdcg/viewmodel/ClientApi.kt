@@ -276,7 +276,7 @@ class ClientApi(private val client: HttpClient) {
         fetch<GameDTO>(
             path = "game/applyGameUpdater",
             method = HttpMethod.Post,
-            body = GameUpdaterDTO(userId.toInt(), gameId.toInt(), token, "DrawItem",boardTile.toEntityDTO(), arrayOf(player.toEntityDTO()))
+            body = GameUpdaterDTO(userId.toInt(), gameId.toInt(), token, "DrawItem", player.toEntityDTO(), arrayOf(boardTile.toEntityDTO()))
         ).map{ it.toGame() }
     suspend fun statModifierEffect(userId: UInt, gameId: UInt, token: String, origin: BoardTile, player: Player): Result<Game> =
         fetch<GameDTO>(
@@ -287,8 +287,8 @@ class ClientApi(private val client: HttpClient) {
                 gameId = gameId.toInt(),
                 token = token,
                 updaterName = "UpdateStatModifiers",
-                origin = origin.toEntityDTO(),
-                target = arrayOf(player.toEntityDTO()),
+                origin = player.toEntityDTO(),
+                target = arrayOf(origin.toEntityDTO()),
             )
         ).map{ it.toGame() }
     suspend fun challenge(userId: UInt, gameId: UInt, token: String, origin: Character, targets: Character): Result<Game> =

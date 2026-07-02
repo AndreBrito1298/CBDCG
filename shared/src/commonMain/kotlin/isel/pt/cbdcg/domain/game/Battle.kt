@@ -125,11 +125,7 @@ fun BattleDTO.toBattle(): Battle =
         itemBet = itemBet.map { it.toBattleBet() }
     )
 
-/*
-
- */
 fun Battle.attack(battleAction: BattleAction): Battle {
-
     val origin = characters.find { it.name == battleAction.origin.name }
         ?: throw BattleError.CharacterNotFound(battleAction.origin.name)
     val originBattleStats = origin.adjustStats()
@@ -171,7 +167,6 @@ fun Battle.attack(battleAction: BattleAction): Battle {
     )
 }
 fun Battle.hold(battleAction: BattleAction): Battle {
-
     val origin = characters.find { it.name == battleAction.origin.name }
         ?: throw BattleError.CharacterNotFound(battleAction.origin.name)
 

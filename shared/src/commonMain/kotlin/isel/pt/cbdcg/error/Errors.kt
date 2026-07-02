@@ -27,6 +27,8 @@ sealed class UserError(
     class AlreadyLoggedIn: UserError("User is logged in on a different client.")
 
     class NotLoggedIn: UserError("User is not logged in.")
+
+    class SessionExpired: UserError("Session expired.")
     class IdNotFound: UserError("ID does not exist.")
     class OAuthError(reason: String) : UserError("OAuth authentication failed: $reason")
 }

@@ -15,7 +15,9 @@ import isel.pt.cbdcg.repository.database.Tables.TablesDao
 import isel.pt.cbdcg.repository.database.Tables.Users
 import isel.pt.cbdcg.repository.database.Tables.UsersDao
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
+import kotlin.time.Clock
 
 object UserRepositoryDB: UserRepository {
     override suspend fun findById(id: UInt): User? {
@@ -77,6 +79,19 @@ object UserRepositoryDB: UserRepository {
             val au = AuthUsersDao.find { AuthUsers.token eq token }
                 .singleOrNull()
             UsersDao.findById(au?.userId ?: return@suspendTransaction null)?.toUser()
+        }
+    }
+
+    override suspend fun deleteInactiveUsers() {
+        return suspendTransaction {
+            AuthUsersDao.find { AuthUsers.tokenExpiration lessEq Clock.System.now().toEpochMilliseconds() }
+                .forEach { it.delete() }
+        }
+    }
+
+    override suspend fun removeAuthentication(userId: UInt) {
+        suspendTransaction {
+            AuthUsersDao.find { AuthUsers.userId eq userId.toInt() }.forEach { it.delete() }
         }
     }
 

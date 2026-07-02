@@ -1,10 +1,13 @@
 package isel.pt.cbdcg.domain.game
 
+import isel.pt.cbdcg.AOE_EFFECT_MOD
+import isel.pt.cbdcg.SINGLE_TARGET_EFFECT_MOD
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.Direction
 import isel.pt.cbdcg.domain.game.board.tile.StatType
 import isel.pt.cbdcg.domain.game.board.tile.TileEffect
 import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
+import isel.pt.cbdcg.domain.game.character.Grade
 import isel.pt.cbdcg.domain.game.character.ModifierType
 import isel.pt.cbdcg.domain.game.character.Stats
 import isel.pt.cbdcg.error.BattleError
@@ -138,9 +141,9 @@ class UpdatersTest {
         )
         val game = testGame(players = listOf(player), battle = battle)
 
-        val result = game.gameUpdateByName("JoinBattle", player, listOf(helper))
+        val result = game.gameUpdateByName("JoinBattle", helper, emptyList())
 
-        assertTrue(result.battle?.pending?.any { it.origin.name == helper.name } == true)
+        assertEquals(result.battle?.pending?.any { it.origin.name == helper.name }, true)
     }
 
     @Test
@@ -179,7 +182,7 @@ class UpdatersTest {
     }
 
     @Test
-    fun `LeaveBattle updater removes non-main character and deletes concluded battle`() {
+    fun `LeaveBattle updater removes non-main character without deleting battle`() {
         val attacker = testCharacter("alchemist")
         val defender = testCharacter("guardian")
         val support = testCharacter("thief")
@@ -209,7 +212,9 @@ class UpdatersTest {
 
         val result = game.gameUpdateByName("LeaveBattle", support, emptyList())
 
-        assertNull(result.battle)
+        assertNotNull(result.battle)
+        assertTrue(result.battle?.characters?.none { it.name == support.name } == true)
+        assertTrue(result.battle?.pending?.none { it.origin.name == support.name } == true)
     }
 
     @Test
@@ -238,5 +243,106 @@ class UpdatersTest {
             game.gameUpdateByName("MissingUpdater", testCharacter("alchemist"), emptyList())
         }
     }
-}
+    @Test
+    fun `DrawItem updater draws two items from big chest and starts cooldown`() {
+        val commonItem = testItem("iron_claw", Grade.BASIC)
+        val keyItem = testItem("red_key", Grade.KEY)
+        val player = testPlayer(1u, currentCharacter = "alchemist")
+        val bigChest = testBoardTile(
+            BoardPosition(0, 0),
+            tile = testTile(effect = TileEffect(TileEffectTypes.BigChest, maxCooldown = 3u)),
+        )
+        val game = testGame(
+            players = listOf(player),
+            board = testBoardWith(bigChest),
+            itemDeck = mapOf(commonItem to 1u, keyItem to 1u),
+            turn = Turn(1u, listOf(1u), TurnPhase.MOVEMENT, 1_000L),
+        )
 
+        val result = game.gameUpdateByName("DrawItem", player, listOf(bigChest))
+
+        assertEquals(3u, result.board.tiles.single().cooldown)
+        assertEquals(setOf(commonItem, keyItem), result.players.single().hand.values.map { (it as ItemCard).item }.toSet())
+        assertEquals(0u, result.itemDeck.getValue(commonItem))
+        assertEquals(0u, result.itemDeck.getValue(keyItem))
+    }
+
+    @Test
+    fun `DrawItem updater exposes server error when endpoint payload order is reversed`() {
+        val item = testItem()
+        val player = testPlayer(1u, currentCharacter = "alchemist")
+        val chest = testBoardTile(BoardPosition(0, 0), tile = chestTile(cooldown = 2u))
+        val game = testGame(
+            players = listOf(player),
+            board = testBoardWith(chest),
+            itemDeck = mapOf(item to 1u),
+            turn = Turn(1u, listOf(1u), TurnPhase.MOVEMENT, 1_000L),
+        )
+
+        assertFailsWith<ClassCastException> {
+            game.gameUpdateByName("DrawItem", chest, listOf(player))
+        }
+    }
+
+    @Test
+    fun `UpdateStatModifiers updater applies every stat effect type through polymorphic dispatch`() {
+        val cases = StatType.entries.flatMap { stat ->
+            listOf(
+                TileEffectTypes.StatUp(stat) to expectedStats(stat, SINGLE_TARGET_EFFECT_MOD),
+                TileEffectTypes.StatDown(stat) to expectedStats(stat, -SINGLE_TARGET_EFFECT_MOD),
+                TileEffectTypes.StatUpAoE(stat) to expectedStats(stat, AOE_EFFECT_MOD),
+                TileEffectTypes.StatDownAoE(stat) to expectedStats(stat, -AOE_EFFECT_MOD),
+            )
+        }
+
+        cases.forEach { (effectType, expectedStats) ->
+            val originCharacter = testCharacter("alchemist")
+            val origin = testBoardTile(
+                BoardPosition(0, 0),
+                tile = testTile(effect = TileEffect(effectType, range = 1u, maxCooldown = 2u)),
+                character = originCharacter,
+            )
+            val player = testPlayer(1u, currentCharacter = originCharacter.name)
+            val game = testGame(
+                players = listOf(player),
+                board = testBoardWith(origin),
+                turn = Turn(1u, listOf(1u), TurnPhase.MOVEMENT, 1_000L),
+            )
+
+            val result = game.gameUpdateByName("UpdateStatModifiers", player, listOf(origin))
+            val updatedCharacter = result.board.tiles.single().character ?: error("character should remain on tile")
+            val modifier = updatedCharacter.activeStatModifiers.single()
+
+            assertEquals(2u, result.board.tiles.single().cooldown)
+            assertEquals(ModifierType.TILE_EFFECT, modifier.type)
+            assertEquals(expectedStats, modifier.stats)
+        }
+    }
+
+    @Test
+    fun `UpdateStatModifiers updater exposes server error when endpoint payload order is reversed`() {
+        val character = testCharacter("alchemist")
+        val origin = testBoardTile(
+            BoardPosition(0, 0),
+            tile = testTile(effect = TileEffect(TileEffectTypes.StatUp(StatType.Dmg), maxCooldown = 2u)),
+            character = character,
+        )
+        val player = testPlayer(1u, currentCharacter = character.name)
+        val game = testGame(
+            players = listOf(player),
+            board = testBoardWith(origin),
+            turn = Turn(1u, listOf(1u), TurnPhase.MOVEMENT, 1_000L),
+        )
+
+        assertFailsWith<ClassCastException> {
+            game.gameUpdateByName("UpdateStatModifiers", origin, listOf(player))
+        }
+    }
+
+    private fun expectedStats(stat: StatType, value: Int): Stats =
+        Stats(
+            dmg = if (stat == StatType.Dmg) value else 0,
+            def = if (stat == StatType.Def) value else 0,
+            spe = if (stat == StatType.Spe) value else 0,
+        )
+}

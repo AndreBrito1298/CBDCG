@@ -20,6 +20,7 @@ data class PlayableCharacter(
     override val evolution: Evolution?,
     val items: List<Item> = listOf(),
     val maxItems: Int = ITEM_CAPACITY,
+  //  val passive: Passive
 ) : Character {
 
     override val role: CharacterRole = CharacterRole.PLAYABLE
@@ -183,7 +184,8 @@ fun CharacterDTO.toPlayableCharacter(): PlayableCharacter =
         grade = grade.toGrade(),
         items = items.map{ it.toItem() },
         maxItems = maxItems,
-        evolution = evolution?.toEvolution()
+        evolution = evolution?.toEvolution(),
+       // passive = TODO()
     )
 
 fun getPlayableCharacterByName(name: String): PlayableCharacter? = PlayableCharacterCatalog.basicCharacters.find { it.name == name }

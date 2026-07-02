@@ -1,4 +1,7 @@
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
@@ -10,7 +13,13 @@ plugins {
 }
 
 kotlin {
-    jvm()
+    jvm {
+        mainRun {
+            mainClass.set("isel.pt.cbdcg.MainKt")
+        }
+    }
+
+    jvmToolchain(21)
 
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
@@ -64,7 +73,7 @@ kotlin {
 
 compose.desktop {
     application {
-        mainClass = "isel.pt.cbdcg.MainKt"
+        mainClass = "isel.pt.cbdcg.main"
         jvmArgs += "--enable-native-access=ALL-UNNAMED"
 
         nativeDistributions {

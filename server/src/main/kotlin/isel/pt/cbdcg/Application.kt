@@ -28,6 +28,10 @@ import isel.pt.cbdcg.webapi.websocket.webSocketApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 fun main() {
     dbInit(true)
@@ -35,6 +39,7 @@ fun main() {
         .start(wait = true)
 }
 
+private const val timeBetweenCleanup = 1000L
 
 fun Application.module() {
 
@@ -54,6 +59,20 @@ fun Application.module() {
             webSocketHub,
             CoroutineScope(SupervisorJob() + Dispatchers.Default)
         )
+
+ val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    cleanupScope.launch {
+        while (true) {
+            delay(timeBetweenCleanup.milliseconds)
+            userService.deleteInactiveUsers()
+        }
+    }
+
+    monitor.subscribe(ApplicationStopped) {
+        cleanupScope.cancel()
+    }
+
+
 
     routing {
         userWebApi(userService, httpClient)

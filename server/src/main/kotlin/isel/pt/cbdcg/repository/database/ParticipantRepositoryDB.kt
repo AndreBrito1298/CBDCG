@@ -11,7 +11,6 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 
 object ParticipantRepositoryDB: ParticipantRepository {
-
     override suspend fun createParticipant(
         user: User,
         table: Table,

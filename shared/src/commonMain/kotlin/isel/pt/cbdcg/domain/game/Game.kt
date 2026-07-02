@@ -486,11 +486,14 @@ fun Game.resolvePending(): Game {
 
     if(battle.pending.size < availableCharacters.size) return this
     if(battle.currentTurn == 0u)
-        return copy(battle = battle.copy(phase = BattlePhase.BATTLING, pending = emptyList(), currentTurn = 1u))
+        return copy(
+            battle = battle.copy(phase = BattlePhase.BATTLING, pending = emptyList(), currentTurn = 1u),
+            turn = turn.copy(deadline = newDeadline(BATTLE_TURN_DURATION_SECONDS))
+        )
 
     val orderOfActions: List<BattleAction> = availableCharacters.map{ character ->
         val action = battle.pending.find{ it.origin == character }
-        requireNotNull(action) { "Action not found for character ${character.name}" }
+        requireNotNull(action)
     }
 
     val updatedBattle = orderOfActions.fold<BattleAction, Battle>(battle.incrementModifiers()){ currentBattle, pending ->
@@ -569,7 +572,7 @@ fun Game.resolveBattleEnd(battle: Battle, winner: Character): Game {
         players = updatedPlayers,
         board = board.copy(tiles = updatedBoardTiles),
         turn = turn.copy(deadline = newDeadline(BATTLE_TURN_DURATION_SECONDS))
-    )
+    ).deleteBattle()
 }
 fun Game.deleteBattle(): Game{
     if(battle == null)

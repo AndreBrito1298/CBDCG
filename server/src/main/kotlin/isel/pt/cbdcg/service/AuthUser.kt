@@ -10,7 +10,8 @@ import kotlin.time.DurationUnit
 import kotlin.time.Instant
 import kotlin.time.toDuration
 
-val sessionIncrements = 5000.toDuration(DurationUnit.MILLISECONDS)
+val refreshIncrements = 5000.toDuration(DurationUnit.MILLISECONDS)
+val gameSessionTime = 600000.toDuration(DurationUnit.MILLISECONDS)
 suspend fun String.verifyToken(user: User, currGame: UInt?, userRepository: UserRepository) {
     if(user.auth == null)
         throw UserError.TokenNotFound()
@@ -19,10 +20,15 @@ suspend fun String.verifyToken(user: User, currGame: UInt?, userRepository: User
     if(currGame != user.auth!!.gameId && decrypt(user.auth!!.token) != this)
         throw UserError.TokenMismatch()
 
-    if(user.auth!!.tokenExpiration < Clock.System.now())
+    if(user.auth!!.tokenExpiration< Clock.System.now()){
+        userRepository.removeAuthentication(user.id)
+        throw UserError.SessionExpired()
+    }
+
+    if(user.auth!!.tokenRefresh < Clock.System.now())
         newToken = UUID.randomUUID().toString()
 
-    userRepository.save(user.copy(auth = user.auth!!.copy(token = encrypt(newToken), tokenExpiration = getNextTokenRefresh())))
+    userRepository.save(user.copy(auth = user.auth!!.copy(token = encrypt(newToken), tokenRefresh = getNextTokenRefresh())))
 }
 
 fun String.hasSession(user: User, userRepository: UserRepository){
@@ -34,7 +40,7 @@ fun String.hasSession(user: User, userRepository: UserRepository){
 }
 
 suspend fun User.addToGame(gameId: UInt, userRepository: UserRepository) {
-    val newUser = copy(auth = auth?.copy(gameId = gameId))
+    val newUser = copy(auth = auth?.copy(gameId = gameId, tokenExpiration = getGameSessionTime()))
     userRepository.save(newUser)
 }
 
@@ -44,4 +50,5 @@ suspend fun User.removeFromGame(userRepository: UserRepository) {
 }
 
 
-fun getNextTokenRefresh(): Instant = Clock.System.now()+sessionIncrements
+fun getNextTokenRefresh(): Instant = Clock.System.now()+refreshIncrements
+fun getGameSessionTime(): Instant = Clock.System.now()+gameSessionTime

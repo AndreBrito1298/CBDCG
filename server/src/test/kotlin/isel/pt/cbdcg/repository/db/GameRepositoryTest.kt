@@ -13,6 +13,8 @@ import isel.pt.cbdcg.domain.game.Turn
 import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.board.Direction
 import isel.pt.cbdcg.domain.game.board.tile.Tile
+import isel.pt.cbdcg.domain.game.board.tile.TileEffect
+import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
 import isel.pt.cbdcg.domain.game.character.ItemCatalog
 import isel.pt.cbdcg.repository.database.GameRepositoryDB
 import isel.pt.cbdcg.repository.database.UserRepositoryDB
@@ -130,6 +132,31 @@ class GameRepositoryTest {
         assertEquals(playerTwoUser.id, stored.turn.playerTurn.first())
         assertEquals(mapOf(cornerTile to 9u), stored.tileDeck)
         assertEquals(mapOf(otherItem to 7u), stored.itemDeck)
+    }
+
+    @Test
+    fun `tile deck persistence preserves special effects`() = runBlocking {
+        val players = players()
+        val effectTile = straightTile.copy(
+            specialEffect = TileEffect(
+                type = TileEffectTypes.Chest,
+                maxCooldown = 2u,
+                info = "Draw one item.",
+            )
+        )
+
+        val created = gameRepo.createGame(
+            players = players,
+            spectators = listOf(Spectator(spectatorUser)),
+            turnOrder = players.map { it.user.id },
+            startingDeck = mapOf(effectTile to 1u),
+            itemDeck = mapOf(basicItem to 1u),
+        )
+
+        val stored = gameRepo.findById(created.id)
+
+        assertNotNull(stored)
+        assertEquals(mapOf(effectTile to 1u), stored.tileDeck)
     }
 
     @Test

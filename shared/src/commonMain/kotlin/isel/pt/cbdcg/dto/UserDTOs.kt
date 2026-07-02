@@ -14,7 +14,24 @@ data class UserDTO(
     val name: String,
     val email: String,
     val password: String,
-    val auth: String
+    val auth: AuthUserDTO?
+)
+
+@Serializable
+data class AuthUserDTO(
+    val token: String,
+    val userId: Int,
+    val gameId: Int?,
+    val tokenRefresh: Long,
+    val tokenExpiration: Long,
+)
+
+fun AuthUserDTO.toAuthUser(): AuthUser = AuthUser(
+    token = token,
+    userId = userId.toUInt(),
+    gameId = gameId?.toUInt(),
+    tokenRefresh = Instant.fromEpochMilliseconds(tokenRefresh),
+    tokenExpiration = Instant.fromEpochMilliseconds(tokenExpiration),
 )
 
 fun UserDTO.toUser(): User = User(
@@ -22,7 +39,7 @@ fun UserDTO.toUser(): User = User(
     name = Name(name),
     email = Email(email),
     password = Password(password),
-    auth = AuthUser(auth, id.toUInt(), null, Instant.DISTANT_FUTURE)
+    auth = auth?.toAuthUser(),
 )
 
 @Serializable

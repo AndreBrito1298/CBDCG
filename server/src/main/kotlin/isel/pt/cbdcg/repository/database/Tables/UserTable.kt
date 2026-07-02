@@ -50,6 +50,7 @@ object AuthUsers : IntIdTable("authUsers") {
     val token = varchar("token", 255).uniqueIndex()
     val userId = integer("user_id").references(Users.id).uniqueIndex()
     val gameId = integer("game_id").nullable()
+    val tokenRefreshTime = long("token_refresh_time")
     val tokenExpiration = long("token_expiration")
 }
 
@@ -59,11 +60,13 @@ class AuthUsersDao(id: EntityID<Int>) : IntEntity(id) {
     var userId by AuthUsers.userId
     var gameId by AuthUsers.gameId
     var tokenExpiration by AuthUsers.tokenExpiration
+    var tokenRefresh by AuthUsers.tokenRefreshTime
 
     fun toAuthUser() = AuthUser(
         token = token,
         userId = userId.toUInt(),
         gameId = gameId?.toUInt(),
         tokenExpiration = Instant.fromEpochMilliseconds(tokenExpiration),
+        tokenRefresh = Instant.fromEpochMilliseconds(tokenRefresh)
     )
 }

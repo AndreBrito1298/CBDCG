@@ -347,9 +347,7 @@ class GameService(
 
         val newGame = game.gameUpdateByName(updaterName, origin, targets)
 
-        gameRepo.save(newGame)
-        events.publishGameUpdated(newGame)
-        newGame
+        savePublishAndSchedule(newGame)
     }
 
     suspend fun undoBattleAction(userId: UInt, gameId: UInt, token: String, origin: Character): Result<Game> = runCatching {

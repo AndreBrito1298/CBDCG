@@ -8,7 +8,9 @@ enum class ModifierType{
     BATTLE_ATTACK,
     BATTLE_HOLD,
     BATTLE_FLEE,
-    PERMANENT
+    PERMANENT,
+
+    PASSIVE_MODIFIER,
 }
 
 fun ModifierType.isBattleMod(): Boolean =

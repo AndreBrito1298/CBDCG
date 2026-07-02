@@ -190,6 +190,7 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is BattleError.ActionNotQueued -> HttpStatusCode.NotFound
         is BattleError.CantLeaveBattle -> HttpStatusCode.Conflict
         is BattleError.InvalidPhase -> HttpStatusCode.BadRequest
+        is UserError.SessionExpired -> HttpStatusCode.Unauthorized
     }
 
     return code to message
