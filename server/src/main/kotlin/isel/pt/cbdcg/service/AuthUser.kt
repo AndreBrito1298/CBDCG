@@ -25,10 +25,19 @@ suspend fun String.verifyToken(user: User, currGame: UInt?, userRepository: User
     userRepository.save(user.copy(auth = user.auth!!.copy(token = encrypt(newToken), tokenExpiration = getNextTokenRefresh())))
 }
 
+fun String.hasSession(user: User, userRepository: UserRepository){
+    if(user.auth == null)
+        throw UserError.TokenNotFound()
+
+    if(user.auth!!.tokenExpiration < Clock.System.now())
+        throw UserError.TokenNotFound()
+}
+
 suspend fun User.addToGame(gameId: UInt, userRepository: UserRepository) {
     val newUser = copy(auth = auth?.copy(gameId = gameId))
     userRepository.save(newUser)
 }
+
 suspend fun User.removeFromGame(userRepository: UserRepository) {
     val newUser = copy(auth = auth?.copy(gameId = null))
     userRepository.save(newUser)

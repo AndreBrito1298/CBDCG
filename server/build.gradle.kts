@@ -24,6 +24,8 @@ dependencies {
     implementation(libs.exposed.json)
 
     implementation(libs.h2)
+    implementation(libs.reflections)
+    implementation("org.reflections:reflections:0.10.2")
     implementation("org.postgresql:postgresql:42.7.8")
     implementation("io.ktor:ktor-server-auth:${libs.versions.ktor.get()}")
     implementation("io.ktor:ktor-server-auth-jwt:${libs.versions.ktor.get()}")

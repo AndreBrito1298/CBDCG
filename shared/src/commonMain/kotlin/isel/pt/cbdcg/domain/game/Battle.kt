@@ -15,6 +15,7 @@ import isel.pt.cbdcg.domain.game.character.toStats
 import isel.pt.cbdcg.dto.BattleActionDTO
 import isel.pt.cbdcg.dto.BattleBetDTO
 import isel.pt.cbdcg.dto.BattleDTO
+import isel.pt.cbdcg.dto.EntityDTO
 import isel.pt.cbdcg.error.BattleError
 import kotlin.math.min
 import kotlin.random.Random
@@ -46,12 +47,17 @@ data class BattleAction(
     val origin: Character,
     val target: Character?,
     val action: PossibleBattleActions,
-    val stats: Stats
-)
+    val stats: Stats,
+    val turn: Int
+): Entity {
+    override fun Entity.toEntityDTO() = EntityDTO(battleAction = toBattleActionDTO())
 
-fun BattleAction.toBattleActionDTO(turn: UInt): BattleActionDTO =
+    override fun <T : Entity> toEntity() = this as Entity
+}
+
+fun BattleAction.toBattleActionDTO(): BattleActionDTO =
     BattleActionDTO(
-        turn = turn.toInt(),
+        turn = turn,
         origin = origin.toCharacterDTO(),
         target = target?.toCharacterDTO(),
         action = action.name,
@@ -63,7 +69,8 @@ fun BattleActionDTO.toBattleAction(): BattleAction =
         origin = origin.toCharacter(),
         target = target?.toCharacter(),
         action = action.toPossibleBattleAction(),
-        stats = stats.toStats()
+        stats = stats.toStats(),
+        turn = turn
     )
 
 data class BattleBet(
@@ -90,7 +97,11 @@ data class Battle(
     val pending: List<BattleAction> = emptyList(),
     val actions: Map<UInt, List<BattleAction>> = emptyMap(),
     val itemBet: List<BattleBet>
-)
+): Entity {
+    override fun Entity.toEntityDTO() = EntityDTO(battle = toBattleDTO())
+
+    override fun <T : Entity> toEntity() = this as Entity
+}
 
 
 fun Battle.toBattleDTO(): BattleDTO =
@@ -98,8 +109,8 @@ fun Battle.toBattleDTO(): BattleDTO =
         characters = characters.map{ it.toCharacterDTO() }.toTypedArray(),
         currentTurn = currentTurn.toInt(),
         phase = phase.name,
-        pending = pending.map{ it.toBattleActionDTO(currentTurn) }.toTypedArray(),
-        actions = actions.flatMap{ (key, value) -> value.map{ it.toBattleActionDTO(key)} }.toTypedArray(),
+        pending = pending.map{ it.toBattleActionDTO() }.toTypedArray(),
+        actions = actions.flatMap{ (key, value) -> value.map{ it.toBattleActionDTO()} }.toTypedArray(),
         itemBet = itemBet.map{ it.toBattleBetDTO() }.toTypedArray()
     )
 fun BattleDTO.toBattle(): Battle =
@@ -114,6 +125,9 @@ fun BattleDTO.toBattle(): Battle =
         itemBet = itemBet.map { it.toBattleBet() }
     )
 
+/*
+
+ */
 fun Battle.attack(battleAction: BattleAction): Battle {
 
     val origin = characters.find { it.name == battleAction.origin.name }

@@ -17,6 +17,7 @@ import isel.pt.cbdcg.domain.game.character.ItemEvolution
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.domain.game.character.Stats
 import isel.pt.cbdcg.domain.game.character.special
+import isel.pt.cbdcg.error.BattleError
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import javax.swing.border.Border
@@ -48,25 +49,29 @@ private fun interface UpdaterE<T : Entity, R : Entity> {
         val result = this@UpdaterE.run { this@applyWithEntity.apply(origin as T, list) }
         return result
     }
+
+    fun Game.addActionToPending(origin: Character, target: Character?, action: PossibleBattleActions): Game {
+        if(this.battle == null)
+            throw GameError.NoBattleOngoing()
+
+        if(battle.pending.any{ it.origin.name == origin.name })
+            throw BattleError.ActionAlreadyQueued()
+
+        val battleAction =
+            BattleAction(
+                origin = origin,
+                target = target,
+                action = action,
+                stats = Stats(),
+                turn = turn.gameTurn.toInt()
+            )
+        return copy(battle = battle.copy(pending = battle.pending + battleAction))
+    }
 }
 
 fun Game.gameUpdateByName(name: String, origin: Entity, targets: List<Entity>): Game {
     val updater = funToNameMap[name] ?: throw IllegalArgumentException("Updater not found")
     return updater.run { this@gameUpdateByName.applyWithEntity(origin, targets) }
-}
-
-
-object CharacterMovement2 : UpdaterE<BoardTile, BoardTile> {
-    override fun Game.apply(origin: BoardTile, targets: List<BoardTile>): Game {
-        if (this.turn.phase != TurnPhase.MOVEMENT) throw GameError.CharacterMovementRestriction()
-        val newStartingTile = origin.copy(character = null)
-        val endTile = targets.first() ?: throw BoardError.NoTargetFound()
-        if (endTile.character != null) throw BoardError.TileOccupied()
-        val newEndingTile = targets.first().copy(character = origin.character)
-        return this.copy(board = board
-            .replaceBoardTile(newStartingTile)
-            .replaceBoardTile(newEndingTile))
-    }
 }
 
 @field:RegisterUpdater("CharacterMovement")
@@ -76,7 +81,7 @@ private val CharacterMovement = UpdaterE<BoardTile, BoardTile> { origin, targets
     val endTile = targets.firstOrNull() ?: throw BoardError.NoTargetFound()
     if (endTile.character != null) throw BoardError.TileOccupied()
     val newEndingTile = targets.first().copy(character = origin.character)
-    this.copy(
+    copy(
         board = board
             .replaceBoardTile(newStartingTile)
             .replaceBoardTile(newEndingTile)
@@ -185,7 +190,7 @@ private val BattleStart = UpdaterE<Character, Character> { attacker, targets ->
         it.currentCharacter in mainCharacters.map { character -> character.name }
     }
     val mainCharactersReady = mainCharacters.map { character ->
-        BattleAction(origin = character, target = null, action = PossibleBattleActions.FLEE, stats = Stats())
+        BattleAction(origin = character, target = null, action = PossibleBattleActions.FLEE, stats = Stats(), turn = turn.gameTurn.toInt())
     }
     val itemBet = mainPlayers.mapNotNull { player ->
         val itemCards = player.hand.mapNotNull { card -> (card.value as? ItemCard) }
@@ -213,9 +218,10 @@ private val BattleStart = UpdaterE<Character, Character> { attacker, targets ->
         battle = Battle(
             characters = charactersInBattle,
             itemBet = itemBet,
-            pending = mainCharactersReady
+            pending = mainCharactersReady,
+            phase = BattlePhase.BATTLING
         )
-    )
+    ).resolvePending()
 }
 
 @field:RegisterUpdater("JoinBattle")
@@ -223,7 +229,7 @@ private val JoinBattle = UpdaterE<Player, Character> { player, targets ->
     val character = targets.firstOrNull() ?: throw BoardError.NoTargetFound()
     val currentBattle = this.battle ?: throw GameError.NoBattleOngoing()
 
-    val ready = BattleAction(origin = character, target = null, action = PossibleBattleActions.FLEE, stats = Stats())
+    val ready = BattleAction(origin = character, target = null, action = PossibleBattleActions.FLEE, stats = Stats(), turn = turn.gameTurn.toInt())
 
     val itemCards = player.hand.mapNotNull { card -> (card.value as? ItemCard) }
     val keyItems = itemCards.filter { itemCard -> itemCard.item.grade == Grade.KEY }
@@ -232,10 +238,77 @@ private val JoinBattle = UpdaterE<Player, Character> { player, targets ->
     else if (itemCards.isNotEmpty()) BattleBet(player, itemCards.random().item)
     else BattleBet(player, null)
 
-    this.copy(
+    copy(
         battle = currentBattle.copy(
             pending = currentBattle.pending + ready,
             itemBet = currentBattle.itemBet + bet
         )
-    )
+    ).resolvePending()
+}
+
+@field:RegisterUpdater("AddActionToPending")
+private val AddActionToPending = UpdaterE<BattleAction, BattleAction> { action, none->
+    if(battle == null)
+        throw GameError.NoBattleOngoing()
+
+    if(battle.pending.any{ it.origin.name == action.origin.name })
+        throw BattleError.ActionAlreadyQueued()
+
+    copy(battle = battle.copy(pending = battle.pending + action)).resolvePending()
+}
+
+@field:RegisterUpdater("LeaveBattle")
+private val LeaveBattle= UpdaterE<Character, Character> { character, none->
+    if(battle == null) throw GameError.NoBattleOngoing()
+
+    val idx = battle.characters.indexOf(character)
+    if(idx == 0 || idx == 1) throw BattleError.CantLeaveBattle()
+
+    this.copy(battle = battle.copy(characters = battle.characters - character)).deleteBattle()
+}
+
+@field:RegisterUpdater("RemoveActionFromPending")
+private val RemoveActionFromPending= UpdaterE<Character, BattleAction> { character, none->
+    if(battle == null)
+        throw GameError.NoBattleOngoing()
+
+    val action = battle.pending.find{ it.origin == character }
+        ?: throw BattleError.ActionNotQueued()
+
+    this.copy(battle = battle.copy(pending = battle.pending - action)).resolvePending()
+}
+
+
+
+fun Game.handleTimeOutStartingBattle(): Game {
+
+    if(battle == null) throw GameError.NoBattleOngoing()
+
+    val charactersReady = battle.pending.map{ it.origin.name }
+    val charactersNotReady = battle.characters.filter{ character ->
+        character.name !in charactersReady
+    }
+
+    val newGame = charactersNotReady.fold(this){ currentGame, character ->
+        currentGame.gameUpdateByName("LeaveGame", character, emptyList())
+    }
+
+    return newGame.resolvePending()
+}
+fun Game.handleTimeOutDuringOrAfterBattle(): Game {
+
+    if(battle == null) throw GameError.NoBattleOngoing()
+
+    val charactersReady = battle.pending.map{ it.origin.name }
+    val charactersNotReady = battle.characters.filter{ character ->
+        character.name !in charactersReady
+    }
+
+    val newGame = charactersNotReady.fold(this){ currentGame, character ->
+        currentGame.gameUpdateByName("AddActionToPending", BattleAction(character, null, PossibleBattleActions.FLEE, Stats(), turn = turn.gameTurn.toInt()), emptyList())
+
+    }
+
+    return  if(battle.phase == BattlePhase.BATTLING) newGame.resolvePending()
+    else newGame.deleteBattle()
 }

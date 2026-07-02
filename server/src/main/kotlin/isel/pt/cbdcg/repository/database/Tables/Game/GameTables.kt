@@ -26,9 +26,11 @@ import isel.pt.cbdcg.domain.game.character.getItemByName
 import isel.pt.cbdcg.domain.game.character.toStats
 import isel.pt.cbdcg.domain.game.toBattle
 import isel.pt.cbdcg.domain.game.toCard
+import isel.pt.cbdcg.domain.game.toTurn
 import isel.pt.cbdcg.dto.BattleDTO
 import isel.pt.cbdcg.dto.CardDTO
 import isel.pt.cbdcg.dto.TileDTO
+import isel.pt.cbdcg.dto.TurnDTO
 import isel.pt.cbdcg.repository.database.Tables.Users
 import isel.pt.cbdcg.repository.database.Tables.UsersDao
 import kotlinx.serialization.Serializable
@@ -45,12 +47,13 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.json.json
 
 object Games : IntIdTable("games") {
-    val gameTurn = integer("game_turn")
-    val currentTurnPhase = enumeration("turn_phase", TurnPhase::class)
+   // val gameTurn = integer("game_turn")
+    val turn = json<TurnDTO>("turn", Json.Default)
+ //   val currentTurnPhase = enumeration("turn_phase", TurnPhase::class)
     val itemDeck = json<Array<ItemJson>>("item_deck", Json.Default)
     val tileDeck = json<Array<TileJson>>("tile_deck", Json.Default)
     val battle = json<BattleDTO>("battle", Json.Default).nullable()
-    val playerTurnQueue = json<Array<Int>>("player_turn_queue", Json.Default)   // NEW
+  //  val playerTurnQueue = json<Array<Int>>("player_turn_queue", Json.Default)   // NEW
 }
 
 
@@ -78,12 +81,14 @@ data class TileJson(
 
 class GamesDao(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<GamesDao>(Games)
-    var gameTurn by Games.gameTurn
-    var currentTurnPhase by Games.currentTurnPhase
+   // var gameTurn by Games.gameTurn
+
+    var turn by Games.turn
+   // var currentTurnPhase by Games.currentTurnPhase
     var itemsDeck by Games.itemDeck
     var tileDeck by Games.tileDeck
     var battle by Games.battle
-    var playerTurnQueue by Games.playerTurnQueue   // NEW
+   /// var playerTurnQueue by Games.playerTurnQueue   // NEW
 }
 object GamePlayers : IntIdTable("game_players") {
     val gameId = integer("game_id").references(Games.id, onDelete = ReferenceOption.CASCADE)
@@ -234,11 +239,7 @@ fun GamesDao.toGame(): Game {
 
     val board = toBoard()
 
-    val turn = Turn(
-        gameTurn = gameTurn.toUInt(),
-        playerTurn = playerTurnQueue.map { it.toUInt() },   // read the actual stored queue
-        phase = currentTurnPhase
-    )
+    val turn = turn.toTurn()
 
     return Game(
         id = gameId.toUInt(),

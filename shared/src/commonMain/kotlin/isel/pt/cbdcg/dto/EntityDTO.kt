@@ -1,5 +1,7 @@
 package isel.pt.cbdcg.dto
 
+import isel.pt.cbdcg.domain.game.Battle
+import isel.pt.cbdcg.domain.game.BattleAction
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Entity
 import isel.pt.cbdcg.domain.game.Player
@@ -8,6 +10,8 @@ import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.toBoardTile
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.toCharacter
+import isel.pt.cbdcg.domain.game.toBattle
+import isel.pt.cbdcg.domain.game.toBattleAction
 import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.domain.game.toPlayer
 import kotlinx.serialization.Serializable
@@ -18,13 +22,19 @@ data class EntityDTO(
     val board: Array<BoardTileDTO>? = null,
     val character: CharacterDTO? = null,
     val card: CardDTO? = null,
+    val battleAction: BattleActionDTO? = null,
+    val battle: BattleDTO? = null,
 ){
     fun toType(): Entity{
-        return player?.toPlayer()?.toEntity<Player>()
-            ?: (boardTile?.toBoardTile()?.toEntity<BoardTile>()
-                ?: if(board != null) Board(board.map{ it.toBoardTile() }).toEntity<Board>()
-                else character?.toCharacter()?.toEntity<Character>()
-                    ?: (card?.toCard()?.toEntity<Card>() ?: throw Exception("Invalid Entity Type")))
+        return if (player != null) player.toPlayer().toEntity<Player>()
+        else if (boardTile != null) boardTile.toBoardTile().toEntity<BoardTile>()
+        else if (board != null) Board(board.map{ it.toBoardTile() }).toEntity<Board>()
+        else if (character != null) character.toCharacter().toEntity<Character>()
+        else if (card != null) card.toCard().toEntity<Card>()
+        else if (battleAction != null) battleAction.toBattleAction().toEntity<BattleAction>()
+        else if (battle != null) battle.toBattle().toEntity<Battle>()
+        else throw Exception("Invalid Entity Type")
+
     }
 
     override fun equals(other: Any?): Boolean {

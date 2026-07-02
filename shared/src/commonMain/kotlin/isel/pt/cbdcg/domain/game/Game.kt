@@ -37,6 +37,7 @@ import isel.pt.cbdcg.domain.game.character.adjustStats
 import isel.pt.cbdcg.domain.game.character.special
 import isel.pt.cbdcg.domain.game.character.toItem
 import isel.pt.cbdcg.domain.game.character.toItemDTO
+import isel.pt.cbdcg.dto.BattleActionDTO
 import isel.pt.cbdcg.dto.EntityDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.ItemDeckDTO
@@ -87,7 +88,6 @@ fun Game.toGameDTO(): GameDTO {
     )
 }
 fun GameDTO.toGame(): Game {
-
     val players = players.map{ it.toPlayer() }
     val spectators = spectators.map{ it.toSpectator() }
     val tiles = board.map{ it.toBoardTile() }
@@ -108,7 +108,6 @@ fun GameDTO.toGame(): Game {
 }
 
 fun Game.resolveTurnZero() : Game {
-
     val remainingPlayers = turn.playerTurn.drop(1)
     val nextPlayerTurn = remainingPlayers.ifEmpty { getTurnOrder() }
     
@@ -141,7 +140,6 @@ fun Game.resolveTurnZero() : Game {
             }
 }
 fun Game.nextPhase(): Game {
-
     val player = players.find{ it.user.id == turn.playerTurn.first() }
         ?: throw GameError.NotYourTurn()
 
@@ -162,7 +160,6 @@ fun Game.nextPhase(): Game {
     }
 }
 fun Game.nextTurn(): Game {
-
     val winner = checkWinner()
     if(winner.players.size == 1) return this
 
@@ -179,7 +176,6 @@ fun Game.nextTurn(): Game {
     return nextTurn.startNextTurn()
 }
 private fun Game.getTurnOrder(): List<UInt>{
-    
     val playerToCharacter = players.map{ player ->
         player to board.tiles.find{ it.character != null && it.character.name == player.currentCharacter }?.character
     }
@@ -194,7 +190,6 @@ private fun Game.getTurnOrder(): List<UInt>{
 }
 private fun Game.checkWinner(): Game =
     players.fold(this) { currentGame, player ->
-
         val hasCharactersRemaining =
             player.hand.numCharacterCards() > 0 ||
             currentGame.board.tiles.any {
@@ -226,7 +221,6 @@ private fun Game.checkWinner(): Game =
         }
     }
 fun Game.startNextTurn(): Game {
-
     if (turn.gameTurn == 0u) return this
 
     val anyRemainingTilesInDeck = tileDeck.values.any{ it > 0u }
@@ -256,7 +250,6 @@ fun Game.startNextTurn(): Game {
 
     val availableTilePositions = board.possibleUnoccupiedPositions()
     val nextPhase = if(availableTilePositions.isNotEmpty()) TurnPhase.CONSTRUCTION else TurnPhase.SUBSTITUTION
-
     return copy(
         players = updatedPlayers,
         tileDeck = updatedDeck,
@@ -265,7 +258,6 @@ fun Game.startNextTurn(): Game {
     )
 }
 fun Game.leaveGame(player: Player, toSpectator: Boolean = false): Game {
-
     val newPlayers = players.filter { it.user.id != player.user.id }
     if(newPlayers.size == 1) return copy(
         players = newPlayers,
@@ -297,7 +289,6 @@ fun Game.leaveGame(player: Player, toSpectator: Boolean = false): Game {
            else newGame
 }
 fun Game.placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: UInt): Game {
-
     if(player.user.id != turn.playerTurn.first())
         throw GameError.NotYourTurn()
 
@@ -312,7 +303,6 @@ fun Game.placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: 
     }
 }
 fun Game.placeTile(player: Player, position: BoardPosition, card: TileCard, idx: UInt): Game {
-
     if(turn.phase != TurnPhase.CONSTRUCTION)
         throw GameError.TilePlacementRestriction()
 
@@ -325,7 +315,6 @@ fun Game.placeTile(player: Player, position: BoardPosition, card: TileCard, idx:
     return copy(board = updatedBoard, players = updatedPlayers)
 }
 fun Game.placeCharacter(player: Player, position: BoardPosition, card: CharacterCard, idx: UInt): Game {
-
     if(turn.phase != TurnPhase.SUBSTITUTION)
         throw GameError.CharacterPlacementRestriction()
 
@@ -368,7 +357,6 @@ fun Game.placeCharacter(player: Player, position: BoardPosition, card: Character
     }
 }
 fun Game.placeItem(player: Player, position: BoardPosition, card: ItemCard, idx: UInt): Game {
-
     if(turn.phase != TurnPhase.SUBSTITUTION)
         throw GameError.EquipItemRestriction()
 
@@ -381,7 +369,6 @@ fun Game.placeItem(player: Player, position: BoardPosition, card: ItemCard, idx:
     return copy(board = updatedBoard, players = updatedPlayers)
 }
 fun Game.unequip(player: Player, character: Character, idx: Int): Game {
-
     if(this.turn.phase != TurnPhase.SUBSTITUTION)
         throw GameError.EquipItemRestriction()
 
@@ -399,102 +386,8 @@ fun Game.unequip(player: Player, character: Character, idx: Int): Game {
 
     return copy(board = updatedBoard, players = updatedPlayers)
 }
-fun Game.drawItem(player: Player, boardTile: BoardTile): Game {
 
-    if(player.user.id != turn.playerTurn.first())
-        throw GameError.NotYourTurn()
-
-    if(boardTile.cooldown != 0u)
-        throw BoardError.EffectInCooldown(boardTile.tile.specialEffect.type.name, boardTile.cooldown!!.toInt())
-
-    val newBoard = board.tiles.map{
-        if(it == boardTile) boardTile.copy(cooldown = boardTile.tile.specialEffect.maxCooldown)
-        else it
-    }
-
-    val items = when(boardTile.tile.specialEffect.type) {
-        TileEffectTypes.Chest -> listOf(itemDeck.filter{ (item, _) -> !item.grade.special() }.draw())
-
-        TileEffectTypes.BigChest -> {
-
-            val commonItem = itemDeck
-                .filter{ (item, _) -> !item.grade.special() }
-                .draw()
-
-            val charactersOnBoard = board.tiles.mapNotNull{ it.character }
-            val evolveItems = charactersOnBoard
-                .filter{ it.evolution != null && it.evolution is ItemEvolution }
-                .map{ (it.evolution as ItemEvolution).item }
-
-            val specialItem = itemDeck
-                .filter{ (item, _) -> item.grade.special() && (item.grade == Grade.KEY || item.name in evolveItems) }
-                .draw()
-
-            listOf(commonItem, specialItem)
-        }
-
-        else -> throw GameError.InvalidFormat("Draw Item", boardTile.tile.specialEffect.type.name)
-    }
-
-    val updatedPlayers = players.map{
-        if(it == player) items.fold(player) { p, item -> p.addToHand(ItemCard(item)) }
-        else it
-    }
-
-    val updatedItemDeck = items.fold(itemDeck) { deck, item -> deck.remove(item) }
-
-    return copy(
-        players = updatedPlayers,
-        board = board.copy(tiles = newBoard),
-        itemDeck = updatedItemDeck,
-    )
-}
-fun Game.updateStatModifiers(player: Player, boardTile: BoardTile): Game {
-
-    if(player.user.id != turn.playerTurn.first())
-        throw GameError.NotYourTurn()
-
-    if(boardTile.cooldown != 0u)
-        throw BoardError.EffectInCooldown(boardTile.tile.specialEffect.type.name, boardTile.cooldown!!.toInt())
-
-    val character = (boardTile.character as? PlayableCharacter)
-        ?: throw BoardError.EmptyTile()
-
-    if(character.name != player.currentCharacter)
-        throw BoardError.ApplyEffectOnYourCharacter()
-
-    val specialEffect = boardTile.tile.specialEffect
-    val statModifier = specialEffect.getStatModifier()
-    val range = specialEffect.range.toInt()
-
-    val distances = board.connectionDistancesFrom(boardTile)
-    val affectedTiles =
-        if(specialEffect.isPositive()) distances.filter { it.value <= range }.keys
-        else distances.filter{ it.value in 1..range }.keys
-
-    val newBoard = board.tiles.map{ tile ->
-
-        val isOrigin = tile.pos == boardTile.pos
-        val affectedTile = affectedTiles.find { it.pos == tile.pos }
-
-        val newCooldown = if(isOrigin) specialEffect.maxCooldown else tile.cooldown
-
-        val updatedCharacter = if(affectedTile != null && tile.character is PlayableCharacter) {
-            tile.character.copy(activeStatModifiers = tile.character.activeStatModifiers + statModifier)
-        } else tile.character
-
-        tile.copy(
-            cooldown = newCooldown,
-            character = updatedCharacter
-        )
-    }
-
-    return copy(
-        board = board.copy(tiles = newBoard)
-    )
-}
 fun Game.battle(attacker: Character, defender: Character): Game {
-
     if(battle != null) throw GameError.BattleNotConcluded()
     if(turn.phase != TurnPhase.MOVEMENT)
         throw GameError.MoveToBattleRestriction()
@@ -508,7 +401,8 @@ fun Game.battle(attacker: Character, defender: Character): Game {
             origin = character,
             target = null,
             action = PossibleBattleActions.FLEE,
-            stats = Stats()
+            stats = Stats(),
+            turn = turn.gameTurn.toInt()
         )
     }
     val itemBet = mainPlayers.map{ player ->
@@ -548,14 +442,14 @@ fun Game.battle(attacker: Character, defender: Character): Game {
     )
 }
 fun Game.joinBattle(player: Player, character: Character): Game {
-
     if(battle == null) throw GameError.NoBattleOngoing()
 
     val ready = BattleAction(
         origin = character,
         target = null,
         action = PossibleBattleActions.FLEE,
-        stats = Stats()
+        stats = Stats(),
+        turn = turn.gameTurn.toInt()
     )
 
     val itemCards = player.hand.mapNotNull{ card -> (card.value as? ItemCard) }
@@ -572,35 +466,8 @@ fun Game.joinBattle(player: Player, character: Character): Game {
         )
     )
 }
-fun Game.leaveBattle(character: Character): Game {
 
-    if(battle == null) throw GameError.NoBattleOngoing()
-
-    val idx = battle.characters.indexOf(character)
-    if(idx == 0 || idx == 1) throw BattleError.CantLeaveBattle()
-
-    return copy(battle = battle.copy(characters = battle.characters - character))
-}
-fun Game.addActionToPending(origin: Character, target: Character?, action: PossibleBattleActions): Game {
-
-    if(battle == null)
-        throw GameError.NoBattleOngoing()
-
-    if(battle.pending.any{ it.origin.name == origin.name })
-        throw BattleError.ActionAlreadyQueued()
-
-    val battleAction =
-        BattleAction(
-            origin = origin,
-            target = target,
-            action = action,
-            stats = Stats()
-        )
-
-    return copy(battle = battle.copy(pending = battle.pending + battleAction))
-}
 fun Game.removeActionFromPending(character: Character): Game {
-
     if(battle == null)
         throw GameError.NoBattleOngoing()
 
@@ -610,7 +477,6 @@ fun Game.removeActionFromPending(character: Character): Game {
     return copy(battle = battle.copy(pending = battle.pending - action))
 }
 fun Game.resolvePending(): Game {
-
     if(battle == null)
         throw GameError.NoBattleOngoing()
 
@@ -654,8 +520,8 @@ fun Game.resolvePending(): Game {
                 turn = turn.copy(deadline = newDeadline(BATTLE_TURN_DURATION_SECONDS))
             )
 }
-fun Game.resolveBattleEnd(battle: Battle, winner: Character): Game {
 
+fun Game.resolveBattleEnd(battle: Battle, winner: Character): Game {
     val fled = battle.characters.filter{ character ->
         character.activeStatModifiers.any{ mod -> mod.type == ModifierType.BATTLE_FLEE && mod.stats.hp != 0 }
     }.map{ it.name }
@@ -706,7 +572,6 @@ fun Game.resolveBattleEnd(battle: Battle, winner: Character): Game {
     )
 }
 fun Game.deleteBattle(): Game{
-
     if(battle == null)
         throw GameError.NoBattleOngoing()
 
@@ -745,7 +610,6 @@ fun Game.deleteBattle(): Game{
     ).checkWinner()
 }
 fun Game.handleTimeOutTurnZero(): Game {
-
     val player = players.find{ it.user.id == turn.playerTurn.first() }
         ?: throw GameError.PlayerNotFound(turn.playerTurn.first().toInt(), null, id.toInt())
 
@@ -758,7 +622,6 @@ fun Game.handleTimeOutTurnZero(): Game {
     }
 }
 fun Game.handleTimeOutOutsideOfBattle(): Game {
-
     val player = players.find{ it.user.id == turn.playerTurn.first() }
         ?: throw GameError.PlayerNotFound(turn.playerTurn.first().toInt(), null, id.toInt())
 
@@ -776,8 +639,8 @@ fun Game.handleTimeOutOutsideOfBattle(): Game {
     return if(substitutionPhase.turn.playerTurn != turn.playerTurn) substitutionPhase
            else substitutionPhase.nextTurn()
 }
-private fun Game.handleTimeOutConstructionPhase(player: Player): Game {
 
+private fun Game.handleTimeOutConstructionPhase(player: Player): Game {
     val randomTileCard = player.hand
         .filterValues { it.type == CardType.TILE }
         .entries
@@ -812,7 +675,6 @@ private fun Game.handleTimeOutConstructionPhase(player: Player): Game {
     return newGame.copy(turn = turn.copy(phase = TurnPhase.SUBSTITUTION))
 }
 private fun Game.handleTimeOutSubstitutionPhase(player: Player): Game {
-
     val anyCharacterInHand = player.hand.numCharacterCards() > 0
     val randomTile = board.tiles
         .filter{ it.character == null }
@@ -841,34 +703,125 @@ private fun Game.handleTimeOutSubstitutionPhase(player: Player): Game {
         )
     }
 }
-fun Game.handleTimeOutStartingBattle(): Game {
 
+
+
+/*
+
+fun Game.updateStatModifiers(player: Player, boardTile: BoardTile): Game {
+
+    if(player.user.id != turn.playerTurn.first())
+        throw GameError.NotYourTurn()
+
+    if(boardTile.cooldown != 0u)
+        throw BoardError.EffectInCooldown(boardTile.tile.specialEffect.type.name, boardTile.cooldown!!.toInt())
+
+    val character = (boardTile.character as? PlayableCharacter)
+        ?: throw BoardError.EmptyTile()
+
+    if(character.name != player.currentCharacter)
+        throw BoardError.ApplyEffectOnYourCharacter()
+
+    val specialEffect = boardTile.tile.specialEffect
+    val statModifier = specialEffect.getStatModifier()
+    val range = specialEffect.range.toInt()
+
+    val distances = board.connectionDistancesFrom(boardTile)
+    val affectedTiles =
+        if(specialEffect.isPositive()) distances.filter { it.value <= range }.keys
+        else distances.filter{ it.value in 1..range }.keys
+
+    val newBoard = board.tiles.map{ tile ->
+
+        val isOrigin = tile.pos == boardTile.pos
+        val affectedTile = affectedTiles.find { it.pos == tile.pos }
+
+        val newCooldown = if(isOrigin) specialEffect.maxCooldown else tile.cooldown
+
+        val updatedCharacter = if(affectedTile != null && tile.character is PlayableCharacter) {
+            tile.character.copy(activeStatModifiers = tile.character.activeStatModifiers + statModifier)
+        } else tile.character
+
+        tile.copy(
+            cooldown = newCooldown,
+            character = updatedCharacter
+        )
+    }
+
+    return copy(
+        board = board.copy(tiles = newBoard)
+    )
+}
+
+
+
+fun Game.drawItem(player: Player, boardTile: BoardTile): Game {
+
+    if(player.user.id != turn.playerTurn.first())
+        throw GameError.NotYourTurn()
+
+    if(boardTile.cooldown != 0u)
+        throw BoardError.EffectInCooldown(boardTile.tile.specialEffect.type.name, boardTile.cooldown!!.toInt())
+
+    val newBoard = board.tiles.map{
+        if(it == boardTile) boardTile.copy(cooldown = boardTile.tile.specialEffect.maxCooldown)
+        else it
+    }
+
+    val items = when(boardTile.tile.specialEffect.type) {
+        TileEffectTypes.Chest -> listOf(itemDeck.filter{ (item, _) -> !item.grade.special() }.draw())
+
+        TileEffectTypes.BigChest -> {
+
+            val commonItem = itemDeck
+                .filter{ (item, _) -> !item.grade.special() }
+                .draw()
+
+            val charactersOnBoard = board.tiles.mapNotNull{ it.character }
+            val evolveItems = charactersOnBoard
+                .filter{ it.evolution != null && it.evolution is ItemEvolution }
+                .map{ (it.evolution as ItemEvolution).item }
+
+            val specialItem = itemDeck
+                .filter{ (item, _) -> item.grade.special() && (item.grade == Grade.KEY || item.name in evolveItems) }
+                .draw()
+
+            listOf(commonItem, specialItem)
+        }
+
+        else -> throw GameError.InvalidFormat("Draw Item", boardTile.tile.specialEffect.type.name)
+    }
+
+    val updatedPlayers = players.map{
+        if(it == player) items.fold(player) { p, item -> p.addToHand(ItemCard(item)) }
+        else it
+    }
+
+    val updatedItemDeck = items.fold(itemDeck) { deck, item -> deck.remove(item) }
+
+    return copy(
+        players = updatedPlayers,
+        board = board.copy(tiles = newBoard),
+        itemDeck = updatedItemDeck,
+    )
+}
+
+fun Game.leaveBattle(character: Character): Game {
     if(battle == null) throw GameError.NoBattleOngoing()
 
-    val charactersReady = battle.pending.map{ it.origin.name }
-    val charactersNotReady = battle.characters.filter{ character ->
-        character.name !in charactersReady
-    }
+    val idx = battle.characters.indexOf(character)
+    if(idx == 0 || idx == 1) throw BattleError.CantLeaveBattle()
 
-    val newGame = charactersNotReady.fold(this){ currentGame, character ->
-        currentGame.leaveBattle(character)
-    }
-
-    return newGame.resolvePending()
+    return copy(battle = battle.copy(characters = battle.characters - character))
 }
-fun Game.handleTimeOutDuringOrAfterBattle(): Game {
 
-    if(battle == null) throw GameError.NoBattleOngoing()
+fun Game.addActionToPending(battleAction: BattleAction): Game {
+    if(battle == null)
+        throw GameError.NoBattleOngoing()
 
-    val charactersReady = battle.pending.map{ it.origin.name }
-    val charactersNotReady = battle.characters.filter{ character ->
-        character.name !in charactersReady
-    }
+    if(battle.pending.any{ it.origin.name == battleAction.origin.name })
+        throw BattleError.ActionAlreadyQueued()
 
-    val newGame = charactersNotReady.fold(this){ currentGame, character ->
-        currentGame.addActionToPending(character, null, PossibleBattleActions.FLEE)
-    }
-
-    return  if(battle.phase == BattlePhase.BATTLING) newGame.resolvePending()
-            else newGame.deleteBattle()
+    return copy(battle = battle.copy(pending = battle.pending + battleAction))
 }
+ */

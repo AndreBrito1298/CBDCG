@@ -12,6 +12,7 @@ import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.game.Battle
+import isel.pt.cbdcg.domain.game.BattleAction
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CardType
 import isel.pt.cbdcg.domain.game.CharacterCard
@@ -27,6 +28,7 @@ import isel.pt.cbdcg.domain.game.board.findPath
 import isel.pt.cbdcg.domain.game.board.tile.rotate
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
+import isel.pt.cbdcg.domain.game.character.Stats
 import isel.pt.cbdcg.domain.game.character.adjustStats
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -945,9 +947,7 @@ class AppViewModel(
         }
 
         return viewModelScope.launch {
-
             ui.update { it.copy(isLoading = true, errorMessage = null) }
-
             clientApi.moveCharacter(
                 user.id,
                 game.id,
@@ -1033,7 +1033,6 @@ class AppViewModel(
         }
     }
     fun challenge(swap: Boolean = false): Job? {
-
         val session = ui.value.session
         val gameUI = ui.value.gameUI
         if(session !is SessionState.InGame) return null
@@ -1121,13 +1120,14 @@ class AppViewModel(
         }
 
         return viewModelScope.launch {
+            val player = game.players.find { user.id == it.user.id }
             ui.update { it.copy(isLoading = true, errorMessage = null) }
-
             clientApi.drawItem(
                 user.id,
                 game.id,
                 token,
-                boardTile
+                boardTile,
+                player!!
             ).fold(
                 onSuccess = { newGame ->
                     ui.update {
@@ -1172,10 +1172,10 @@ class AppViewModel(
         }
 
         return viewModelScope.launch {
-
+            val player = game.players.find { user.id == it.user.id }
             ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            clientApi.statModifierEffect(user.id, game.id, token, boardTile).fold(
+            clientApi.statModifierEffect(user.id, game.id, token, boardTile, player!!).fold(
                 onSuccess = { newGame ->
                     ui.update {
                         it.copy(
@@ -1252,7 +1252,6 @@ class AppViewModel(
         }
     }
     fun attack(): Job? {
-
         val session = ui.value.session
         val gameUI = ui.value.gameUI
         if(session !is SessionState.InGame) return null
@@ -1271,7 +1270,8 @@ class AppViewModel(
         return viewModelScope.launch {
             ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            clientApi.actInBattle(user.id, game.id, token, PossibleBattleActions.ATTACK, origin, gameUI.state.target).fold(
+            clientApi.actInBattle(user.id, game.id, token,
+                BattleAction(origin, gameUI.state.target, PossibleBattleActions.ATTACK, Stats(),game.turn.gameTurn.toInt())).fold(
                 onSuccess = { newGame ->
                     ui.update{
 
@@ -1357,7 +1357,6 @@ class AppViewModel(
         }
     }
     fun actInBattle(action: PossibleBattleActions): Job? {
-
         val session = ui.value.session
         val gameUI = ui.value.gameUI
         if(session !is SessionState.InGame) return null
@@ -1375,8 +1374,7 @@ class AppViewModel(
 
         return viewModelScope.launch {
             ui.update { it.copy(isLoading = true, errorMessage = null) }
-
-            clientApi.actInBattle(user.id, game.id, token, action, origin).fold(
+            clientApi.actInBattle(user.id, game.id, token,BattleAction(origin, null, action, Stats(), game.turn.gameTurn.toInt())).fold(
                 onSuccess = { newGame ->
                     ui.update{
                         it.copy(
@@ -1398,7 +1396,6 @@ class AppViewModel(
         }
     }
     fun undoBattleAction(): Job? {
-
         val session = ui.value.session
         val gameUI = ui.value.gameUI
         if(session !is SessionState.InGame) return null
@@ -1455,7 +1452,8 @@ class AppViewModel(
 
             ui.update { it.copy(isLoading = true, errorMessage = null) }
 
-            clientApi.leaveBattle(user.id, game.id, token, gameUI.state.playerCharacter).fold(
+            clientApi.leaveBattle(user.id, game.id, token, BattleAction(gameUI.state.playerCharacter, null,
+                PossibleBattleActions.FLEE, Stats(), game.turn.gameTurn.toInt())).fold(
                 onSuccess = { newGame ->
                     ui.update{
                         it.copy(

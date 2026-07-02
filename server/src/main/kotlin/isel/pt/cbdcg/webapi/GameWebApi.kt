@@ -117,20 +117,6 @@ fun Route.gameWebApi(gameService: GameService) {
 
         }
 
-        post("/sdasdadw") {
-            val input = call.receive<BoardTileEffectDTO>()
-            val result = gameService.applyGameUpdater(
-                userId = input.userId.toUInt(),
-                gameId = input.gameId.toUInt(),
-                token = input.token,
-                updaterName = input.updaterName,
-                origin = input.origin.toBoardTile(),
-                targets = input.target.map { it.toBoardTile() },
-            ).getOrThrow()
-
-            call.respond(HttpStatusCode.OK, result.toGameDTO())
-        }
-
         post("/applyGameUpdater") {
             val input = call.receive<GameUpdaterDTO>()
             val result = gameService.applyGameUpdater(
@@ -143,6 +129,24 @@ fun Route.gameWebApi(gameService: GameService) {
             ).getOrThrow()
 
             call.respond(HttpStatusCode.OK, result.toGameDTO())
+        }
+    }
+}
+
+/*
+   post("/update-modifiers"){
+
+            val input = call.receive<SimpleInGameActionDTO>()
+
+            val result = gameService.updateStatModifiers(
+                userId = input.userId.toUInt(),
+                gameId = input.gameId.toUInt(),
+                token = input.token,
+                origin = input.origin.toBoardTile(),
+            ).getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.toGameDTO())
+
         }
 
         post("/draw-item"){
@@ -159,25 +163,9 @@ fun Route.gameWebApi(gameService: GameService) {
             call.respond(HttpStatusCode.OK, result.toGameDTO())
         }
 
-        post("/update-modifiers"){
 
-            val input = call.receive<SimpleInGameActionDTO>()
-
-            val result = gameService.updateStatModifiers(
-                userId = input.userId.toUInt(),
-                gameId = input.gameId.toUInt(),
-                token = input.token,
-                origin = input.origin.toBoardTile(),
-            ).getOrThrow()
-
-            call.respond(HttpStatusCode.OK, result.toGameDTO())
-
-        }
-
-        route("/battle"){
-
+  route("/battle"){
             post{
-
                 val input = call.receive<StartBattleDTO>()
 
                 val result = gameService.battle(
@@ -204,7 +192,6 @@ fun Route.gameWebApi(gameService: GameService) {
                 ).getOrThrow()
 
                 call.respond(HttpStatusCode.OK, result.toGameDTO())
-
             }
 
             post("/act"){
@@ -252,5 +239,4 @@ fun Route.gameWebApi(gameService: GameService) {
                 call.respond(HttpStatusCode.OK, result.toGameDTO())
             }
         }
-    }
-}
+ */

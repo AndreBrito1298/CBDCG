@@ -9,6 +9,10 @@ import io.ktor.server.http.content.staticResources
 import io.ktor.server.netty.*
 import io.ktor.server.routing.*
 import isel.pt.cbdcg.configs.dbInit
+import isel.pt.cbdcg.repository.database.GameRepositoryDB
+import isel.pt.cbdcg.repository.database.ParticipantRepositoryDB
+import isel.pt.cbdcg.repository.database.TableRepositoryDB
+import isel.pt.cbdcg.repository.database.UserRepositoryDB
 import isel.pt.cbdcg.repository.memory.GameRepositoryMem
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
 import isel.pt.cbdcg.repository.memory.TableRepositoryMem
@@ -26,7 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
 fun main() {
-    dbInit()
+    dbInit(true)
     embeddedServer(Netty, port = SERVER_PORT, host = "0.0.0.0", module = Application::module)
         .start(wait = true)
 }

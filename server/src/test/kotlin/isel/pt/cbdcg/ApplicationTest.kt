@@ -20,7 +20,7 @@ import kotlin.test.assertEquals
 class ApplicationTest {
 
     @BeforeTest
-    fun clearState() {
+    suspend fun clearState() {
         UserRepositoryMem.clear()
         TableRepositoryMem.clear()
         ParticipantRepositoryMem.participants.clear()

@@ -4,11 +4,14 @@ import isel.pt.cbdcg.domain.game.Deck
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.Spectator
+import isel.pt.cbdcg.domain.game.Turn
 import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.board.tile.Tile
 import isel.pt.cbdcg.domain.game.character.Item
 import isel.pt.cbdcg.domain.game.toBattleDTO
+import isel.pt.cbdcg.domain.game.toTurnDTO
+import isel.pt.cbdcg.dto.TurnDTO
 import isel.pt.cbdcg.repository.GameRepository
 import isel.pt.cbdcg.repository.database.Tables.Game.GamePlayers
 import isel.pt.cbdcg.repository.database.Tables.Game.GamePlayersDao
@@ -35,15 +38,15 @@ object GameRepositoryDB: GameRepository{
         itemDeck: Deck<Item>
     ): Game =
         suspendTransaction {
-
             val game = GamesDao.new {
-                gameTurn = 0
-                currentTurnPhase = TurnPhase.CONSTRUCTION
+                //gameTurn = 0
+               // currentTurnPhase = TurnPhase.CONSTRUCTION
+                turn = Turn(0u, turnOrder, TurnPhase.CONSTRUCTION, 0).toTurnDTO()
                 itemsDeck = itemDeck.itemDeckToDb()
                 tileDeck = startingDeck.tileDeckToDb()
               //  currentPlayer = players.minByOrNull { turnOrder.indexOf(it.user.id) }!!.user.id.toInt()
                 battle = null
-                playerTurnQueue = turnOrder.map { it.toInt() }.toTypedArray()   // NEW
+              //  playerTurnQueue = turnOrder.map { it.toInt() }.toTypedArray()   // NEW
             }
 
             players.forEach { player ->
@@ -93,11 +96,12 @@ object GameRepositoryDB: GameRepository{
                 }
             }
 
-            game.playerTurnQueue = element.turn.playerTurn.map { it.toInt() }.toTypedArray()  // persist the queue itself
+            game.turn = element.turn.toTurnDTO()
+           // game.playerTurnQueue = element.turn.playerTurn.map { it.toInt() }.toTypedArray()  // persist the queue itself
             game.itemsDeck = element.itemDeck.itemDeckToDb()
             game.tileDeck = element.tileDeck.tileDeckToDb()
-            game.gameTurn = element.turn.gameTurn.toInt()
-            game.currentTurnPhase = element.turn.phase
+          //  game.gameTurn = element.turn.gameTurn.toInt()
+          //  game.currentTurnPhase = element.turn.phase
             game.battle = element.battle?.toBattleDTO()
 
             saveBoard(game.id.value, element.board)

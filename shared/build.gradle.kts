@@ -21,8 +21,14 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.kotlinx.serializationJson)
         }
+        jvmMain.dependencies {
+            implementation(libs.reflections)
+        }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
+    }
+    sourceSets.jvmMain.dependencies {
+        implementation(kotlin("reflect"))
     }
 }

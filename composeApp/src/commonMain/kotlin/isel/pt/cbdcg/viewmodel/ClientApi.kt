@@ -21,18 +21,17 @@ import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.domain.game.BattleAction
 import isel.pt.cbdcg.domain.game.Card
-import isel.pt.cbdcg.domain.game.Entity
 import isel.pt.cbdcg.domain.game.Game
+import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.PossibleBattleActions
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
-import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.character.Character
+import isel.pt.cbdcg.domain.game.character.Stats
 import isel.pt.cbdcg.domain.game.toGame
 import isel.pt.cbdcg.dto.ActInBattleDTO
-import isel.pt.cbdcg.dto.StartBattleDTO
-import isel.pt.cbdcg.dto.SimpleInGameActionDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.CreateUserDTO
@@ -255,6 +254,7 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = UnequipItemDTO(userId.toInt(), gameId.toInt(), token, character.toCharacterDTO(), idx)
         ).map{ it.toGame() }
+
     suspend fun leaveGame(userId: UInt, gameId: UInt, token: String): Result<Unit> =
         fetch<Unit>(
             path = "game/leave",
@@ -272,84 +272,89 @@ class ClientApi(private val client: HttpClient) {
                 origin.toEntityDTO(),
                 arrayOf((target.toEntityDTO())))
         ).map{ it.toGame() }
-    suspend fun drawItem(userId: UInt, gameId: UInt, token: String, boardTile: BoardTile): Result<Game> =
+    suspend fun drawItem(userId: UInt, gameId: UInt, token: String, boardTile: BoardTile, player: Player): Result<Game> =
         fetch<GameDTO>(
-            path = "game/draw-item",
+            path = "game/applyGameUpdater",
             method = HttpMethod.Post,
-            body = SimpleInGameActionDTO(userId.toInt(), gameId.toInt(), token, boardTile.toBoardTileDTO())
+            body = GameUpdaterDTO(userId.toInt(), gameId.toInt(), token, "DrawItem",boardTile.toEntityDTO(), arrayOf(player.toEntityDTO()))
         ).map{ it.toGame() }
-    suspend fun statModifierEffect(userId: UInt, gameId: UInt, token: String, origin: BoardTile): Result<Game> =
+    suspend fun statModifierEffect(userId: UInt, gameId: UInt, token: String, origin: BoardTile, player: Player): Result<Game> =
         fetch<GameDTO>(
-            path = "game/update-modifiers",
+            path = "game/applyGameUpdater",
             method = HttpMethod.Post,
-            body = SimpleInGameActionDTO(
+            body = GameUpdaterDTO(
                 userId = userId.toInt(),
                 gameId = gameId.toInt(),
                 token = token,
-                origin = origin.toBoardTileDTO(),
+                updaterName = "UpdateStatModifiers",
+                origin = origin.toEntityDTO(),
+                target = arrayOf(player.toEntityDTO()),
             )
         ).map{ it.toGame() }
-    suspend fun challenge(userId: UInt, gameId: UInt, token: String, attacker: Character, defender: Character): Result<Game> =
+    suspend fun challenge(userId: UInt, gameId: UInt, token: String, origin: Character, targets: Character): Result<Game> =
         fetch<GameDTO>(
-            path = "game/battle",
+            path = "game/applyGameUpdater",
             method = HttpMethod.Post,
-            body = StartBattleDTO(
+            body = GameUpdaterDTO(
                 userId = userId.toInt(),
                 gameId = gameId.toInt(),
                 token = token,
-                attacker = attacker.toCharacterDTO(),
-                defender = defender.toCharacterDTO()
+                updaterName = "BattleStart",
+                origin = origin.toEntityDTO(),
+                target = arrayOf(targets.toEntityDTO())
             )
         ).map{ it.toGame() }
-    suspend fun actInBattle(userId: UInt, gameId: UInt, token: String, action: PossibleBattleActions, origin: Character, target: Character? = null): Result<Game> =
+    suspend fun actInBattle(userId: UInt, gameId: UInt, token: String, origin: BattleAction): Result<Game> =
         fetch<GameDTO>(
-            path = "game/battle/act",
+            path = "game/applyGameUpdater",
             method = HttpMethod.Post,
-            body = ActInBattleDTO(
+            body = GameUpdaterDTO(
                 userId = userId.toInt(),
                 gameId = gameId.toInt(),
                 token = token,
-                action = action.name,
-                origin = origin.toCharacterDTO(),
-                target = target?.toCharacterDTO(),
+                updaterName = "AddActionToPending",
+                origin = origin.toEntityDTO(),
+                target = arrayOf(),
             )
         ).map{ it.toGame() }
+
     suspend fun undoBattleAction(userId: UInt, gameId: UInt, token: String, origin: Character): Result<Game> =
         fetch<GameDTO>(
-            path = "game/battle/undo",
+            path = "game/applyGameUpdater",
             method = HttpMethod.Post,
-            body = ActInBattleDTO(
+            body = GameUpdaterDTO(
                 userId = userId.toInt(),
                 gameId = gameId.toInt(),
                 token = token,
-                action = "",
-                origin = origin.toCharacterDTO(),
-                target = null,
+                updaterName = "RemoveActionFromPending",
+                origin = origin.toEntityDTO(),
+                target = arrayOf(),
             )
         ).map{ it.toGame() }
     suspend fun participateInBattle(userId: UInt, gameId: UInt, token: String, character: Character, accept: Boolean): Result<Game> =
         fetch<GameDTO>(
-            path = "game/battle/participate",
+            path = "game/applyGameUpdater",
             method = HttpMethod.Post,
-            body = ParticipateInBattleDTO(
+            body = GameUpdaterDTO(
                 userId = userId.toInt(),
                 gameId = gameId.toInt(),
                 token = token,
-                character = character.toCharacterDTO(),
-                accept = accept,
+                updaterName = if(accept) "JoinBattle" else "LeaveBattle",
+                origin = character.toEntityDTO(),
+                target = arrayOf(),
             )
         ).map{ it.toGame() }
-    suspend fun leaveBattle(userId: UInt, gameId: UInt, token: String, character: Character): Result<Game> =
+    suspend fun leaveBattle(userId: UInt, gameId: UInt, token: String, origin: BattleAction): Result<Game> =
         fetch<GameDTO>(
-            path = "game/battle/leave",
+            path = "game/applyGameUpdater",
             method = HttpMethod.Post,
-            body = ActInBattleDTO(
+            body = GameUpdaterDTO(
                 userId = userId.toInt(),
                 gameId = gameId.toInt(),
                 token = token,
-                action = "FLEE",
-                origin = character.toCharacterDTO(),
-                target = null,
+                updaterName = "AddActionToPending",
+                origin = origin.toEntityDTO(),
+                target = arrayOf(),
             )
         ).map{ it.toGame() }
 

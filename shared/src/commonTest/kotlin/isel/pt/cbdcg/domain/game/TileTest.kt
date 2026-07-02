@@ -1,7 +1,8 @@
 package isel.pt.cbdcg.domain.game
 
 import isel.pt.cbdcg.domain.game.board.Direction
-import isel.pt.cbdcg.domain.game.board.Tile
+import isel.pt.cbdcg.domain.game.board.tile.Tile
+import isel.pt.cbdcg.domain.game.board.tile.canConnectTo
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

@@ -7,6 +7,9 @@ import isel.pt.cbdcg.domain.Table
 import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.error.UserError
+import isel.pt.cbdcg.repository.ParticipantRepository
+import isel.pt.cbdcg.repository.TableRepository
+import isel.pt.cbdcg.repository.UserRepository
 import isel.pt.cbdcg.repository.database.ParticipantRepositoryDB
 import isel.pt.cbdcg.repository.database.TableRepositoryDB
 import isel.pt.cbdcg.repository.database.UserRepositoryDB
@@ -18,9 +21,9 @@ import kotlin.collections.plus
 import kotlin.runCatching
 
 class TableService(
-    private val userRepo: UserRepositoryDB,
-    private val tableRepo: TableRepositoryDB,
-    private val participantRepo: ParticipantRepositoryDB,
+    private val userRepo: UserRepository,
+    private val tableRepo: TableRepository,
+    private val participantRepo: ParticipantRepository,
     private val events: EventsPublisher,
 ) {
 
