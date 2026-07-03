@@ -1,6 +1,7 @@
 package isel.pt.cbdcg.domain.game
 
 import isel.pt.cbdcg.domain.game.board.tile.Tile
+import isel.pt.cbdcg.domain.game.board.tile.TileEffect
 import isel.pt.cbdcg.domain.game.board.tile.toTile
 import isel.pt.cbdcg.domain.game.board.tile.toTileDTO
 import isel.pt.cbdcg.domain.game.character.Character
@@ -68,6 +69,8 @@ data class CharacterCard(
 }
 
 fun Character?.toCard() = CharacterCard(checkNotNull(this){ "Character should not be null for card conversion" })
+fun Item?.toCard() = ItemCard(checkNotNull(this){ "Item should not be null for card conversion" })
+fun TileEffect.toCard() = TileCard(Tile(listOf(), checkNotNull(this){ "TileEffect should not be null for card conversion" }))
 
 data class ItemCard(
     val item: Item

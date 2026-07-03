@@ -13,6 +13,7 @@ import isel.pt.cbdcg.views.game.GameScreen
 import isel.pt.cbdcg.views.game.SpectatorScreen
 import isel.pt.cbdcg.views.lobby.SearchTablesScreen
 import isel.pt.cbdcg.views.lobby.WaitingTableScreen
+import isel.pt.cbdcg.views.startMenu.CatalogScreen
 import isel.pt.cbdcg.views.startMenu.CreateUserScreen
 import isel.pt.cbdcg.views.startMenu.MenuScreen
 import isel.pt.cbdcg.views.startMenu.LoginScreen
@@ -50,7 +51,7 @@ fun AppNavHost(vm: AppViewModel) {
             }
             AppDestination.Lobby -> {
                 nav.navigate(SearchTablesRoute) {
-                    popUpTo(MenuRoute) { inclusive = false } // Ignore Login/Creation menu
+                    popUpTo(MenuRoute) { inclusive = false }
                     launchSingleTop = true
                 }
             }
@@ -78,6 +79,7 @@ fun AppNavHost(vm: AppViewModel) {
             MenuScreen(
                 loginNav = { nav.navigate(LoginRoute) },
                 createUserNav = { nav.navigate(CreateUserRoute) },
+                catalogNav = { nav.navigate(GameCatalogRoute) }
             )
         }
 
@@ -103,6 +105,13 @@ fun AppNavHost(vm: AppViewModel) {
                         password = password,
                     )
                 }
+            )
+        }
+
+        composable<GameCatalogRoute> {
+            CatalogScreen(
+                mainMenuNav = { },
+                getDrawable = { vm.getDrawable(it) },
             )
         }
 

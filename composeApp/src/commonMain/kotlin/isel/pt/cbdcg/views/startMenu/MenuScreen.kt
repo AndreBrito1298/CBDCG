@@ -18,7 +18,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun MenuScreen(
     loginNav: () -> Unit,
-    createUserNav: () -> Unit
+    createUserNav: () -> Unit,
+    catalogNav: () -> Unit,
 ){
 
     Column(
@@ -47,6 +48,13 @@ fun MenuScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Create User")
+        }
+
+        Button(
+            onClick = catalogNav,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Game Catalog")
         }
     }
 }

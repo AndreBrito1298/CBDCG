@@ -112,7 +112,7 @@ class AppViewModel(
         }
     private fun updateInGameState(user: User, newGame: Game, currentGame: Game, currentUI: GameUI): GameUI {
 
-        // Remove UI only gray filter for characters
+        // Remove UI-only gray filter for characters
         val ui =
             if(newGame.turn.playerTurn != currentGame.turn.playerTurn) currentUI.copy(battledCharactersPosition = emptyList())
             else currentUI

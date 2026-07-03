@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 fun main() {
-    dbInit(true)
+    // dbInit(true)
     embeddedServer(Netty, port = SERVER_PORT, host = "0.0.0.0", module = Application::module)
         .start(wait = true)
 }
@@ -60,7 +60,7 @@ fun Application.module() {
             CoroutineScope(SupervisorJob() + Dispatchers.Default)
         )
 
- val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     cleanupScope.launch {
         while (true) {
             delay(timeBetweenCleanup.milliseconds)
@@ -71,8 +71,6 @@ fun Application.module() {
     monitor.subscribe(ApplicationStopped) {
         cleanupScope.cancel()
     }
-
-
 
     routing {
         userWebApi(userService, httpClient)
