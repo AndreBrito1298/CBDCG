@@ -44,7 +44,6 @@ import isel.pt.cbdcg.domain.game.joinBattle
 import isel.pt.cbdcg.domain.game.leaveGame
 import isel.pt.cbdcg.domain.game.nextPhase
 import isel.pt.cbdcg.domain.game.placeOnBoard
-import isel.pt.cbdcg.domain.game.removeActionFromPending
 import isel.pt.cbdcg.domain.game.resolvePending
 import isel.pt.cbdcg.domain.game.resolveTurnZero
 import isel.pt.cbdcg.domain.game.unequip
@@ -71,7 +70,6 @@ class GameService(
     private val events: EventsPublisher,
     private val scope: CoroutineScope,
 ) {
-
     private val timerJobs = mutableMapOf<UInt, Job>()
     private fun scheduleTurnTimer(game: Game) {
 
@@ -109,7 +107,6 @@ class GameService(
                     else currentGame.handleTimeOutDuringOrAfterBattle()
 
                 savePublishAndSchedule(newGame)
-
             }
         }
     }
@@ -350,19 +347,7 @@ class GameService(
         savePublishAndSchedule(newGame)
     }
 
-    suspend fun undoBattleAction(userId: UInt, gameId: UInt, token: String, origin: Character): Result<Game> = runCatching {
 
-        val user = userRepo.findById(userId)
-            ?: throw UserError.IdNotFound()
-        token.verifyToken(user, gameId, this.userRepo)
-
-        val game = gameRepo.findById(gameId)
-            ?: throw GameError.GameNotFound(gameId.toInt())
-
-        val newGame = game.removeActionFromPending(origin)
-
-        saveAndPublish(newGame)
-    }
 }
 
 

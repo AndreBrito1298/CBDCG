@@ -37,6 +37,7 @@ import isel.pt.cbdcg.domain.game.character.adjustStats
 import isel.pt.cbdcg.domain.game.character.special
 import isel.pt.cbdcg.domain.game.character.toItem
 import isel.pt.cbdcg.domain.game.character.toItemDTO
+import isel.pt.cbdcg.domain.game.character.usePassive
 import isel.pt.cbdcg.dto.BattleActionDTO
 import isel.pt.cbdcg.dto.EntityDTO
 import isel.pt.cbdcg.dto.GameDTO
@@ -257,6 +258,7 @@ fun Game.startNextTurn(): Game {
         turn = turn.copy(phase = nextPhase, deadline = newDeadline(TURN_DURATION_SECONDS))
     )
 }
+
 fun Game.leaveGame(player: Player, toSpectator: Boolean = false): Game {
     val newPlayers = players.filter { it.user.id != player.user.id }
     if(newPlayers.size == 1) return copy(
@@ -284,7 +286,6 @@ fun Game.leaveGame(player: Player, toSpectator: Boolean = false): Game {
         tileDeck = newTileDeck,
         itemDeck = newItemDeck
     )
-
     return if(turn.playerTurn.first() == player.user.id) newGame.nextTurn()
            else newGame
 }
@@ -467,15 +468,6 @@ fun Game.joinBattle(player: Player, character: Character): Game {
     )
 }
 
-fun Game.removeActionFromPending(character: Character): Game {
-    if(battle == null)
-        throw GameError.NoBattleOngoing()
-
-    val action = battle.pending.find{ it.origin == character }
-        ?: throw BattleError.ActionNotQueued()
-
-    return copy(battle = battle.copy(pending = battle.pending - action))
-}
 fun Game.resolvePending(): Game {
     if(battle == null)
         throw GameError.NoBattleOngoing()
@@ -484,19 +476,35 @@ fun Game.resolvePending(): Game {
         .filter{ it.adjustStats().hp > 0 }
         .sortedByDescending { it.adjustStats().spe }
 
-    if(battle.pending.size < availableCharacters.size) return this
-    if(battle.currentTurn == 0u)
+    val battleAfterPassives = availableCharacters.fold(battle) { currentBattle, character ->
+        val updatedCharacter = (character as PlayableCharacter).passive.usePassive(character, currentBattle)
+
+        currentBattle.copy(
+            characters = currentBattle.characters.map {
+                if (it.name == character.name) updatedCharacter else it
+            }
+        )
+    }
+
+    val availableCharactersAfterPassives = battleAfterPassives.characters
+        .filter { it.adjustStats().hp > 0 }
+        .sortedByDescending { it.adjustStats().spe }
+
+    if(battleAfterPassives.pending.size < availableCharactersAfterPassives.size)
+        return copy(battle = battleAfterPassives)
+
+    if(battleAfterPassives.currentTurn == 0u)
         return copy(
-            battle = battle.copy(phase = BattlePhase.BATTLING, pending = emptyList(), currentTurn = 1u),
+            battle = battleAfterPassives.copy(phase = BattlePhase.BATTLING, pending = emptyList(), currentTurn = 1u),
             turn = turn.copy(deadline = newDeadline(BATTLE_TURN_DURATION_SECONDS))
         )
 
-    val orderOfActions: List<BattleAction> = availableCharacters.map{ character ->
-        val action = battle.pending.find{ it.origin == character }
+    val orderOfActions: List<BattleAction> = availableCharactersAfterPassives.map{ character ->
+        val action = battleAfterPassives.pending.find{ it.origin.name == character.name }
         requireNotNull(action)
     }
 
-    val updatedBattle = orderOfActions.fold<BattleAction, Battle>(battle.incrementModifiers()){ currentBattle, pending ->
+    val updatedBattle = orderOfActions.fold<BattleAction, Battle>(battleAfterPassives.incrementModifiers()){ currentBattle, pending ->
         val character = currentBattle.characters.find{ it.name == pending.origin.name }
 
         if(character != null && character.adjustStats().hp > 0){
@@ -518,10 +526,10 @@ fun Game.resolvePending(): Game {
     val winner = updatedBattle.characters.filter{ it.adjustStats().hp > 0 }
 
     return  if(winner.size == 1) resolveBattleEnd(updatedBattle, winner.first())
-            else copy(
-                battle = updatedBattle.copy(pending = emptyList(), currentTurn = battle.currentTurn + 1u),
-                turn = turn.copy(deadline = newDeadline(BATTLE_TURN_DURATION_SECONDS))
-            )
+    else copy(
+        battle = updatedBattle.copy(pending = emptyList(), currentTurn = battleAfterPassives.currentTurn + 1u),
+        turn = turn.copy(deadline = newDeadline(BATTLE_TURN_DURATION_SECONDS))
+    )
 }
 
 fun Game.resolveBattleEnd(battle: Battle, winner: Character): Game {
@@ -567,13 +575,18 @@ fun Game.resolveBattleEnd(battle: Battle, winner: Character): Game {
         }
     }
 
+    val endingActions = battle.characters.map{ character ->
+        BattleAction(character, null, PossibleBattleActions.HOLD, Stats(), turn.gameTurn.toInt())
+    }
+    
     return copy(
         battle = battle.copy(phase = BattlePhase.ENDING, pending = emptyList()),
         players = updatedPlayers,
         board = board.copy(tiles = updatedBoardTiles),
         turn = turn.copy(deadline = newDeadline(BATTLE_TURN_DURATION_SECONDS))
-    ).deleteBattle()
+    )
 }
+
 fun Game.deleteBattle(): Game{
     if(battle == null)
         throw GameError.NoBattleOngoing()
@@ -826,5 +839,15 @@ fun Game.addActionToPending(battleAction: BattleAction): Game {
         throw BattleError.ActionAlreadyQueued()
 
     return copy(battle = battle.copy(pending = battle.pending + battleAction))
+}
+
+fun Game.removeActionFromPending(character: Character): Game {
+    if(battle == null)
+        throw GameError.NoBattleOngoing()
+
+    val action = battle.pending.find{ it.origin == character }
+        ?: throw BattleError.ActionNotQueued()
+
+    return copy(battle = battle.copy(pending = battle.pending - action))
 }
  */
