@@ -51,7 +51,6 @@ import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CharacterCard
 import isel.pt.cbdcg.domain.game.ItemCard
 import isel.pt.cbdcg.domain.game.PlayerHand
-import isel.pt.cbdcg.domain.game.PossibleBattleActions
 import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.board.BoardPosition
@@ -59,8 +58,6 @@ import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.BoardTiles
 import isel.pt.cbdcg.domain.game.board.getTileName
 import isel.pt.cbdcg.domain.game.character.Character
-import isel.pt.cbdcg.domain.game.character.ModifierType
-import isel.pt.cbdcg.domain.game.character.adjustStats
 import isel.pt.cbdcg.views.game.utils.board.BoardTilePossibleActions
 import isel.pt.cbdcg.views.game.utils.board.MovementPathOverlay
 import isel.pt.cbdcg.views.game.utils.board.TilePathSegment

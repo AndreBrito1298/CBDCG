@@ -1,7 +1,6 @@
 package isel.pt.cbdcg.domain.game.board
 
 import isel.pt.cbdcg.domain.game.Entity
-import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.board.tile.Tile
 import isel.pt.cbdcg.domain.game.board.tile.getAdjacent
 import isel.pt.cbdcg.domain.game.board.tile.getBlocked

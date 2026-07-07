@@ -8,7 +8,6 @@ import isel.pt.cbdcg.navigation.AppNavHost
 import isel.pt.cbdcg.viewmodel.AppViewModel
 import isel.pt.cbdcg.viewmodel.AssetRepository
 import isel.pt.cbdcg.viewmodel.ClientApi
-import isel.pt.cbdcg.views.startMenu.tutorial.TutorialScreen
 
 @Composable
 fun App(client: HttpClient) {
@@ -25,13 +24,6 @@ fun App(client: HttpClient) {
     }
 
     MaterialTheme {
-
-
-        TutorialScreen(
-            mainMenuNav = {},
-            getDrawable = { vm.getDrawable(it) },
-        )
-
-        // AppNavHost(vm)
+        AppNavHost(vm)
     }
 }
