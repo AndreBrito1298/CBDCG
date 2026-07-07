@@ -1,7 +1,5 @@
-package isel.pt.cbdcg.views.startMenu
+package isel.pt.cbdcg.views.startMenu.catalog
 
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,29 +22,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CharacterCard
 import isel.pt.cbdcg.domain.game.ItemCard
 import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.board.tile.AllTileEffects
-import isel.pt.cbdcg.domain.game.board.tile.TileEffect
 import isel.pt.cbdcg.domain.game.character.ItemCatalog
-import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.domain.game.character.PlayableCharacterCatalog
 import isel.pt.cbdcg.views.game.utils.dialog.CardStatsDialog
 import isel.pt.cbdcg.views.game.utils.dialog.TileEffectDialog
-import isel.pt.cbdcg.views.game.utils.dialog.TileEffectInfo
-import isel.pt.cbdcg.views.game.utils.misc.extra.ZoomedImage
-import isel.pt.cbdcg.views.game.utils.misc.info.CharacterInfoPanel
-import isel.pt.cbdcg.views.game.utils.misc.info.ItemInfoPanel
-import kotlin.math.absoluteValue
 import kotlin.math.ceil
-import kotlin.math.nextUp
-import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 enum class CatalogContent{ CHARACTERS, ITEMS, EVENTS, }

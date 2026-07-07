@@ -37,7 +37,6 @@ import isel.pt.cbdcg.domain.game.handleTimeOutTurnZero
 import isel.pt.cbdcg.domain.game.leaveGame
 import isel.pt.cbdcg.domain.game.nextPhase
 import isel.pt.cbdcg.domain.game.placeOnBoard
-import isel.pt.cbdcg.domain.game.removeActionFromPending
 import isel.pt.cbdcg.domain.game.resolveTurnZero
 import isel.pt.cbdcg.domain.game.unequip
 import isel.pt.cbdcg.domain.verifyToken

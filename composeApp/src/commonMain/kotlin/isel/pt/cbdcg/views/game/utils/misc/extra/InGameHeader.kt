@@ -36,5 +36,4 @@ fun InGameHeader(
             style = MaterialTheme.typography.bodyMedium
         )
     }
-
 }

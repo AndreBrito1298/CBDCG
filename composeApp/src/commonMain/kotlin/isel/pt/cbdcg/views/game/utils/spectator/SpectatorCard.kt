@@ -4,6 +4,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +44,7 @@ fun SpectatorCard(
                 ZoomedImage(
                     fileName = fileName,
                     loadDrawable = { getDrawable(fileName) },
+                    modifier = Modifier.size(128.dp),
                     zoom = 1.0f
                 )
             }
@@ -51,6 +53,7 @@ fun SpectatorCard(
                 ZoomedImage(
                     fileName = card.tile.toString(),
                     loadDrawable = { getDrawable(card.tile.toString()) },
+                    modifier = Modifier.size(128.dp),
                     zoom = 1.0f,
                 )
 
@@ -58,6 +61,7 @@ fun SpectatorCard(
                     ZoomedImage(
                         fileName = card.tile.specialEffect.type.name,
                         loadDrawable = { getDrawable(card.tile.specialEffect.type.name) },
+                        modifier = Modifier.size(128.dp),
                         zoom = 0.25f,
                     )
                 }

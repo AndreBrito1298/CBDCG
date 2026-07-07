@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views.startMenu
+package isel.pt.cbdcg.views.startMenu.authentication
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,24 +24,19 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import isel.pt.cbdcg.domain.isEmailLengthValid
 import isel.pt.cbdcg.domain.isEmailValid
-import isel.pt.cbdcg.domain.isNameFilled
-import isel.pt.cbdcg.domain.isNameLengthValid
 import isel.pt.cbdcg.domain.isPasswordLengthValid
 
 @Composable
-fun CreateUserScreen(
+fun LoginScreen(
     mainMenuNav: () -> Unit,
-    create: (String, String, String) -> Unit
+    login: (String, String) -> Unit
 ) {
 
-    var name by rememberSaveable { mutableStateOf("") }
-    var nameError by remember { mutableStateOf<String?>("") } // Disable the create button
-
     var email by rememberSaveable { mutableStateOf("") }
-    var emailError by remember { mutableStateOf<String?>("") } // Disable the create button
+    var emailError by remember { mutableStateOf<String?>("") } // Disable the login button
 
     var password by rememberSaveable { mutableStateOf("") }
-    var passwordError by remember { mutableStateOf<String?>("") } // Disable the create button
+    var passwordError by remember { mutableStateOf<String?>("") } // Disable the login button
 
     Column(
         modifier = Modifier
@@ -49,31 +44,15 @@ fun CreateUserScreen(
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
+    ){
 
         Button(onClick = mainMenuNav) {
             Text("Back")
         }
 
         Text(
-            text = "Create User",
+            text = "Login",
             style = MaterialTheme.typography.headlineMedium,
-        )
-
-        OutlinedTextField(
-            value = name,
-            onValueChange = {
-                name = it
-                nameError = if(!it.isNameFilled()) "Name is empty."
-                            else if(!it.isNameLengthValid()) "Name cannot have more than 20 characters."
-                            else null
-            },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Name") },
-            singleLine = true,
-            supportingText = {
-                if(nameError != null) { Text(nameError!!) }
-            },
         )
 
         OutlinedTextField(
@@ -81,8 +60,8 @@ fun CreateUserScreen(
             onValueChange = {
                 email = it
                 emailError = if(!it.isEmailValid()) "Email format is invalid."
-                             else if(!it.isEmailLengthValid()) "Email is too long."
-                             else null
+                else if(!it.isEmailLengthValid()) "Email is too long."
+                else null
             },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Email") },
@@ -98,7 +77,7 @@ fun CreateUserScreen(
             onValueChange = {
                 password = it
                 passwordError = if(!it.isPasswordLengthValid()) "Password must have at least 5 characters."
-                                else null
+                else null
             },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Password") },
@@ -111,10 +90,10 @@ fun CreateUserScreen(
         )
 
         Button(
-            enabled = nameError == null && emailError == null && passwordError == null,
-            onClick = { create(name, email, password) }
+            enabled = emailError == null && passwordError == null,
+            onClick = { login(email, password) },
         ) {
-            Text("Create User")
+            Text("Log In")
         }
     }
 }

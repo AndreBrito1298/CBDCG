@@ -4,6 +4,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -37,6 +38,7 @@ fun PlayerTileCard(
         ZoomedImage(
             fileName = tile.toString(),
             loadDrawable = { getDrawable(tile.toString()) },
+            modifier = Modifier.size(128.dp),
             zoom = 1.0f
         )
 
@@ -44,6 +46,7 @@ fun PlayerTileCard(
             ZoomedImage(
                 fileName = tile.specialEffect.type.name,
                 loadDrawable = { getDrawable(tile.specialEffect.type.name) },
+                modifier = Modifier.size(128.dp),
                 zoom = 0.33f
             )
         }

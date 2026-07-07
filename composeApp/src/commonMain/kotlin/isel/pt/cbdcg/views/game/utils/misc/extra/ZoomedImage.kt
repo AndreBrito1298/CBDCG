@@ -2,6 +2,7 @@ package isel.pt.cbdcg.views.game.utils.misc.extra
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,7 +27,7 @@ fun ZoomedImage(
     zoom: Float,
     loadDrawable: suspend () -> ImageBitmap,
     filter: ColorFilter? = null,
-    modifier: Modifier = Modifier,
+    modifier: Modifier,
     contentDescription: String? = fileName,
 ) {
     var image by remember { mutableStateOf<ImageBitmap?>(null) }
@@ -42,9 +43,7 @@ fun ZoomedImage(
     }
 
     Box(
-        modifier = modifier
-            .size(128.dp)
-            .clipToBounds(),
+        modifier = modifier.clipToBounds(),
         contentAlignment = Alignment.Center
     ) {
         Image(
@@ -52,7 +51,7 @@ fun ZoomedImage(
             contentDescription = contentDescription,
             colorFilter = filter,
             modifier = Modifier
-                .size(128.dp)
+                .fillMaxSize()
                 .graphicsLayer {
                     scaleX = zoom
                     scaleY = zoom

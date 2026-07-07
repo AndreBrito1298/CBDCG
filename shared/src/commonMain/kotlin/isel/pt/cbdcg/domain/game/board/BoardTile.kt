@@ -3,6 +3,8 @@ package isel.pt.cbdcg.domain.game.board
 import isel.pt.cbdcg.domain.game.Entity
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.board.tile.Tile
+import isel.pt.cbdcg.domain.game.board.tile.getAdjacent
+import isel.pt.cbdcg.domain.game.board.tile.getBlocked
 import isel.pt.cbdcg.domain.game.board.tile.toTile
 import isel.pt.cbdcg.domain.game.board.tile.toTileDTO
 import isel.pt.cbdcg.domain.game.character.Character
@@ -21,8 +23,13 @@ data class BoardTile(
     override fun <T : Entity> toEntity() = this as Entity
 
 }
-
-
+fun BoardTile.getTileName(board: BoardTiles): String {
+    val adjTiles = tile.getAdjacent(board, pos)
+    val blocked = tile.getBlocked(adjTiles)
+    return tile.toString() +
+            if(blocked.isNotEmpty()) "_" + blocked.map{ it.name[0] }.joinToString("")
+            else ""
+}
 fun BoardTile.directionTo(other: BoardTile): Direction? =
     when (other.pos.x) {
         pos.x + 1 if other.pos.y == pos.y -> Direction.EAST

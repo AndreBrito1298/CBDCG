@@ -20,6 +20,7 @@ fun MenuScreen(
     loginNav: () -> Unit,
     createUserNav: () -> Unit,
     catalogNav: () -> Unit,
+    tutorialNav: () -> Unit,
 ){
 
     Column(
@@ -55,6 +56,13 @@ fun MenuScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Game Catalog")
+        }
+
+        Button(
+            onClick = tutorialNav,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Game Tutorials")
         }
     }
 }

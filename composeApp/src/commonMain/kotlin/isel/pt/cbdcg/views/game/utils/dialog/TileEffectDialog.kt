@@ -3,9 +3,11 @@ package isel.pt.cbdcg.views.game.utils.dialog
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -66,11 +68,11 @@ fun TileEffectInfo(
             .fillMaxSize()
             .horizontalScroll(rememberScrollState())
             .verticalScroll(rememberScrollState()),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.CenterStart
     ){
         Row(
-            modifier = Modifier.width(775.dp).height(340.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+            modifier = Modifier.width(500.dp).height(340.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             CardBasicInfoColumn(
@@ -80,20 +82,27 @@ fun TileEffectInfo(
                 zoom = 1.0f,
                 subText = ""
             )
-            Box(
-                modifier = Modifier.width(350.dp).fillMaxHeight()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = description
+
+            Column(
+                modifier = Modifier.width(350.dp).fillMaxHeight(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically)
+            ){
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(2f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = description
+                    )
+                }
+                AffectedCharactersColumn(
+                    getDrawable = { getDrawable(it) },
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    characters = affectedCharacters
                 )
             }
-            AffectedCharactersColumn(
-                getDrawable = { getDrawable(it) },
-                modifier = Modifier.width(200.dp).fillMaxHeight(),
-                characters = affectedCharacters
-            )
         }
     }
 }

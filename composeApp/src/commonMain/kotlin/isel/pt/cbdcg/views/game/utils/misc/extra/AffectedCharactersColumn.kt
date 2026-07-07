@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -62,7 +63,7 @@ fun AffectedCharactersColumn(
                             fileName = character.name,
                             loadDrawable = { getDrawable(character.name) },
                             zoom = 1.0f,
-                            modifier = Modifier.width(64.dp).height(64.dp)
+                            modifier = Modifier.size(64.dp)
                         )
 
                         Text(

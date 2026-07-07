@@ -13,14 +13,16 @@ import isel.pt.cbdcg.views.game.GameScreen
 import isel.pt.cbdcg.views.game.SpectatorScreen
 import isel.pt.cbdcg.views.lobby.SearchTablesScreen
 import isel.pt.cbdcg.views.lobby.WaitingTableScreen
-import isel.pt.cbdcg.views.startMenu.CatalogScreen
-import isel.pt.cbdcg.views.startMenu.CreateUserScreen
+import isel.pt.cbdcg.views.startMenu.catalog.CatalogScreen
+import isel.pt.cbdcg.views.startMenu.authentication.CreateUserScreen
 import isel.pt.cbdcg.views.startMenu.MenuScreen
-import isel.pt.cbdcg.views.startMenu.LoginScreen
+import isel.pt.cbdcg.views.startMenu.authentication.LoginScreen
+import isel.pt.cbdcg.views.startMenu.tutorial.TutorialScreen
 import isel.pt.cbdcg.views.utils.DisplayError
 
 private enum class AppDestination {
     Menu,
+    Tutorial,
     Lobby,
     Table,
     Game
@@ -34,6 +36,7 @@ fun AppNavHost(vm: AppViewModel) {
 
     val destination = when (ui.session) {
         is SessionState.SignedOut -> AppDestination.Menu
+        is SessionState.InTutorial -> AppDestination.Tutorial
         is SessionState.InLobby -> AppDestination.Lobby
         is SessionState.InTable -> AppDestination.Table
         is SessionState.InGame -> AppDestination.Game
@@ -60,6 +63,11 @@ fun AppNavHost(vm: AppViewModel) {
                     launchSingleTop = true
                 }
             }
+            AppDestination.Tutorial -> {
+                nav.navigate(TutorialRoute){
+                    launchSingleTop = true
+                }
+            }
             AppDestination.Menu -> {
                 nav.navigate(MenuRoute) {
                     popUpTo(0)
@@ -79,7 +87,15 @@ fun AppNavHost(vm: AppViewModel) {
             MenuScreen(
                 loginNav = { nav.navigate(LoginRoute) },
                 createUserNav = { nav.navigate(CreateUserRoute) },
-                catalogNav = { nav.navigate(GameCatalogRoute) }
+                catalogNav = { nav.navigate(GameCatalogRoute) },
+                tutorialNav = { nav.navigate(TutorialRoute) },
+            )
+        }
+
+        composable<TutorialRoute> {
+            TutorialScreen(
+                mainMenuNav = { nav.navigate(MenuRoute) },
+                getDrawable = { vm.getDrawable(it) }
             )
         }
 
@@ -110,7 +126,7 @@ fun AppNavHost(vm: AppViewModel) {
 
         composable<GameCatalogRoute> {
             CatalogScreen(
-                mainMenuNav = { },
+                mainMenuNav = { nav.navigate(MenuRoute) },
                 getDrawable = { vm.getDrawable(it) },
             )
         }
@@ -175,7 +191,6 @@ fun AppNavHost(vm: AppViewModel) {
                     unequip = { idx -> vm.unequip(idx) },
                     toggleCardStats = { card, boardTile -> vm.inspectCard(card, boardTile) },
                     onEffectInfoClick = {
-                        // Esta lógica não vai ficar aqui
                         val effect = (ui.gameUI.state as? GameUIState.InspectTileEffect)?.tile?.specialEffect?.type
                             ?: return@GameScreen
                         when (effect) {
@@ -185,7 +200,6 @@ fun AppNavHost(vm: AppViewModel) {
 
                             else -> return@GameScreen
                         }
-                        // É temporário, para efeitos de testes.
                     },
                     moveSignal = { boardTile -> vm.moveSignal(boardTile) },
                     moveCharacter = { tile -> vm.moveCharacter(tile) },

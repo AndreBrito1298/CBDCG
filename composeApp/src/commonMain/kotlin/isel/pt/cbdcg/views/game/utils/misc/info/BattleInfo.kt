@@ -49,7 +49,7 @@ fun BattleInfo(
                 CardBasicInfoColumn(
                     getDrawable = { getDrawable(it) },
                     modifier = Modifier
-                        .height(180.dp)
+                        .height(190.dp)
                         .clickable(target != null){ if(target != null) target(character) }
                         .then(other =
                             if(targetCharacter != null && targetCharacter.name == character.name)

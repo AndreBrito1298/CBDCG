@@ -28,7 +28,7 @@ import isel.pt.cbdcg.views.game.utils.misc.extra.ZoomedImage
 
 @Composable
 fun BoardTile(
-    actions: BoardTileDDM,
+    actions: BoardTileState,
     boardTile: BoardTile,
     tileName: String,
     tileSize: Dp,
@@ -43,7 +43,7 @@ fun BoardTile(
 
     val isClickable = actions.placeCharacter || actions.equipItem || actions.applyMovement ||
             actions.moveCharacter || actions.inspectTileEffect || actions.inspectCharacter ||
-            actions.sneakThrough
+            actions.sneakThrough || actions.battleCharacter
 
     Box(
         modifier = Modifier
@@ -104,7 +104,7 @@ fun BoardTile(
                     zoom = 0.33f,
                     modifier = Modifier.size(tileSize),
                     filter =
-                        if(!actions.wasBattled)
+                        if(actions.wasBattled)
                             ColorFilter.colorMatrix(ColorMatrix().apply{ setToSaturation(0f) })
                         else null
                 )

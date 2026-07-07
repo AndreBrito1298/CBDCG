@@ -4,6 +4,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -34,6 +35,7 @@ fun PlayerItemCard(
         ZoomedImage(
             fileName = item.name,
             loadDrawable = { getDrawable(item.name) },
+            modifier = Modifier.size(128.dp),
             zoom = 1.0f
         )
 
@@ -42,7 +44,7 @@ fun PlayerItemCard(
             onDismissRequest = select
         ){
             DropdownMenuItem(
-                text = { Text("See Item Stats") },
+                text = { Text("Inspect Item") },
                 onClick = inspect,
             )
 

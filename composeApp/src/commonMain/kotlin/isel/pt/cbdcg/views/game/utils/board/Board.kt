@@ -18,8 +18,8 @@ import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.BoardTiles
+import isel.pt.cbdcg.domain.game.board.getTileName
 import isel.pt.cbdcg.domain.game.board.tile.getAdjacent
-import isel.pt.cbdcg.domain.game.board.tile.getBlocked
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.viewmodel.GameUIState
@@ -34,17 +34,17 @@ enum class BoardTilePossibleActions{
     Idle
 }
 
-data class BoardTileDDM(
-    val inspectTileEffect: Boolean,
-    val inspectCharacter: Boolean,
-    val placeCharacter: Boolean,
-    val equipItem: Boolean,
-    val moveCharacter: Boolean,
-    val battleCharacter: Boolean,
-    val sneakThrough: Boolean,
-    val applyMovement: Boolean,
-    val wasBattled: Boolean,
-    val myCharacter: Boolean
+data class BoardTileState(
+    val inspectTileEffect: Boolean = false,
+    val inspectCharacter: Boolean = false,
+    val placeCharacter: Boolean = false,
+    val equipItem: Boolean = false,
+    val moveCharacter: Boolean = false,
+    val battleCharacter: Boolean = false,
+    val sneakThrough: Boolean = false,
+    val applyMovement: Boolean = false,
+    val wasBattled: Boolean = false,
+    val myCharacter: Boolean = false
 )
 
 @Composable
@@ -85,21 +85,16 @@ fun Board(
 
                     if(currentBoardTile != null){
 
-                        val adjTiles = currentBoardTile.tile.getAdjacent(gameBoard, currentBoardTile.pos)
-                        val blocked = currentBoardTile.tile.getBlocked(adjTiles)
-                        val tileName = currentBoardTile.tile.toString() +
-                            if(blocked.isNotEmpty()) "_" + blocked.map{ it.name[0] }.joinToString("")
-                            else ""
-
+                        val tileName = currentBoardTile.getTileName(gameBoard)
                         val character = currentBoardTile.character
-                        val wasBattled = battledCharacterPositions.none{ it.equals(currentBoardTile.pos) }
+                        val wasBattled = battledCharacterPositions.any{ it.equals(currentBoardTile.pos) }
 
                         val adjacentCharacters = currentBoardTile.tile
                             .getAdjacent(gameBoard, currentBoardTile.pos)
                             .mapNotNull{ it.second.character }
                         val playerCharacter = adjacentCharacters.find{ it.name == player?.currentCharacter }
 
-                        val actions = BoardTileDDM(
+                        val actions = BoardTileState(
                             inspectTileEffect = gameState is GameUIState.Idle &&
                                     currentBoardTile.tile.specialEffect.type.name != "None" &&
                                     currentBoardTile.tile.specialEffect.type.name != "Start",

@@ -94,7 +94,7 @@ fun BattleDialog(
                     if(!showActions){
                         BattleInfo(
                             getDrawable = { getDrawable(it) },
-                            modifier = Modifier.fillMaxWidth().height(348.dp),
+                            modifier = Modifier.fillMaxWidth().height(358.dp),
                             playerCharacterName = playerCharacterName,
                             characters = battle.characters,
                             targetCharacter = null
@@ -102,7 +102,7 @@ fun BattleDialog(
                     } else {
                         ActionsInfo(
                             getDrawable = { getDrawable(it) },
-                            modifier = Modifier.fillMaxWidth().height(348.dp).padding(4.dp),
+                            modifier = Modifier.fillMaxWidth().height(358.dp).padding(4.dp),
                             characters = battle.characters,
                             currentTurn = battle.currentTurn,
                             actions = battle.actions

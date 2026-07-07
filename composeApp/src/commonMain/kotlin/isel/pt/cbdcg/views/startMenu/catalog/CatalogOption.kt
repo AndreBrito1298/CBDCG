@@ -1,4 +1,4 @@
-package isel.pt.cbdcg.views.startMenu
+package isel.pt.cbdcg.views.startMenu.catalog
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable

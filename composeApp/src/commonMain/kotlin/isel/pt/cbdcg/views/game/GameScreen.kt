@@ -5,11 +5,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,7 +23,6 @@ import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
-import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.connectionDistancesFrom
 import isel.pt.cbdcg.domain.game.board.tile.isPositive
@@ -36,7 +32,6 @@ import isel.pt.cbdcg.viewmodel.GameUI
 import isel.pt.cbdcg.viewmodel.GameUIState
 import isel.pt.cbdcg.views.game.utils.dialog.GameOverDialog
 import isel.pt.cbdcg.views.game.utils.board.Board
-import isel.pt.cbdcg.views.game.utils.misc.extra.InGameHeader
 import isel.pt.cbdcg.views.game.utils.players.PlayerHand
 import isel.pt.cbdcg.views.game.utils.board.ZoomButtons
 import isel.pt.cbdcg.views.game.utils.dialog.CardStatsDialog
@@ -50,6 +45,7 @@ import isel.pt.cbdcg.views.game.utils.dialog.CollisionOption
 import isel.pt.cbdcg.views.game.utils.dialog.EndBattleDialog
 import isel.pt.cbdcg.views.game.utils.dialog.StartBattleDialog
 import isel.pt.cbdcg.views.game.utils.misc.extra.SimpleClock
+import isel.pt.cbdcg.views.game.utils.misc.layout.GameScreenHeader
 import kotlinx.coroutines.delay
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
@@ -85,16 +81,6 @@ fun GameScreen(
     val currentPlayer = game.players.find {
         it.user.id == game.turn.playerTurn.first()
     }
-    val phaseText = when (game.turn.phase) {
-        TurnPhase.CONSTRUCTION -> "Construction"
-        TurnPhase.SUBSTITUTION -> "Substitution"
-        TurnPhase.MOVEMENT -> "Movement"
-    }
-    val nextPhaseText = when (game.turn.phase) {
-        TurnPhase.CONSTRUCTION -> "Next: Substitution"
-        TurnPhase.SUBSTITUTION -> "Next: Movement"
-        TurnPhase.MOVEMENT -> "End Turn"
-    }
 
     var remainingSeconds by remember(game.turn.deadline) {
         mutableStateOf(((game.turn.deadline - Clock.System.now().toEpochMilliseconds()) / 1000).coerceAtLeast(0))
@@ -112,39 +98,13 @@ fun GameScreen(
         modifier = Modifier.fillMaxSize(),
     ){
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .height(50.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-
-            val playing = currentPlayer != null && currentPlayer.user.id == player.user.id
-            val playingCharacter =
-                if(playing) game.board.tiles.firstOrNull{ it.character?.name == player.currentCharacter }?.character
-                else null
-
-            InGameHeader(
-                modifier = Modifier.align(Alignment.CenterStart),
-                dungeonTurn = game.turn.gameTurn.toString(),
-                phase = phaseText,
-                playerName = player.user.name.string,
-                currentPlayerName = currentPlayer?.user?.name?.string ?: "Unknown",
-                remainingMoves =
-                    if(playingCharacter!= null) "${(playingCharacter.adjustStats().spe - gameUI.movementUsed).coerceAtLeast(0)}"
-                    else null
-            )
-
-            if (playing && game.turn.gameTurn > 0u) {
-                Button(
-                    onClick = nextPhase,
-                    modifier = Modifier.align(Alignment.BottomEnd)
-                ) {
-                    Text(nextPhaseText)
-                }
-            }
-        }
+        GameScreenHeader(
+            game = game,
+            currentPlayer = currentPlayer,
+            thisPlayer = player,
+            movementUsed = gameUI.movementUsed,
+            nextPhase = nextPhase
+        )
 
         Box(
             modifier = Modifier.fillMaxSize().padding(16.dp)
