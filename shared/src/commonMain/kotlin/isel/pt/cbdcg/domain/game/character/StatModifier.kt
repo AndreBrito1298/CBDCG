@@ -9,12 +9,13 @@ enum class ModifierType{
     BATTLE_HOLD,
     BATTLE_FLEE,
     PERMANENT,
+    TMP_PASSIVE_MODIFIER,
 
-    PASSIVE_MODIFIER,
+    PERMANENT_PASSIVE_MODIFIER,
 }
 
 fun ModifierType.isBattleMod(): Boolean =
-    this == ModifierType.BATTLE_ATTACK || this == ModifierType.BATTLE_HOLD || this == ModifierType.BATTLE_FLEE
+    this == ModifierType.BATTLE_ATTACK || this == ModifierType.BATTLE_HOLD || this == ModifierType.BATTLE_FLEE || this == ModifierType.TMP_PASSIVE_MODIFIER
 
 fun String.toModifierType(): ModifierType =
     when(this){
@@ -23,6 +24,8 @@ fun String.toModifierType(): ModifierType =
         "BATTLE_HOLD" -> ModifierType.BATTLE_HOLD
         "BATTLE_FLEE" -> ModifierType.BATTLE_FLEE
         "PERMANENT" -> ModifierType.PERMANENT
+        "TMP_PASSIVE_MODIFIER" -> ModifierType.TMP_PASSIVE_MODIFIER
+        "PERMANENT_PASSIVE_MODIFIER" -> ModifierType.PERMANENT_PASSIVE_MODIFIER
         else -> throw GameError.InvalidFormat("Modifier Type", this)
     }
 

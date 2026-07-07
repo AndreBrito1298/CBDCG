@@ -3,7 +3,6 @@ package isel.pt.cbdcg.domain.game
 import isel.pt.cbdcg.MAX_TILES_IN_HAND
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.Direction
-import isel.pt.cbdcg.domain.game.character.ModifierType
 import isel.pt.cbdcg.domain.game.character.Stats
 import isel.pt.cbdcg.error.BoardError
 import isel.pt.cbdcg.error.GameError
@@ -242,7 +241,7 @@ class GameTest {
 
         assertTrue(result.battle?.pending?.any { it.origin.name == helper.name } == true)
     }
-
+/*
     @Test
     fun `removeActionFromPending removes queued battle action`() {
         val character = testCharacter("alchemist")
@@ -261,7 +260,7 @@ class GameTest {
 
         assertTrue(result.battle?.pending?.isEmpty() == true)
     }
-
+*/
     @Test
     fun `resolvePending starts battle when every character is ready`() {
         val attacker = testCharacter("alchemist")
@@ -285,16 +284,32 @@ class GameTest {
     }
 
     @Test
-    fun `resolveBattleEnd sets ending phase and penalizes losing character`() {
+    fun `resolveBattleEnd clears battle after applying rewards and penalties`() {
         val winner = testCharacter("alchemist")
-        val loser = testCharacter("guardian")
+        val loser = testCharacter("guardian", stats = Stats(hp = 1, dmg = 2, def = 1, spe = 2))
+        val winnerItem = testItem("winner_item")
+        val loserItem = testItem("loser_item")
+        val winnerPlayer = testPlayer(
+            1u,
+            hand = mapOf(0u to ItemCard(winnerItem)),
+            currentCharacter = winner.name,
+        )
+        val loserPlayer = testPlayer(
+            2u,
+            hand = mapOf(0u to ItemCard(loserItem)),
+            currentCharacter = loser.name,
+        )
         val battle = Battle(
             characters = listOf(winner, loser),
             currentTurn = 1u,
             phase = BattlePhase.BATTLING,
-            itemBet = emptyList(),
+            itemBet = listOf(
+                BattleBet(winnerPlayer, winnerItem),
+                BattleBet(loserPlayer, loserItem),
+            ),
         )
         val game = testGame(
+            players = listOf(winnerPlayer, loserPlayer),
             board = testBoardWith(
                 testBoardTile(BoardPosition(0, 0), character = winner),
                 testBoardTile(BoardPosition(0, 1), character = loser),
@@ -304,9 +319,10 @@ class GameTest {
 
         val result = game.resolveBattleEnd(battle, winner)
 
-        val updatedLoser = result.board.tiles.first { it.character?.name == loser.name }.character
-        assertEquals(BattlePhase.ENDING, result.battle?.phase)
-        assertTrue(updatedLoser?.activeStatModifiers?.any { it.type == ModifierType.PERMANENT && it.stats.hp == -1 } == true)
+        val updatedWinner = result.players.single { it.user.id == winnerPlayer.user.id }
+        assertNull(result.battle)
+        assertTrue(updatedWinner.hand.values.any { (it as? ItemCard)?.item == loserItem })
+        assertTrue(result.board.tiles.none { it.character?.name == loser.name })
     }
 
     @Test

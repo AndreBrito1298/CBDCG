@@ -25,13 +25,10 @@ import isel.pt.cbdcg.domain.game.BattleAction
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
-import isel.pt.cbdcg.domain.game.PossibleBattleActions
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.character.Character
-import isel.pt.cbdcg.domain.game.character.Stats
 import isel.pt.cbdcg.domain.game.toGame
-import isel.pt.cbdcg.dto.ActInBattleDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.CreateUserDTO
@@ -40,7 +37,6 @@ import isel.pt.cbdcg.dto.GameUpdaterDTO
 import isel.pt.cbdcg.dto.SimpleGameRequestDTO
 import isel.pt.cbdcg.dto.LoginInput
 import isel.pt.cbdcg.dto.LogoutInput
-import isel.pt.cbdcg.dto.ParticipateInBattleDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RoleChangeInput
 import isel.pt.cbdcg.dto.RotatePieceDTO
@@ -352,11 +348,13 @@ class ClientApi(private val client: HttpClient) {
                 userId = userId.toInt(),
                 gameId = gameId.toInt(),
                 token = token,
-                updaterName = "AddActionToPending",
+                updaterName = "EndBattle",
                 origin = origin.toEntityDTO(),
                 target = arrayOf(),
             )
         ).map{ it.toGame() }
+
+
 
     private suspend inline fun <reified T> fetch(
         path: String,

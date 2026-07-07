@@ -179,7 +179,6 @@ private val UpdateStatModifiers = UpdaterE<Player, BoardTile> { player, targets 
 }
 
 @field:RegisterUpdater("BattleStart")
-
 private val BattleStart = UpdaterE<Character, Character> { attacker, targets ->
     val defender = targets.firstOrNull() ?: throw BoardError.NoTargetFound()
 
@@ -274,6 +273,17 @@ private val LeaveBattle= UpdaterE<Character, Character> { character, none->
     )).resolvePending()
 }
 
+@field:RegisterUpdater("EndBattle")
+private val EndBattle= UpdaterE<BattleAction, Character> { action, none->
+    if(battle == null)
+        throw GameError.NoBattleOngoing()
+
+    if(battle.pending.any{ it.origin.name == action.origin.name })
+        throw BattleError.ActionAlreadyQueued()
+
+    copy(battle = battle.copy(pending = battle.pending + action)).deleteBattle()
+}
+
 @field:RegisterUpdater("RemoveActionFromPending")
 private val RemoveActionFromPending= UpdaterE<Character, BattleAction> { character, none->
     if(battle == null)
@@ -284,8 +294,6 @@ private val RemoveActionFromPending= UpdaterE<Character, BattleAction> { charact
 
     this.copy(battle = battle.copy(pending = battle.pending - action)).resolvePending()
 }
-
-
 
 fun Game.handleTimeOutStartingBattle(): Game {
 
@@ -317,7 +325,6 @@ fun Game.handleTimeOutDuringOrAfterBattle(): Game {
 
     val newGame = charactersNotReady.fold(this){ currentGame, character ->
         currentGame.gameUpdateByName("AddActionToPending", BattleAction(character, null, PossibleBattleActions.FLEE, Stats(), turn = turn.gameTurn.toInt()), emptyList())
-
     }
 
     return  if(battle.phase == BattlePhase.BATTLING) newGame.resolvePending()
