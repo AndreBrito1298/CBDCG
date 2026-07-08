@@ -12,6 +12,7 @@ enum class ModifierType{
     TMP_PASSIVE_MODIFIER,
 
     PERMANENT_PASSIVE_MODIFIER,
+    SELF_PASSIVE_MODIFIER,
 }
 
 fun ModifierType.isBattleMod(): Boolean =
@@ -26,6 +27,7 @@ fun String.toModifierType(): ModifierType =
         "PERMANENT" -> ModifierType.PERMANENT
         "TMP_PASSIVE_MODIFIER" -> ModifierType.TMP_PASSIVE_MODIFIER
         "PERMANENT_PASSIVE_MODIFIER" -> ModifierType.PERMANENT_PASSIVE_MODIFIER
+        "SELF_PASSIVE_MODIFIER" -> ModifierType.SELF_PASSIVE_MODIFIER
         else -> throw GameError.InvalidFormat("Modifier Type", this)
     }
 

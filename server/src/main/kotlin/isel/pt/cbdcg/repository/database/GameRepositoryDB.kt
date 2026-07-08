@@ -41,6 +41,7 @@ object GameRepositoryDB: GameRepository{
             val game = GamesDao.new {
                 //gameTurn = 0
                // currentTurnPhase = TurnPhase.CONSTRUCTION
+                version = 0u
                 turn = Turn(0u, turnOrder, TurnPhase.CONSTRUCTION, 0).toTurnDTO()
                 itemsDeck = itemDeck.itemDeckToDb()
                 tileDeck = startingDeck.tileDeckToDb()
@@ -95,7 +96,8 @@ object GameRepositoryDB: GameRepository{
                     gamePlayer[currentCharacter] = player.currentCharacter
                 }
             }
-
+            game.version = 1u
+            //game.version = element.version
             game.turn = element.turn.toTurnDTO()
            // game.playerTurnQueue = element.turn.playerTurn.map { it.toInt() }.toTypedArray()  // persist the queue itself
             game.itemsDeck = element.itemDeck.itemDeckToDb()
@@ -125,11 +127,9 @@ object GameRepositoryDB: GameRepository{
             }
         }
     }
-
     private fun deleteGameChildren(gameId: Int) {
         GameSpectatorsDao.find { GameSpectators.gameId eq gameId }.forEach { it.delete() }
         GamePlayersDao.find { GamePlayers.gameId eq gameId }.forEach { it.delete() }
         deleteBoardForGame(gameId)
     }
-
 }

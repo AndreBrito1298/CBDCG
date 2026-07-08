@@ -117,7 +117,7 @@ fun Board(
                                     character != null &&
                                     playerCharacter != null &&
                                     character.name != playerCharacter.name &&
-                                    wasBattled,
+                                    !wasBattled,
 
 
                             sneakThrough = gameState is GameUIState.SneakDestination &&

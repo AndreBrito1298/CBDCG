@@ -248,8 +248,8 @@ fun Game.startNextTurn(): Game {
     updatedCharacterModifiers.tiles.forEach { tile ->
         var char = tile.character
         if(char != null){
-            if(char.passiveType == PassiveType.NEUTRAL_PASSIVE){
-                char = char.passive.run { char.usePassive(null) } as Character
+            if(char.passiveProps.type == PassiveType.NEUTRAL_PASSIVE){
+                char = char.passiveProps.passive.run { char.usePassive(null) } as Character
             }
             updatedCharacterModifiers = updatedCharacterModifiers.replaceBoardTile(tile.copy(character = char))
         }
@@ -488,7 +488,7 @@ fun Game.resolvePending(): Game {
         .filter{ it.adjustStats().hp > 0 }
         .sortedByDescending { it.adjustStats().spe }
 
-    val initialBattle = battle.applyBattlePassives(availableCharacters)
+    val initialBattle = battle.applyBattlePassives(availableCharacters, false)
 
     val availableCharactersAfterPassives = initialBattle.characters
         .filter { it.adjustStats().hp > 0 }
@@ -532,7 +532,7 @@ fun Game.resolvePending(): Game {
         .filter{ it.adjustStats().hp > 0 }
         .sortedByDescending { it.adjustStats().spe }
 
-    val finalBattle = updatedBattle.applyBattlePassives(availableCharactersAfterAction)
+    val finalBattle = updatedBattle.applyBattlePassives(availableCharactersAfterAction, true)
 
     val winner = updatedBattle.characters.filter{ it.adjustStats().hp > 0 }
 
@@ -543,19 +543,24 @@ fun Game.resolvePending(): Game {
     )
 }
 
-fun Battle.applyBattlePassives(availableCharacters: List<Character>):Battle {
+fun Battle.applyBattlePassives(availableCharacters: List<Character>, actionsHaveHappened: Boolean):Battle {
     return availableCharacters.fold(this) { currentBattle, character ->
-        when (character.passiveType) {
-            PassiveType.BATTLE_PASSIVE ->{
-                val updatedBattle = (character).passive.run { character.usePassive(this@applyBattlePassives)
+        if (character.passiveProps.isAfterActions == actionsHaveHappened) {
+            when (character.passiveProps.type) {
+                PassiveType.BATTLE_PASSIVE -> {
+                    val updatedBattle = (character).passiveProps.passive.run {
+                        character.usePassive(this@applyBattlePassives)
+                    }
+                    updatedBattle as Battle
                 }
-                updatedBattle as Battle
-            }
-            PassiveType.NEUTRAL_PASSIVE ->{
-                val  updatedCharacter = (character).passive.run { character.usePassive(this@applyBattlePassives) } as Character
-                currentBattle.replaceChar(updatedCharacter)
+                PassiveType.NEUTRAL_PASSIVE -> {
+                    val updatedCharacter =
+                        (character).passiveProps.passive.run { character.usePassive(this@applyBattlePassives) } as Character
+                    currentBattle.replaceChar(updatedCharacter)
+                }
             }
         }
+        else currentBattle
     }
 }
 

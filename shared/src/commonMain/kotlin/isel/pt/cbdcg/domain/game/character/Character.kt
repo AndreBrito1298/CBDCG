@@ -21,8 +21,7 @@ interface Character: Entity {
     val activeStatModifiers: List<StatModifier>
     val grade: Grade
     val evolution: Evolution?
-    val passive: Passive<*>
-    val passiveType: PassiveType
+    val passiveProps: PassiveProps
     val canUsePassive: Boolean
 
     fun addModifier(newStatModifier: StatModifier): Character

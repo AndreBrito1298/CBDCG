@@ -18,8 +18,7 @@ data class PlayableCharacter(
     override val evolution: Evolution?,
     val items: List<Item> = listOf(),
     val maxItems: Int = ITEM_CAPACITY,
-    override val passiveType: PassiveType = PassiveType.NEUTRAL_PASSIVE,
-    override val passive: Passive<*> = NoPassive,
+    override val passiveProps: PassiveProps,
     override val canUsePassive:Boolean = true
 ) : Character {
     override val role: CharacterRole = CharacterRole.PLAYABLE
@@ -167,7 +166,6 @@ data class PlayableCharacter(
                 evolution = evolution?.toEvolutionDTO(),
                 items = items.map{ it.toItemDTO() }.toTypedArray(),
                 maxItems = maxItems,
-                passiveType = passiveType.name,
                 canUsePassive = canUsePassive
             )
         }
@@ -189,6 +187,7 @@ fun PlayableCharacter.equipItem(item: Item): PlayableCharacter {
 
     return copy(items = items + item).evolve() as PlayableCharacter
 }
+
 fun PlayableCharacter.unequip(item: Item): PlayableCharacter = copy(items = items - item)
 fun CharacterDTO.toPlayableCharacter(): PlayableCharacter =
     PlayableCharacter(
@@ -199,53 +198,51 @@ fun CharacterDTO.toPlayableCharacter(): PlayableCharacter =
         items = items.map{ it.toItem() },
         maxItems = maxItems,
         evolution = evolution?.toEvolution(),
-        passiveType = PassiveType.valueOf(passiveType),
+        passiveProps = PlayableCharacterCatalog.getCharacterByName(name)?.passiveProps?:throw CharacterDoesNotExist(name),
         canUsePassive = canUsePassive,
-        passive = PlayableCharacterCatalog.getCharacterByName(name)?.passive?:throw CharacterDoesNotExist(name)
     )
-
 object PlayableCharacterCatalog {
     val basicCharacters = listOf(
-        PlayableCharacter(name = "alchemist", baseStats = Stats(3, 3, 1, 2), grade = Grade.BASIC, evolution = MultipleBattlesEvolution(condition = MultipleBattlesEvolutionConditions.WIN, value = 1, character = "plague_doc"), passive = AlchemistBasic, passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "apprentice", baseStats = Stats(2, 3, 2, 2), grade = Grade.BASIC, evolution = BattleEvolution(condition = InBattleEvolutionConditions.DAMAGE, value = 3, character = "mage"), passive = MageBasic, passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "beast_warrior", baseStats = Stats(4, 1, 1, 3), grade = Grade.BASIC, evolution = BattleEvolution(condition = InBattleEvolutionConditions.DAMAGE, value = 3, character = "predator"), passiveType = PassiveType.NEUTRAL_PASSIVE),
-        PlayableCharacter(name = "elf", baseStats = Stats(3, 2, 1, 3), grade = Grade.BASIC, evolution = MultipleBattlesEvolution(condition = MultipleBattlesEvolutionConditions.BATTLE, value = 2, character = "elf_champ"), passive = ElfBasic, passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "guardian", baseStats = Stats(3, 2, 3, 1), grade = Grade.BASIC, evolution = BattleEvolution(condition = InBattleEvolutionConditions.BLOCK, value = 3, character = "paladin"), passive = PaladinBasic, passiveType = PassiveType.NEUTRAL_PASSIVE),
-        PlayableCharacter(name = "juggernaut", baseStats = Stats(3, 3, 1, 2), grade = Grade.BASIC, evolution = BattleEvolution(condition = InBattleEvolutionConditions.DAMAGE, value = 3, character = "maniac"), passive = BerserkerBasic, passiveType = PassiveType.NEUTRAL_PASSIVE),
-        PlayableCharacter(name = "ninja", baseStats = Stats(2, 4, 1, 2), grade = Grade.BASIC, evolution = MultipleBattlesEvolution(condition = MultipleBattlesEvolutionConditions.WIN, value = 1, character = "killer"), passive = AssassinBasic, passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "nun", baseStats = Stats(3, 1, 1, 3), grade = Grade.BASIC, evolution = BattleEvolution(condition = InBattleEvolutionConditions.PERISH, value = 1, character = "priestess"), passive = NoPassive, passiveType = PassiveType.NEUTRAL_PASSIVE),
-        PlayableCharacter(name = "taoist", baseStats = Stats(2, 2, 2, 3), grade = Grade.BASIC, evolution = MultipleBattlesEvolution(condition = MultipleBattlesEvolutionConditions.WIN, value = 1, character = "first_rate"), passive = TaoistBasic, passiveType = PassiveType.NEUTRAL_PASSIVE),
-        PlayableCharacter(name = "thief", baseStats = Stats(2, 2, 2, 3), grade = Grade.BASIC, evolution = MultipleBattlesEvolution(condition = MultipleBattlesEvolutionConditions.FLEE, value = 1, character = "vagabond")),
-        PlayableCharacter(name = "trainee", baseStats = Stats(3, 2, 2, 2), grade = Grade.BASIC, evolution = BattleEvolution(condition = InBattleEvolutionConditions.BLOCK, value = 3, character = "knight"), passive = KnightBasic,passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "vampire", baseStats = Stats(3, 3, 1, 2), grade = Grade.BASIC, evolution = BattleEvolution(condition = InBattleEvolutionConditions.REGEN, value = 2, character = "vampire_count")),
+        PlayableCharacter(name = "alchemist", baseStats = Stats(3, 3, 1, 2), grade = Grade.BASIC, evolution = MultipleBattlesEvolution(condition = MultipleBattlesEvolutionConditions.WIN, value = 1, character = "plague_doc"), passiveProps = AlchemistBasicProps),
+        PlayableCharacter(name = "apprentice", baseStats = Stats(2, 3, 2, 2), grade = Grade.BASIC, evolution = BattleEvolution(condition = InBattleEvolutionConditions.DAMAGE, value = 3, character = "mage"), passiveProps = MageBasicProps),
+        PlayableCharacter(name = "beast_warrior", baseStats = Stats(4, 1, 1, 3), grade = Grade.BASIC, evolution = BattleEvolution(condition = InBattleEvolutionConditions.DAMAGE, value = 3, character = "predator"), passiveProps = WerewolfBasicProps),
+        PlayableCharacter(name = "elf", baseStats = Stats(3, 2, 1, 3), grade = Grade.BASIC, evolution = MultipleBattlesEvolution(condition = MultipleBattlesEvolutionConditions.BATTLE, value = 2, character = "elf_champ"), passiveProps = ElfBasicProps),
+        PlayableCharacter(name = "guardian", baseStats = Stats(3, 2, 3, 1), grade = Grade.BASIC, evolution = BattleEvolution(condition = InBattleEvolutionConditions.BLOCK, value = 3, character = "paladin"), passiveProps = PaladinBasicProps),
+        PlayableCharacter(name = "juggernaut", baseStats = Stats(3, 3, 1, 2), grade = Grade.BASIC, evolution = BattleEvolution(condition = InBattleEvolutionConditions.DAMAGE, value = 3, character = "maniac"), passiveProps = BerserkerBasicProps),
+        PlayableCharacter(name = "ninja", baseStats = Stats(2, 4, 1, 2), grade = Grade.BASIC, evolution = MultipleBattlesEvolution(condition = MultipleBattlesEvolutionConditions.WIN, value = 1, character = "killer"), passiveProps = AssassinBasicProps),
+        PlayableCharacter(name = "nun", baseStats = Stats(3, 1, 1, 3), grade = Grade.BASIC, evolution = BattleEvolution(condition = InBattleEvolutionConditions.PERISH, value = 1, character = "priestess"), passiveProps = NoPassiveProps),
+        PlayableCharacter(name = "taoist", baseStats = Stats(2, 2, 2, 3), grade = Grade.BASIC, evolution = MultipleBattlesEvolution(condition = MultipleBattlesEvolutionConditions.WIN, value = 1, character = "first_rate"), passiveProps = TaoistBasicProps),
+        PlayableCharacter(name = "thief", baseStats = Stats(2, 2, 2, 3), grade = Grade.BASIC, evolution = MultipleBattlesEvolution(condition = MultipleBattlesEvolutionConditions.FLEE, value = 1, character = "vagabond"), passiveProps = ThiefBasicProps),
+        PlayableCharacter(name = "trainee", baseStats = Stats(3, 2, 2, 2), grade = Grade.BASIC, evolution = BattleEvolution(condition = InBattleEvolutionConditions.BLOCK, value = 3, character = "knight"), passiveProps = KnightBasicProps),
+        //  PlayableCharacter(name = "vampire", baseStats = Stats(3, 3, 1, 2), grade = Grade.BASIC, evolution = BattleEvolution(condition = InBattleEvolutionConditions.REGEN, value = 2, character = "vampire_count")),
     )
     val rareCharacters = listOf(
-        PlayableCharacter(name = "elf_champ", baseStats = Stats(3, 4, 2, 2), grade = Grade.RARE, evolution = ItemEvolution(item = "fae", character = "high_elf"), passive = ElfRare,passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "first_rate", baseStats = Stats(2, 3, 3, 3), grade = Grade.RARE, evolution = ItemEvolution(item = "jade_sword", character = "sword_emp"), passive = TaoistRare, passiveType = PassiveType.NEUTRAL_PASSIVE),
-        PlayableCharacter(name = "killer", baseStats = Stats(3, 4, 1, 3), grade = Grade.RARE, evolution = ItemEvolution(item = "red_gourd", character = "red_death"), passive = AssassinRare,passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "knight", baseStats = Stats(5, 2, 2, 2), grade = Grade.RARE, evolution = ItemEvolution(item = "badge", character = "commander"), passive = KnightRare,passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "mage", baseStats = Stats(3, 4, 2, 2), grade = Grade.RARE, evolution = ItemEvolution(item = "golden_glove", character = "archmage"), passive = MageRare,passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "maniac", baseStats = Stats(4, 4, 1, 2), grade = Grade.RARE, evolution = ItemEvolution(item = "golden_star", character = "war_god"), passive = BerserkerRare, passiveType = PassiveType.NEUTRAL_PASSIVE),
-        PlayableCharacter(name = "paladin", baseStats = Stats(3, 2, 5, 1), grade = Grade.RARE, evolution = ItemEvolution(item = "peacemaker", character = "god_warrior"),passiveType = PassiveType.NEUTRAL_PASSIVE),
-        PlayableCharacter(name = "plague_doc", baseStats = Stats(4, 3, 2, 2), grade = Grade.RARE, evolution = ItemEvolution(item = "poison_shard", character = "heavenly_doc"), passive = AlchemistRare,passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "predator", baseStats = Stats(4, 2, 2, 3), grade = Grade.RARE, evolution = ItemEvolution(item = "unknown_stone", character = "hell_beast"), passive = WerewolfRare, passiveType = PassiveType.NEUTRAL_PASSIVE),
-        PlayableCharacter(name = "priestess", baseStats = Stats(4, 2, 3, 2), grade = Grade.RARE, evolution = ItemEvolution(item = "nirvana_cross", character = "apostle"), passive = PriestRare,passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "vagabond", baseStats = Stats(3, 2, 2, 4), grade = Grade.RARE, evolution = ItemEvolution(item = "idol", character = "golden_thief")),
-        PlayableCharacter(name = "vampire_count", baseStats = Stats(4, 3, 1, 3), grade = Grade.RARE, evolution = ItemEvolution(item = "chalice", character = "ancestor")),
+        PlayableCharacter(name = "elf_champ", baseStats = Stats(3, 4, 2, 2), grade = Grade.RARE, evolution = ItemEvolution(item = "fae", character = "high_elf"), passiveProps = ElfRareProps),
+        PlayableCharacter(name = "first_rate", baseStats = Stats(2, 3, 3, 3), grade = Grade.RARE, evolution = ItemEvolution(item = "jade_sword", character = "sword_emp"), passiveProps = TaoistRareProps),
+        PlayableCharacter(name = "killer", baseStats = Stats(3, 4, 1, 3), grade = Grade.RARE, evolution = ItemEvolution(item = "red_gourd", character = "red_death"), passiveProps = AssassinRareProps),
+        PlayableCharacter(name = "knight", baseStats = Stats(5, 2, 2, 2), grade = Grade.RARE, evolution = ItemEvolution(item = "badge", character = "commander"), passiveProps = KnightRareProps),
+        PlayableCharacter(name = "mage", baseStats = Stats(3, 4, 2, 2), grade = Grade.RARE, evolution = ItemEvolution(item = "golden_glove", character = "archmage"), passiveProps = MageRareProps),
+        PlayableCharacter(name = "maniac", baseStats = Stats(4, 4, 1, 2), grade = Grade.RARE, evolution = ItemEvolution(item = "golden_star", character = "war_god"), passiveProps = BerserkerRareProps),
+        PlayableCharacter(name = "paladin", baseStats = Stats(3, 2, 5, 1), grade = Grade.RARE, evolution = ItemEvolution(item = "peacemaker", character = "god_warrior"), passiveProps = PaladinRareProps),
+        PlayableCharacter(name = "plague_doc", baseStats = Stats(4, 3, 2, 2), grade = Grade.RARE, evolution = ItemEvolution(item = "poison_shard", character = "heavenly_doc"), passiveProps = AlchemistRareProps),
+        PlayableCharacter(name = "predator", baseStats = Stats(4, 2, 2, 3), grade = Grade.RARE, evolution = ItemEvolution(item = "unknown_stone", character = "hell_beast"), passiveProps = WerewolfRareProps),
+        PlayableCharacter(name = "priestess", baseStats = Stats(4, 2, 3, 2), grade = Grade.RARE, evolution = ItemEvolution(item = "nirvana_cross", character = "apostle"), passiveProps = PriestRareProps),
+        PlayableCharacter(name = "vagabond", baseStats = Stats(3, 2, 2, 4), grade = Grade.RARE, evolution = ItemEvolution(item = "idol", character = "golden_thief"), passiveProps = ThiefRareProps),
+        // PlayableCharacter(name = "vampire_count", baseStats = Stats(4, 3, 1, 3), grade = Grade.RARE, evolution = ItemEvolution(item = "chalice", character = "ancestor")),
     )
     val epicCharacters = listOf(
-        PlayableCharacter(name = "ancestor", baseStats = Stats(4, 4, 1, 3), grade = Grade.EPIC, evolution = null),
-        PlayableCharacter(name = "apostle", baseStats = Stats(4, 3, 3, 2), grade = Grade.EPIC, evolution = null, passive = PriestEpic,passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "archmage", baseStats = Stats(3, 4, 2, 3), grade = Grade.EPIC, evolution = null, passive = MageEpic,passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "commander", baseStats = Stats(5, 3, 2, 2), grade = Grade.EPIC, evolution = null, passive = KnightEpic,passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "god_warrior", baseStats = Stats(4, 2, 5, 1), grade = Grade.EPIC, evolution = null, passive = PaladinEpic, passiveType = PassiveType.NEUTRAL_PASSIVE),
-        PlayableCharacter(name = "golden_thief", baseStats = Stats(3, 2, 2, 5), grade = Grade.EPIC, evolution = null),
-        PlayableCharacter(name = "heavenly_doc", baseStats = Stats(4, 4, 2, 2), grade = Grade.EPIC, evolution = null, passive = AlchemistEpic,passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "hell_beast", baseStats = Stats(4, 2, 3, 3), grade = Grade.EPIC, evolution = null, passive = WerewolfEpic),
-        PlayableCharacter(name = "high_elf", baseStats = Stats(3, 4, 3, 2), grade = Grade.EPIC, evolution = null, passive= ElfEpic,passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "red_death", baseStats = Stats(3, 5, 1, 3), grade = Grade.EPIC, evolution = null, passive = AssassinEpic,passiveType = PassiveType.BATTLE_PASSIVE),
-        PlayableCharacter(name = "sword_emp", baseStats = Stats(2, 3, 3, 4), grade = Grade.EPIC, evolution = null, passive = TaoistEpic, passiveType = PassiveType.NEUTRAL_PASSIVE),
-        PlayableCharacter(name = "war_god", baseStats = Stats(5, 4, 1, 2), grade = Grade.EPIC, evolution = null, passive = BerserkerEpic,passiveType = PassiveType.BATTLE_PASSIVE),
+        //  PlayableCharacter(name = "ancestor", baseStats = Stats(4, 4, 1, 3), grade = Grade.EPIC, evolution = null),
+        PlayableCharacter(name = "apostle", baseStats = Stats(4, 3, 3, 2), grade = Grade.EPIC, evolution = null, passiveProps = PriestEpicProps),
+        PlayableCharacter(name = "archmage", baseStats = Stats(3, 4, 2, 3), grade = Grade.EPIC, evolution = null, passiveProps = MageEpicProps),
+        PlayableCharacter(name = "commander", baseStats = Stats(5, 3, 2, 2), grade = Grade.EPIC, evolution = null, passiveProps = KnightEpicProps),
+        PlayableCharacter(name = "god_warrior", baseStats = Stats(4, 2, 5, 1), grade = Grade.EPIC, evolution = null, passiveProps = PaladinEpicProps),
+        PlayableCharacter(name = "golden_thief", baseStats = Stats(3, 2, 2, 5), grade = Grade.EPIC, evolution = null, passiveProps = ThiefEpicProps),
+        PlayableCharacter(name = "heavenly_doc", baseStats = Stats(4, 4, 2, 2), grade = Grade.EPIC, evolution = null, passiveProps = AlchemistEpicProps),
+        PlayableCharacter(name = "hell_beast", baseStats = Stats(4, 2, 3, 3), grade = Grade.EPIC, evolution = null, passiveProps = WerewolfEpicProps),
+        PlayableCharacter(name = "high_elf", baseStats = Stats(3, 4, 3, 2), grade = Grade.EPIC, evolution = null, passiveProps = ElfEpicProps),
+        PlayableCharacter(name = "red_death", baseStats = Stats(3, 5, 1, 3), grade = Grade.EPIC, evolution = null, passiveProps = AssassinEpicProps),
+        PlayableCharacter(name = "sword_emp", baseStats = Stats(2, 3, 3, 4), grade = Grade.EPIC, evolution = null, passiveProps = TaoistEpicProps),
+        PlayableCharacter(name = "war_god", baseStats = Stats(5, 4, 1, 2), grade = Grade.EPIC, evolution = null, passiveProps = BerserkerEpicProps),
     )
 
     fun getCharacterByName(name: String): PlayableCharacter? =

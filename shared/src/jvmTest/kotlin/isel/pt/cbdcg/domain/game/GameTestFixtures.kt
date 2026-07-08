@@ -14,6 +14,7 @@ import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
 import isel.pt.cbdcg.domain.game.character.Grade
 import isel.pt.cbdcg.domain.game.character.Item
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
+import isel.pt.cbdcg.domain.game.character.PlayableCharacterCatalog.getCharacterByName
 import isel.pt.cbdcg.domain.game.character.Stats
 
 internal fun testUser(id: UInt): User =
@@ -25,12 +26,7 @@ internal fun testUser(id: UInt): User =
     )
 
 internal fun testCharacter(name: String, stats: Stats = Stats(3, 2, 1, 2)): PlayableCharacter =
-    PlayableCharacter(
-        name = name,
-        baseStats = stats,
-        grade = Grade.BASIC,
-        evolution = null,
-    )
+    getCharacterByName(name)!!
 
 internal fun testItem(name: String = "iron_claw", grade: Grade = Grade.BASIC): Item =
     Item(name = name, stats = Stats(dmg = 1), grade = grade)

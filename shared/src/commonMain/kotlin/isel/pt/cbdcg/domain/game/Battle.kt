@@ -168,6 +168,7 @@ fun Battle.attack(battleAction: BattleAction): Battle {
         actions = actions + (currentTurn to ((actions[currentTurn] ?: emptyList()) + battleAction.copy(stats = stats)))
     )
 }
+
 fun Battle.hold(battleAction: BattleAction): Battle {
     val origin = characters.find { it.name == battleAction.origin.name }
         ?: throw BattleError.CharacterNotFound(battleAction.origin.name)

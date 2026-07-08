@@ -99,7 +99,6 @@ data class CharacterDTO(
     val evolution: EvolutionDTO? = null,
     val items: Array<ItemDTO>,
     val maxItems: Int,
-    val passiveType: String = "BATTLE_PASSIVE",
     val canUsePassive: Boolean = true
 ) {
     override fun equals(other: Any?): Boolean {
@@ -113,7 +112,6 @@ data class CharacterDTO(
         if (baseStats != other.baseStats) return false
         if (!activeModifiers.contentEquals(other.activeModifiers)) return false
         if (!items.contentEquals(other.items)) return false
-        if (passiveType != other.passiveType) return false
         if (canUsePassive != other.canUsePassive) return false
 
         return true
@@ -124,7 +122,6 @@ data class CharacterDTO(
         result = 31 * result + baseStats.hashCode()
         result = 31 * result + activeModifiers.contentHashCode()
         result = 31 * result + items.contentHashCode()
-        result = 31 * result + passiveType.hashCode()
         result = 31 * result + canUsePassive.hashCode()
         return result
     }
