@@ -21,14 +21,21 @@ interface Character: Entity {
     val activeStatModifiers: List<StatModifier>
     val grade: Grade
     val evolution: Evolution?
+    val passive: Passive<*>
+    val passiveType: PassiveType
+    val canUsePassive: Boolean
 
     fun addModifier(newStatModifier: StatModifier): Character
     fun removeModifier(statModifier: StatModifier): Character
-    fun decreaseTileEffectModifiers(): Character
+    fun decreaseEffectModifiers(): Character
     fun increaseInBattleModifierTurn(): Character
     fun removeAllBattleMods(): Character
     fun evolve(battle: Battle? = null): Character
     fun toCharacterDTO(): CharacterDTO
+
+    fun hasUsedPassive(): Character
+
+    fun resetPassive(): Character
 }
 
 fun CharacterDTO.toCharacter(): Character =

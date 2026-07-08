@@ -6,44 +6,39 @@ import isel.pt.cbdcg.REMAINING_SECONDS_AFTER_BATTLE
 import isel.pt.cbdcg.TURN_DURATION_SECONDS
 import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.board.BoardPosition
-import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.checkBlocked
 import isel.pt.cbdcg.domain.game.board.connectedNeighbours
 import isel.pt.cbdcg.domain.game.board.tile.Tile
 import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
 import isel.pt.cbdcg.domain.game.board.equipItem
-import isel.pt.cbdcg.domain.game.board.tile.getStatModifier
-import isel.pt.cbdcg.domain.game.board.connectionDistancesFrom
 import isel.pt.cbdcg.domain.game.board.placeCharacter
 import isel.pt.cbdcg.domain.game.board.placeTile
 import isel.pt.cbdcg.domain.game.board.reduceCooldown
-import isel.pt.cbdcg.domain.game.board.tile.isPositive
 import isel.pt.cbdcg.domain.game.board.toBoardTile
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.board.tile.toTile
 import isel.pt.cbdcg.domain.game.board.tile.toTileDTO
 import isel.pt.cbdcg.domain.game.board.unequip
 import isel.pt.cbdcg.domain.game.board.possibleUnoccupiedPositions
+import isel.pt.cbdcg.domain.game.board.replaceBoardTile
 import isel.pt.cbdcg.domain.game.board.tile.allRotations
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.Grade
 import isel.pt.cbdcg.domain.game.character.Item
-import isel.pt.cbdcg.domain.game.character.ItemEvolution
 import isel.pt.cbdcg.domain.game.character.ModifierType
+import isel.pt.cbdcg.domain.game.character.PassiveType
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.domain.game.character.StatModifier
 import isel.pt.cbdcg.domain.game.character.Stats
 import isel.pt.cbdcg.domain.game.character.adjustStats
-import isel.pt.cbdcg.domain.game.character.special
 import isel.pt.cbdcg.domain.game.character.toItem
 import isel.pt.cbdcg.domain.game.character.toItemDTO
-import isel.pt.cbdcg.domain.game.character.usePassive
-import isel.pt.cbdcg.dto.BattleActionDTO
 import isel.pt.cbdcg.dto.EntityDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.ItemDeckDTO
 import isel.pt.cbdcg.dto.TileDeckDTO
 import isel.pt.cbdcg.error.BattleError
+import isel.pt.cbdcg.error.BattleError.*
 import isel.pt.cbdcg.error.BoardError
 import isel.pt.cbdcg.error.CharacterError
 import isel.pt.cbdcg.error.GameError
@@ -168,7 +163,7 @@ fun Game.nextTurn(): Game {
 
     val nextGameTurn = if (remainingPlayers.isEmpty()) turn.gameTurn + 1u else turn.gameTurn
     val nextPlayerTurn = remainingPlayers.ifEmpty { getTurnOrder() }
-    val newBoard = if (remainingPlayers.isEmpty()) board.reduceCooldown() else board
+    var newBoard = if (remainingPlayers.isEmpty()) board.reduceCooldown() else board
 
     val nextTurn = copy(
         board = newBoard,
@@ -221,6 +216,7 @@ private fun Game.checkWinner(): Game =
 
         }
     }
+
 fun Game.startNextTurn(): Game {
     if (turn.gameTurn == 0u) return this
 
@@ -240,14 +236,24 @@ fun Game.startNextTurn(): Game {
     val player = players.find{ player -> player.user.id == nextPlayerId }
         ?: throw GameError.PlayerNotFound(nextPlayerId.toInt(), null, id.toInt())
 
-    val updatedCharacterModifiers = board.copy(tiles =
+    var updatedCharacterModifiers = board.copy(tiles =
         board.tiles.map{ boardTile ->
             val character = boardTile.character
-            if(character != null && player.currentCharacter == character.name)
-                boardTile.copy(character = character.decreaseTileEffectModifiers())
+            if(character != null)
+                boardTile.copy(character = character.decreaseEffectModifiers())
             else boardTile
         }
     )
+
+    updatedCharacterModifiers.tiles.forEach { tile ->
+        var char = tile.character
+        if(char != null){
+            if(char.passiveType == PassiveType.NEUTRAL_PASSIVE){
+                char = char.passive.run { char.usePassive(null) } as Character
+            }
+            updatedCharacterModifiers = updatedCharacterModifiers.replaceBoardTile(tile.copy(character = char))
+        }
+    }
 
     val availableTilePositions = board.possibleUnoccupiedPositions()
     val nextPhase = if(availableTilePositions.isNotEmpty()) TurnPhase.CONSTRUCTION else TurnPhase.SUBSTITUTION
@@ -468,6 +474,12 @@ fun Game.joinBattle(player: Player, character: Character): Game {
     )
 }
 
+fun Battle.addToAction(action: BattleAction): Battle {
+    val currentActions = this.actions[this.currentTurn] ?: emptyList()
+    val updatedActions = this.actions + (this.currentTurn to currentActions + action)
+    return this.copy(actions = updatedActions)
+}
+
 fun Game.resolvePending(): Game {
     if(battle == null)
         throw GameError.NoBattleOngoing()
@@ -476,35 +488,26 @@ fun Game.resolvePending(): Game {
         .filter{ it.adjustStats().hp > 0 }
         .sortedByDescending { it.adjustStats().spe }
 
-    val battleAfterPassives = availableCharacters.fold(battle) { currentBattle, character ->
-        val updatedCharacter = (character as PlayableCharacter).passive.usePassive(character, currentBattle)
+    val initialBattle = battle.applyBattlePassives(availableCharacters)
 
-        currentBattle.copy(
-            characters = currentBattle.characters.map {
-                if (it.name == character.name) updatedCharacter else it
-            }
-        )
-    }
-
-    val availableCharactersAfterPassives = battleAfterPassives.characters
+    val availableCharactersAfterPassives = initialBattle.characters
         .filter { it.adjustStats().hp > 0 }
         .sortedByDescending { it.adjustStats().spe }
 
-    if(battleAfterPassives.pending.size < availableCharactersAfterPassives.size)
-        return copy(battle = battleAfterPassives)
+    if(initialBattle.pending.size < availableCharactersAfterPassives.size)
+        return copy(battle = initialBattle)
 
-    if(battleAfterPassives.currentTurn == 0u)
+    if(initialBattle.currentTurn == 0u)
         return copy(
-            battle = battleAfterPassives.copy(phase = BattlePhase.BATTLING, pending = emptyList(), currentTurn = 1u),
+            battle = initialBattle.copy(phase = BattlePhase.BATTLING, pending = emptyList(), currentTurn = 1u),
             turn = turn.copy(deadline = newDeadline(BATTLE_TURN_DURATION_SECONDS))
         )
 
-    val orderOfActions: List<BattleAction> = availableCharactersAfterPassives.map{ character ->
-        val action = battleAfterPassives.pending.find{ it.origin.name == character.name }
-        requireNotNull(action)
+    val orderOfActions: List<BattleAction> = availableCharactersAfterPassives.mapNotNull { character ->
+        initialBattle.pending.find { it.origin.name == character.name }
     }
 
-    val updatedBattle = orderOfActions.fold<BattleAction, Battle>(battleAfterPassives.incrementModifiers()){ currentBattle, pending ->
+    val updatedBattle = orderOfActions.fold<BattleAction, Battle>(initialBattle.incrementModifiers()){ currentBattle, pending ->
         val character = currentBattle.characters.find{ it.name == pending.origin.name }
 
         if(character != null && character.adjustStats().hp > 0){
@@ -514,22 +517,53 @@ fun Game.resolvePending(): Game {
                 PossibleBattleActions.ATTACK -> {
                     val target = currentBattle.characters.find{ it.name == pending.target?.name }
                     if(target == null)
-                        throw BattleError.CharacterNotFound(pending.target?.name ?: "")
+                        throw CharacterNotFound(pending.target?.name ?: "")
 
                     if(target.adjustStats().hp > 0) currentBattle.attack(pending)
                     else currentBattle
                 }
+
+                PossibleBattleActions.PASSIVE -> currentBattle
             }
         } else currentBattle
     }
 
+    val availableCharactersAfterAction = updatedBattle.characters
+        .filter{ it.adjustStats().hp > 0 }
+        .sortedByDescending { it.adjustStats().spe }
+
+    val finalBattle = updatedBattle.applyBattlePassives(availableCharactersAfterAction)
+
     val winner = updatedBattle.characters.filter{ it.adjustStats().hp > 0 }
 
-    return  if(winner.size == 1) resolveBattleEnd(updatedBattle, winner.first())
+    return  if(winner.size == 1) resolveBattleEnd(finalBattle, winner.first())
     else copy(
-        battle = updatedBattle.copy(pending = emptyList(), currentTurn = battleAfterPassives.currentTurn + 1u),
+        battle = updatedBattle.copy(pending = emptyList(), currentTurn = initialBattle.currentTurn + 1u),
         turn = turn.copy(deadline = newDeadline(BATTLE_TURN_DURATION_SECONDS))
     )
+}
+
+fun Battle.applyBattlePassives(availableCharacters: List<Character>):Battle {
+    return availableCharacters.fold(this) { currentBattle, character ->
+        when (character.passiveType) {
+            PassiveType.BATTLE_PASSIVE ->{
+                val updatedBattle = (character).passive.run { character.usePassive(this@applyBattlePassives)
+                }
+                updatedBattle as Battle
+            }
+            PassiveType.NEUTRAL_PASSIVE ->{
+                val  updatedCharacter = (character).passive.run { character.usePassive(this@applyBattlePassives) } as Character
+                currentBattle.replaceChar(updatedCharacter)
+            }
+        }
+    }
+}
+
+fun Battle.replaceChar(character: Character): Battle {
+    val newChars = this.characters.map {
+        if (it.name == character.name) character else it
+    }
+    return this.copy(characters = newChars)
 }
 
 fun Game.resolveBattleEnd(battle: Battle, winner: Character): Game {

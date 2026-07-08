@@ -26,6 +26,7 @@ import isel.pt.cbdcg.domain.game.character.ModifierType
 import isel.pt.cbdcg.domain.game.character.StatModifier
 import isel.pt.cbdcg.domain.game.character.Stats
 import isel.pt.cbdcg.domain.game.character.adjustStats
+import isel.pt.cbdcg.error.BattleError
 import isel.pt.cbdcg.views.game.utils.misc.stats.StatsVariation
 
 @Composable
@@ -58,7 +59,7 @@ fun BattleTurnActions(
                 ){
                     actions.fold(characters) { currentCharacters, battleAction ->
 
-                        val origin = requireNotNull(currentCharacters.find { it.name == battleAction.origin.name })
+                        val origin = currentCharacters.find { it.name == battleAction.origin.name }?:throw BattleError.InvalidAction("")
                         val target = currentCharacters.find { it.name == battleAction.target?.name }
 
                         BattleAction(
@@ -105,6 +106,18 @@ fun BattleTurnActions(
                                     )
                                 else character
                             }
+
+                            PossibleBattleActions.PASSIVE -> currentCharacters.map{ character ->
+                                if(character.name == battleAction.origin.name)
+                                    character.addModifier(
+                                        StatModifier(
+                                            stats = requireNotNull(battleAction.stats),
+                                            duration = 0u,
+                                            type = ModifierType.TMP_PASSIVE_MODIFIER
+                                        )
+                                    )
+                                else character
+                            }
                         }
                     }
                 }
@@ -130,6 +143,7 @@ fun BattleAction(
             PossibleBattleActions.ATTACK -> Color.Red to "battle_attack"
             PossibleBattleActions.HOLD -> Color.Blue to "battle_hold"
             PossibleBattleActions.FLEE -> Color.Yellow to "battle_flee"
+            PossibleBattleActions.PASSIVE -> Color.Green to "battle_passive"
         }
 
     Box(
