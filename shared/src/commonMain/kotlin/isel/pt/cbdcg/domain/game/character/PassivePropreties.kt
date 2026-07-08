@@ -43,4 +43,4 @@ val BerserkerEpicProps = PassiveProps(PassiveType.BATTLE_PASSIVE, true, "When at
 val PriestRareProps = PassiveProps(PassiveType.BATTLE_PASSIVE, false, "Gains +hp+dmg+def+spe for 1 turn.", PriestRare)
 val PriestEpicProps = PassiveProps(PassiveType.BATTLE_PASSIVE, true, "When attacked, reduces the attacker's dmg to 1 for 1 turn.", PriestEpic)
 
-val NoPassiveProps = PassiveProps(PassiveType.NEUTRAL_PASSIVE, false, "She just chill :)", NoPassive)
+val NoPassiveProps = PassiveProps(PassiveType.NEUTRAL_PASSIVE, false, "She's just a chill guy :)", NoPassive)
