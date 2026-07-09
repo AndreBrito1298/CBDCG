@@ -5,8 +5,6 @@ import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Player
 import isel.pt.cbdcg.domain.game.PlayerHand
 import isel.pt.cbdcg.domain.game.Spectator
-import isel.pt.cbdcg.domain.game.Turn
-import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.board.BoardPosition
 import isel.pt.cbdcg.domain.game.board.BoardTile
@@ -253,7 +251,8 @@ fun GamesDao.toGame(): Game {
         tileDeck = tileDeck.tileDeckFromDb(),
         itemDeck = itemsDeck.itemDeckFromDb(),
         turn = turn,
-        battle = this.battle?.toBattle()
+        battle = this.battle?.toBattle(),
+        version = 0u
     )
 }
 fun GamesDao.toBoard(): Board {

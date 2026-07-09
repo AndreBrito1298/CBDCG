@@ -1,42 +1,38 @@
 package isel.pt.cbdcg.domain
 
 import com.android.identity.util.UUID
+import isel.pt.cbdcg.GAME_SESSION_TIME
+import isel.pt.cbdcg.REFRESH_INCREMENT
 import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.UserRepository
 import isel.pt.cbdcg.service.SimpleCrypto.decrypt
 import isel.pt.cbdcg.service.SimpleCrypto.encrypt
 import kotlin.time.Clock
-import kotlin.time.DurationUnit
 import kotlin.time.Instant
-import kotlin.time.toDuration
 
-val refreshIncrements = 5000.toDuration(DurationUnit.MILLISECONDS)
-val gameSessionTime = 600000.toDuration(DurationUnit.MILLISECONDS)
 suspend fun String.verifyToken(user: User, currGame: UInt?, userRepository: UserRepository) {
-    if(user.auth == null)
+
+    val authState = user.auth
+
+    if(authState == null)
         throw UserError.TokenNotFound()
-    var newToken = user.auth!!.token
+    else {
 
-    if(currGame != user.auth!!.gameId && decrypt(user.auth!!.token) != this)
-        throw UserError.TokenMismatch()
+        var newToken = authState.token
 
-    if(user.auth!!.tokenExpiration< Clock.System.now()){
-        userRepository.removeAuthentication(user.id)
-        throw UserError.SessionExpired()
+        if(currGame != authState.gameId && decrypt(authState.token) != this)
+            throw UserError.TokenMismatch()
+
+        if(authState.tokenExpiration< Clock.System.now()){
+            userRepository.removeAuthentication(user.id)
+            throw UserError.SessionExpired()
+        }
+
+        if(authState.tokenRefresh < Clock.System.now())
+            newToken = UUID.randomUUID().toString()
+
+        userRepository.save(user.copy(auth = authState.copy(token = encrypt(newToken), tokenRefresh = getNextTokenRefresh())))
     }
-
-    if(user.auth!!.tokenRefresh < Clock.System.now())
-        newToken = UUID.randomUUID().toString()
-
-    userRepository.save(user.copy(auth = user.auth!!.copy(token = encrypt(newToken), tokenRefresh = getNextTokenRefresh())))
-}
-
-fun String.hasSession(user: User, userRepository: UserRepository){
-    if(user.auth == null)
-        throw UserError.TokenNotFound()
-
-    if(user.auth!!.tokenExpiration < Clock.System.now())
-        throw UserError.TokenNotFound()
 }
 
 suspend fun User.addToGame(gameId: UInt, userRepository: UserRepository) {
@@ -50,5 +46,5 @@ suspend fun User.removeFromGame(userRepository: UserRepository) {
 }
 
 
-fun getNextTokenRefresh(): Instant = Clock.System.now()+refreshIncrements
-fun getGameSessionTime(): Instant = Clock.System.now()+gameSessionTime
+fun getNextTokenRefresh(): Instant = Clock.System.now()+REFRESH_INCREMENT
+fun getGameSessionTime(): Instant = Clock.System.now()+GAME_SESSION_TIME

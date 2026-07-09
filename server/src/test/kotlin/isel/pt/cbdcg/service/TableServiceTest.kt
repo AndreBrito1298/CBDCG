@@ -104,7 +104,7 @@ class TableServiceTest {
 
     @Test
     fun `create table fails when owner id does not exist`(): Unit = runBlocking {
-        assertFailsWith<UserError.NotLoggedIn> {
+        assertFailsWith<UserError.TokenNotFound> {
             tableService.createTable(Name("lobbyOne"), 9128u).getOrThrow()
         }
     }

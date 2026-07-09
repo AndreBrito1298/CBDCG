@@ -188,6 +188,7 @@ data class GameDTO(
     val itemDeck: Array<ItemDeckDTO>,
     val turn: TurnDTO,
     val battle: BattleDTO?,
+    val version: Int,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -196,6 +197,7 @@ data class GameDTO(
         other as GameDTO
 
         if (id != other.id) return false
+        if (version != other.version) return false
         if (!players.contentEquals(other.players)) return false
         if (!spectators.contentEquals(other.spectators)) return false
         if (!board.contentEquals(other.board)) return false
@@ -208,6 +210,7 @@ data class GameDTO(
     }
     override fun hashCode(): Int {
         var result = id
+        result = 31 * result + version
         result = 31 * result + players.contentHashCode()
         result = 31 * result + spectators.contentHashCode()
         result = 31 * result + board.contentHashCode()
@@ -343,41 +346,7 @@ data class UnequipItemDTO(
     val index: Int,
 )
 
-
-
-// Will be changed
-
 @Serializable
-data class StartBattleDTO(
+data class GameRecoveryDTO(
     val userId: Int,
-    val gameId: Int,
-    val token: String,
-    val attacker: CharacterDTO,
-    val defender: CharacterDTO
-)
-@Serializable
-data class SimpleInGameActionDTO(
-    val userId: Int,
-    val gameId: Int,
-    val token: String,
-    val origin: BoardTileDTO,
-)
-
-@Serializable
-data class ActInBattleDTO(
-    val userId: Int,
-    val gameId: Int,
-    val token: String,
-    val action: String,
-    val origin: CharacterDTO,
-    val target: CharacterDTO?,
-)
-
-@Serializable
-data class ParticipateInBattleDTO(
-    val userId: Int,
-    val gameId: Int,
-    val token: String,
-    val character: CharacterDTO,
-    val accept: Boolean
 )

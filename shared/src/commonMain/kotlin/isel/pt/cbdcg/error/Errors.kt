@@ -1,6 +1,7 @@
 package isel.pt.cbdcg.error
 
 import isel.pt.cbdcg.MIN_PLAYERS_TO_START
+import kotlinx.serialization.Serializable
 
 /**
  * Base Error class used to restrict every specific Error Type created.
@@ -26,11 +27,10 @@ sealed class UserError(
     class TokenMismatch: UserError("Token does not match.")
     class AlreadyLoggedIn: UserError("User is logged in on a different client.")
 
-    class NotLoggedIn: UserError("User is not logged in.")
-
     class SessionExpired: UserError("Session expired.")
     class IdNotFound: UserError("ID does not exist.")
     class OAuthError(reason: String) : UserError("OAuth authentication failed: $reason")
+    class NotInGame : UserError("The user isn't participating in any game.")
 }
 
 sealed class TableError(
@@ -115,3 +115,9 @@ sealed class BattleError(
     class ActionNotQueued : BattleError("You don't have an action queued for this character.")
     class CantLeaveBattle : BattleError("You can't leave the battle if you are directly involved.")
 }
+
+@Serializable
+data class ErrorResponse(
+    val type: String,
+    val message: String,
+)

@@ -1,13 +1,13 @@
 package isel.pt.cbdcg.domain.game
 
 import isel.pt.cbdcg.BATTLE_TURN_DURATION_SECONDS
-import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.connectedNeighbours
 import isel.pt.cbdcg.domain.game.board.connectionDistancesFrom
 import isel.pt.cbdcg.domain.game.board.replaceBoardTile
 import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
 import isel.pt.cbdcg.domain.game.board.tile.getStatModifier
+import isel.pt.cbdcg.domain.game.board.tile.isPositive
 import isel.pt.cbdcg.error.BoardError
 import isel.pt.cbdcg.error.GameError
 import org.reflections.Reflections
@@ -21,7 +21,6 @@ import isel.pt.cbdcg.domain.game.character.special
 import isel.pt.cbdcg.error.BattleError
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
-import javax.swing.border.Border
 
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.FIELD, AnnotationTarget.CLASS)
@@ -127,7 +126,7 @@ private val DrawItem = UpdaterE<Player, BoardTile> { player, targets ->
     }
 
     val updatedPlayers = players.map {
-        if (it == player) items.fold(player) { p, item -> p.addToHand(ItemCard(item)) }
+        if (it.user.id == player.user.id) items.fold(player) { p, item -> p.addToHand(ItemCard(item)) }
         else it
     }
 
@@ -161,7 +160,9 @@ private val UpdateStatModifiers = UpdaterE<Player, BoardTile> { player, targets 
     val range = specialEffect.range.toInt()
 
     val distances = board.connectionDistancesFrom(boardTile)
-    val affectedTiles = distances.filter { it.value <= range }.keys
+    val affectedTiles =
+        if(specialEffect.isPositive()) distances.filter { it.value <= range }.keys
+        else distances.filter{ it.value in 1..range }.keys
 
     val newBoard = board.tiles.map { tile ->
         val isOrigin = tile.pos == boardTile.pos

@@ -38,7 +38,7 @@ object UserRepositoryMem: UserRepository {
         for (index in users.indices) {
             val user = users[index]
             if (user.auth?.tokenExpiration?.let { it <= now } == true) {
-                users[index] = user.copy(auth = null)
+                if(user.auth?.gameId == null) users[index] = user.copy(auth = null)
             }
         }
     }

@@ -6,9 +6,6 @@ import io.ktor.websocket.*
 import isel.pt.cbdcg.dto.WsClientMessage
 import kotlinx.serialization.json.Json
 
-// Registar conforme o tipo de cliente com um enumerado Genérico / Credenciado
-// Respostas diferentes para clientes diferentes
-
 fun Route.webSocketApi(hub: WebSocketHub) {
 
     val json = Json { ignoreUnknownKeys = true }

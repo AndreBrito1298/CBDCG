@@ -58,16 +58,18 @@ fun EndBattleDialog(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.weight(8f)){
-                    Text(
-                        text = mainText,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = subText,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Light
-                    )
+                    Column{
+                        Text(
+                            text = mainText,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = subText,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Light
+                        )
+                    }
                 }
 
                 Box(modifier = Modifier.weight(2f)){

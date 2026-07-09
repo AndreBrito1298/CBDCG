@@ -8,7 +8,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.http.content.staticResources
 import io.ktor.server.netty.*
 import io.ktor.server.routing.*
-import isel.pt.cbdcg.configs.dbInit
+//import isel.pt.cbdcg.configs.dbInit
 import isel.pt.cbdcg.repository.memory.GameRepositoryMem
 import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
 import isel.pt.cbdcg.repository.memory.TableRepositoryMem
@@ -30,13 +30,10 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 fun main() {
-    dbInit(true)
+    // dbInit(true)
     embeddedServer(Netty, port = SERVER_PORT, host = "0.0.0.0", module = Application::module)
         .start(wait = true)
 }
-
-private const val timeBetweenCleanup = 1000L
-
 fun Application.module() {
 
     val httpClient = HttpClient(CIO)
@@ -50,6 +47,7 @@ fun Application.module() {
     val gameService =
         GameService(
             GameRepositoryMem,
+            ParticipantRepositoryMem,
             TableRepositoryMem,
             UserRepositoryMem,
             webSocketHub,
@@ -59,7 +57,7 @@ fun Application.module() {
     val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     cleanupScope.launch {
         while (true) {
-            delay(timeBetweenCleanup.milliseconds)
+            delay(TIME_BETWEEN_CLEANUP.milliseconds)
             userService.deleteInactiveUsers()
         }
     }

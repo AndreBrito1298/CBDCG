@@ -11,12 +11,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 
-/*
-ESTA VERSÃO NÃO ESTÁ IMUNE A "FALHAS DE ENVIO", POR EXEMPLO, O CLIENTE PERDER A CONEXÃO AO SERVER
-DEVE SER FEITO UM MECANISMO QUE, AO VERIFICAR QUE UM DOS CLIENTES REGISTADOS NÃO RECEBEU A NOTIFICAÇÃO
-POR ALGUM MOTIVO, RETIRA A SESSÃO DO CLIENTE OU ALGO DO GÉNERO.
-*/
-
 class WebSocketHub(
     val json: Json = Json { ignoreUnknownKeys = true }
 ): EventsPublisher {

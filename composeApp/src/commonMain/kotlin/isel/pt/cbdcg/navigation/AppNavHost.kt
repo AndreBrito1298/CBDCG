@@ -191,9 +191,12 @@ fun AppNavHost(vm: AppViewModel) {
                     unequip = { idx -> vm.unequip(idx) },
                     toggleCardStats = { card, boardTile -> vm.inspectCard(card, boardTile) },
                     onEffectInfoClick = {
-                        val effect = (ui.gameUI.state as? GameUIState.InspectTileEffect)?.tile?.specialEffect?.type
+                        val state = ui.gameUI.state as? GameUIState.InspectTileEffect
                             ?: return@GameScreen
-                        when (effect) {
+
+                        if(!state.activateInTile) vm.idle()
+
+                        when (state.tile.specialEffect.type) {
                             is TileEffectTypes.Chest, is TileEffectTypes.BigChest -> vm.drawItem()
                             is TileEffectTypes.StatUp, is TileEffectTypes.StatDown,
                             is TileEffectTypes.StatUpAoE, is TileEffectTypes.StatDownAoE -> vm.statModifierEffect()
@@ -228,7 +231,6 @@ fun AppNavHost(vm: AppViewModel) {
 
             if(spectator != null){
                 SpectatorScreen(
-                    spectator = spectator,
                     game = session.game,
                     gameUI = ui.gameUI,
                     togglePlayerHand = { player -> vm.inspectPlayerHand(player) },
@@ -239,13 +241,13 @@ fun AppNavHost(vm: AppViewModel) {
                     getDrawable = { vm.getDrawable(it) },
                 )
             }
-
         }
     }
 
-    ui.errorMessage?.let { message ->
+    ui.error?.let { error ->
+
         DisplayError(
-            error = message,
+            error = error.message ?: "",
             onDismiss = vm::dismissError
         )
     }

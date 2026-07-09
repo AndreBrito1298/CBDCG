@@ -13,7 +13,7 @@ fun InGameHeader(
     modifier: Modifier,
     dungeonTurn: String,
     phase: String,
-    playerName: String,
+    playerName: String?,
     currentPlayerName: String,
     remainingMoves: String? = null
 ) {
@@ -23,7 +23,7 @@ fun InGameHeader(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
-            text = "Dungeon Turn: $dungeonTurn | User: $playerName",
+            text = "Dungeon Turn: $dungeonTurn" + if(playerName != null) " | User: $playerName" else "" ,
             style = MaterialTheme.typography.titleSmall
         )
 

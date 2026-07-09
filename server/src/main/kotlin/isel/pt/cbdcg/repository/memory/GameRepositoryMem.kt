@@ -27,6 +27,7 @@ object GameRepositoryMem: GameRepository {
             tileDeck = startingDeck,
             itemDeck = itemDeck,
             turn = Turn(0u, turnOrder, phase = TurnPhase.CONSTRUCTION, newDeadline(TURN_DURATION_SECONDS)),
+            version = 0u
         )
 
         games.add(game)

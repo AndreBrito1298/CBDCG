@@ -36,7 +36,7 @@ class UserService(
         val user = userRepo.findByEmail(email)
             ?: throw UserError.EmailNotFound(email.string)
 
-        if(user.auth != null)
+        if(user.auth != null && user.auth?.gameId != null)
             throw UserError.AlreadyLoggedIn()
         val decryptedPassword = SimpleCrypto.decrypt(user.password.string)
         if(password.string != decryptedPassword)

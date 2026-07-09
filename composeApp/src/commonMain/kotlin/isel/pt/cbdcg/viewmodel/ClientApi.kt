@@ -6,7 +6,6 @@ import io.ktor.client.plugins.websocket.ClientWebSocketSession
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
@@ -33,6 +32,7 @@ import isel.pt.cbdcg.dto.CreateGameDTO
 import isel.pt.cbdcg.dto.CreateTableDTO
 import isel.pt.cbdcg.dto.CreateUserDTO
 import isel.pt.cbdcg.dto.GameDTO
+import isel.pt.cbdcg.dto.GameRecoveryDTO
 import isel.pt.cbdcg.dto.GameUpdaterDTO
 import isel.pt.cbdcg.dto.SimpleGameRequestDTO
 import isel.pt.cbdcg.dto.LoginInput
@@ -49,6 +49,8 @@ import isel.pt.cbdcg.dto.WsServerMessage
 import isel.pt.cbdcg.dto.toEntityDTO
 import isel.pt.cbdcg.dto.toTable
 import isel.pt.cbdcg.dto.toUser
+import isel.pt.cbdcg.error.ErrorResponse
+import isel.pt.cbdcg.error.UserError
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -257,8 +259,6 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = SimpleGameRequestDTO(userId.toInt(), gameId.toInt(), token)
         )
-
-
     suspend fun moveCharacter(userId: UInt, gameId: UInt, token: String, origin: BoardTile, target: BoardTile): Result<Game> =
         fetch<GameDTO>(
             path = "game/applyGameUpdater",
@@ -353,7 +353,14 @@ class ClientApi(private val client: HttpClient) {
                 target = arrayOf(),
             )
         ).map{ it.toGame() }
-
+    suspend fun getGame(userId: UInt): Result<Game> =
+        fetch<GameDTO>(
+            path = "game",
+            method = HttpMethod.Get,
+            body = GameRecoveryDTO(
+                userId = userId.toInt()
+            )
+        ).map{ it.toGame() }
 
 
     private suspend inline fun <reified T> fetch(
@@ -366,14 +373,20 @@ class ClientApi(private val client: HttpClient) {
             this.method = method
             contentType(ContentType.Application.Json)
             if(body != null) setBody(body)
-
         }
 
         if (!response.status.isSuccess()) {
-            throw IllegalStateException(response.bodyAsText())
+            val error = response.body<ErrorResponse>()
+            throw ClientError(error)
         }
 
         if (T::class == Unit::class) Unit as T
         else response.body<T>()
     }
 }
+
+class ClientError(val error: ErrorResponse) : RuntimeException(error.message)
+
+fun ErrorResponse.isAuthError(): Boolean =
+    type == UserError.SessionExpired::class.qualifiedName ||
+    type == UserError.TokenMismatch::class.qualifiedName

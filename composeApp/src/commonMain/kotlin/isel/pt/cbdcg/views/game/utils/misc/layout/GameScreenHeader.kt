@@ -20,9 +20,10 @@ import isel.pt.cbdcg.views.game.utils.misc.extra.InGameHeader
 fun GameScreenHeader(
     game: Game,
     currentPlayer: Player?,
-    thisPlayer: Player,
+    thisPlayer: Player?,
     movementUsed: Int,
-    nextPhase: () -> Unit
+    nextPhase: () -> Unit,
+    leaveGame: () -> Unit,
 ){
 
     val (phaseText, nextPhaseText) = when(game.turn.phase){
@@ -39,7 +40,7 @@ fun GameScreenHeader(
         contentAlignment = Alignment.CenterStart
     ) {
 
-        val playing = currentPlayer != null && currentPlayer.user.id == thisPlayer.user.id
+        val playing = currentPlayer != null && currentPlayer.user.id == thisPlayer?.user?.id
         val playingCharacter =
             if(playing) game.board.tiles.firstOrNull{ it.character?.name == thisPlayer.currentCharacter }?.character
             else null
@@ -48,7 +49,7 @@ fun GameScreenHeader(
             modifier = Modifier.align(Alignment.CenterStart),
             dungeonTurn = game.turn.gameTurn.toString(),
             phase = phaseText,
-            playerName = thisPlayer.user.name.string,
+            playerName = thisPlayer?.user?.name?.string,
             currentPlayerName = currentPlayer?.user?.name?.string ?: "Unknown",
             remainingMoves =
                 if(playingCharacter!= null) "${(playingCharacter.adjustStats().spe - movementUsed).coerceAtLeast(0)}"
@@ -61,6 +62,13 @@ fun GameScreenHeader(
                 modifier = Modifier.align(Alignment.BottomEnd)
             ) {
                 Text(nextPhaseText)
+            }
+        } else {
+            Button(
+                onClick = leaveGame,
+                modifier = Modifier.align(Alignment.BottomEnd)
+            ) {
+                Text("Leave Game")
             }
         }
     }

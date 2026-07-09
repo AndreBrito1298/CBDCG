@@ -10,12 +10,6 @@ import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.ParticipantRepository
 import isel.pt.cbdcg.repository.TableRepository
 import isel.pt.cbdcg.repository.UserRepository
-import isel.pt.cbdcg.repository.database.ParticipantRepositoryDB
-import isel.pt.cbdcg.repository.database.TableRepositoryDB
-import isel.pt.cbdcg.repository.database.UserRepositoryDB
-import isel.pt.cbdcg.repository.memory.ParticipantRepositoryMem
-import isel.pt.cbdcg.repository.memory.TableRepositoryMem
-import isel.pt.cbdcg.repository.memory.UserRepositoryMem
 import isel.pt.cbdcg.webapi.websocket.EventsPublisher
 import kotlin.collections.plus
 import kotlin.runCatching
@@ -32,7 +26,11 @@ class TableService(
     }
     suspend fun createTable(tableName: Name, userId: UInt): Result<Table> = runCatching {
         val owner = userRepo.findById(userId)
-            ?: throw UserError.NotLoggedIn()
+            ?: throw UserError.TokenNotFound()
+        if(owner.auth == null) throw UserError.TokenNotFound()
+
+        if(!participantRepo.userAvailability(owner))
+            throw TableError.UserUnavailable(owner.name.toString())
 
         val participant = Participant(owner, Role.PLAYER)
 
@@ -49,7 +47,7 @@ class TableService(
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        if(user.auth == null) throw UserError.NotLoggedIn()
+        if(user.auth == null) throw UserError.TokenNotFound()
 
         val table = tableRepo.findById(tableId)
             ?: throw TableError.TableDoesNotExist(tableId.toString())
@@ -75,7 +73,7 @@ class TableService(
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        if(user.auth == null) throw UserError.NotLoggedIn()
+        if(user.auth == null) throw UserError.TokenNotFound()
 
         val table = tableRepo.findById(tableId)
             ?: throw TableError.TableDoesNotExist(tableId.toString())
@@ -102,7 +100,7 @@ class TableService(
 
         val user = userRepo.findById(userId)
             ?: throw UserError.IdNotFound()
-        if(user.auth == null) throw UserError.NotLoggedIn()
+        if(user.auth == null) throw UserError.TokenNotFound()
 
         val table = tableRepo.findById(tableId)
             ?: throw TableError.TableDoesNotExist(tableId.toString())

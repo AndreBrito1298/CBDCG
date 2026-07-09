@@ -79,7 +79,7 @@ fun GameScreen(
 ) {
 
     val currentPlayer = game.players.find {
-        it.user.id == game.turn.playerTurn.first()
+        it.user.id == game.turn.playerTurn.firstOrNull()
     }
 
     var remainingSeconds by remember(game.turn.deadline) {
@@ -103,7 +103,8 @@ fun GameScreen(
             currentPlayer = currentPlayer,
             thisPlayer = player,
             movementUsed = gameUI.movementUsed,
-            nextPhase = nextPhase
+            nextPhase = nextPhase,
+            leaveGame = leaveGame
         )
 
         Box(

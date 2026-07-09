@@ -1,6 +1,5 @@
 package isel.pt.cbdcg.views.game
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,8 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,12 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import isel.pt.cbdcg.domain.game.Game
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.Player
-import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TurnPhase
 import isel.pt.cbdcg.domain.game.board.connectionDistancesFrom
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
@@ -42,13 +37,13 @@ import isel.pt.cbdcg.views.game.utils.dialog.CardStatsDialog
 import isel.pt.cbdcg.views.game.utils.dialog.EndBattleDialog
 import isel.pt.cbdcg.views.game.utils.dialog.GameOverDialog
 import isel.pt.cbdcg.views.game.utils.dialog.TileEffectDialog
+import isel.pt.cbdcg.views.game.utils.misc.extra.SimpleClock
 import kotlinx.coroutines.delay
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun SpectatorScreen(
-    spectator: Spectator,
     game: Game,
     gameUI: GameUI,
     togglePlayerHand: (Player) -> Unit,
@@ -59,7 +54,7 @@ fun SpectatorScreen(
     getDrawable: suspend (String) -> ImageBitmap,
 ){
     val currentPlayer = game.players.find {
-        it.user.id == game.turn.playerTurn.first()
+        it.user.id == game.turn.playerTurn.firstOrNull()
     }
     val phaseText = when (game.turn.phase) {
         TurnPhase.CONSTRUCTION -> "Construction"
@@ -94,26 +89,9 @@ fun SpectatorScreen(
                 modifier = Modifier.align(Alignment.CenterStart),
                 dungeonTurn = game.turn.gameTurn.toString(),
                 phase = phaseText,
-                playerName = spectator.user.name.string,
+                playerName = null,
                 currentPlayerName = currentPlayer?.user?.name?.string ?: "Unknown"
             )
-
-            if(game.battle == null){
-                Box(
-                    modifier = Modifier.align(Alignment.Center)
-                        .size(50.dp)
-                        .padding(4.dp)
-                        .background(Color.White, CircleShape)
-                        .border(1.dp, Color.Black, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = remainingSeconds.toString(),
-                        fontSize = 18.sp,
-                        color = Color.Black
-                    )
-                }
-            }
         }
 
         Box(
@@ -144,6 +122,17 @@ fun SpectatorScreen(
                         idle = { },
                         getDrawable = { getDrawable(it) },
                     )
+
+                    if(game.battle == null){
+                        SimpleClock(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .size(50.dp)
+                                .padding(4.dp),
+                            remainingSeconds = remainingSeconds
+                        )
+                    }
+
                     ZoomButtons(
                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                         amplify = { zoom(true) },

@@ -1,23 +1,21 @@
 package isel.pt.cbdcg.domain.game
 
 import isel.pt.cbdcg.BATTLE_TURN_DURATION_SECONDS
+import isel.pt.cbdcg.MAX_GAME_TURNS
 import isel.pt.cbdcg.MAX_TILES_IN_HAND
 import isel.pt.cbdcg.REMAINING_SECONDS_AFTER_BATTLE
 import isel.pt.cbdcg.TURN_DURATION_SECONDS
+import isel.pt.cbdcg.domain.User
 import isel.pt.cbdcg.domain.game.board.Board
 import isel.pt.cbdcg.domain.game.board.BoardPosition
-import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.checkBlocked
 import isel.pt.cbdcg.domain.game.board.connectedNeighbours
 import isel.pt.cbdcg.domain.game.board.tile.Tile
 import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
 import isel.pt.cbdcg.domain.game.board.equipItem
-import isel.pt.cbdcg.domain.game.board.tile.getStatModifier
-import isel.pt.cbdcg.domain.game.board.connectionDistancesFrom
 import isel.pt.cbdcg.domain.game.board.placeCharacter
 import isel.pt.cbdcg.domain.game.board.placeTile
 import isel.pt.cbdcg.domain.game.board.reduceCooldown
-import isel.pt.cbdcg.domain.game.board.tile.isPositive
 import isel.pt.cbdcg.domain.game.board.toBoardTile
 import isel.pt.cbdcg.domain.game.board.toBoardTileDTO
 import isel.pt.cbdcg.domain.game.board.tile.toTile
@@ -28,17 +26,15 @@ import isel.pt.cbdcg.domain.game.board.tile.allRotations
 import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.Grade
 import isel.pt.cbdcg.domain.game.character.Item
-import isel.pt.cbdcg.domain.game.character.ItemEvolution
 import isel.pt.cbdcg.domain.game.character.ModifierType
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.domain.game.character.StatModifier
 import isel.pt.cbdcg.domain.game.character.Stats
 import isel.pt.cbdcg.domain.game.character.adjustStats
-import isel.pt.cbdcg.domain.game.character.special
+import isel.pt.cbdcg.domain.game.character.points
 import isel.pt.cbdcg.domain.game.character.toItem
 import isel.pt.cbdcg.domain.game.character.toItemDTO
 import isel.pt.cbdcg.domain.game.character.usePassive
-import isel.pt.cbdcg.dto.BattleActionDTO
 import isel.pt.cbdcg.dto.EntityDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.ItemDeckDTO
@@ -61,6 +57,7 @@ data class Game(
     val itemDeck: Deck<Item>,
     val turn: Turn,
     val battle : Battle? = null,
+    val version: UInt,
 ): Entity {
     override fun Entity.toEntityDTO(): EntityDTO {
         return EntityDTO()
@@ -86,6 +83,7 @@ fun Game.toGameDTO(): GameDTO {
         itemDeck = itemDeck,
         turn = turn.toTurnDTO(),
         battle = battle?.toBattleDTO(),
+        version = version.toInt()
     )
 }
 fun GameDTO.toGame(): Game {
@@ -104,6 +102,7 @@ fun GameDTO.toGame(): Game {
         itemDeck = itemDeck,
         turn = turn.toTurn(),
         battle = battle?.toBattle(),
+        version = version.toUInt()
     )
 
 }
@@ -162,7 +161,7 @@ fun Game.nextPhase(): Game {
 }
 fun Game.nextTurn(): Game {
     val winner = checkWinner()
-    if(winner.players.size == 1) return this
+    if(winner.players.size == 1) return winner
 
     val remainingPlayers = turn.playerTurn.drop(1)
 
@@ -189,17 +188,38 @@ private fun Game.getTurnOrder(): List<UInt>{
         players.map { it.user.id }
     }
 }
-private fun Game.checkWinner(): Game =
+private fun Game.checkWinner(): Game {
+
+    if (turn.gameTurn >= MAX_GAME_TURNS && turn.playerTurn.size == 1){
+        val points = players.associateWith{ player ->
+            player.hand.values.fold(0){ currentPoints, card ->
+                currentPoints + when(card){
+                    is CharacterCard -> card.character.grade.points()
+                    is ItemCard -> card.item.grade.points()
+                    is TileCard -> if(card.tile.specialEffect.type.name != "None") 3 else 1
+                }
+            }
+        }
+
+        val winner = points.entries.maxBy { it.value }.key
+        val losers = points.keys.filter{ it.user.id == winner.user.id }
+
+        return copy(
+            players = listOf(winner),
+            spectators = spectators + losers.map{ Spectator(it.user) }
+        )
+    }
+
     players.fold(this) { currentGame, player ->
         val hasCharactersRemaining =
             player.hand.numCharacterCards() > 0 ||
-            currentGame.board.tiles.any {
-                it.character != null &&
-                it.character.name == player.currentCharacter &&
-                it.character.adjustStats().hp > 0
-            }
+                    currentGame.board.tiles.any {
+                        it.character != null &&
+                        it.character.name == player.currentCharacter &&
+                        it.character.adjustStats().hp > 0
+                    }
 
-        if (!hasCharactersRemaining) currentGame.leaveGame(player, true)
+        if (!hasCharactersRemaining) currentGame.leaveGame(player, player.user,true)
         else {
 
             if (!player.hand.containsAllKeys()) currentGame
@@ -221,7 +241,11 @@ private fun Game.checkWinner(): Game =
 
         }
     }
+
+    return this
+}
 fun Game.startNextTurn(): Game {
+
     if (turn.gameTurn == 0u) return this
 
     val anyRemainingTilesInDeck = tileDeck.values.any{ it > 0u }
@@ -259,9 +283,14 @@ fun Game.startNextTurn(): Game {
     )
 }
 
-fun Game.leaveGame(player: Player, toSpectator: Boolean = false): Game {
+fun Game.leaveGame(player: Player?, user: User, toSpectator: Boolean = false): Game {
+
+    if(player == null) return copy(
+        spectators = spectators.filter{ it.user.id == user.id }
+    )
+
     val newPlayers = players.filter { it.user.id != player.user.id }
-    if(newPlayers.size == 1) return copy(
+    if(newPlayers.size <= 1) return copy(
         players = newPlayers,
         spectators = if(toSpectator) spectators + Spectator(player.user) else spectators,
     )
@@ -279,6 +308,8 @@ fun Game.leaveGame(player: Player, toSpectator: Boolean = false): Game {
     val newTileDeck = tileDeck.add(playerTiles)
     val newItemDeck = itemDeck.add(playerItems + characterItems)
 
+    val newPlayerOrder = turn.playerTurn.filter{ it != player.user.id }
+
     val newGame = copy(
         players = newPlayers,
         spectators = if(toSpectator) spectators + Spectator(player.user) else spectators,
@@ -286,8 +317,10 @@ fun Game.leaveGame(player: Player, toSpectator: Boolean = false): Game {
         tileDeck = newTileDeck,
         itemDeck = newItemDeck
     )
-    return if(turn.playerTurn.first() == player.user.id) newGame.nextTurn()
-           else newGame
+
+    return  if(newPlayerOrder.isEmpty() && turn.gameTurn == 0u) newGame.resolveTurnZero()
+            else if(newPlayerOrder.isEmpty()) newGame.nextTurn()
+            else newGame.copy(turn = turn.copy(playerTurn = newPlayerOrder))
 }
 fun Game.placeOnBoard(player: Player, position: BoardPosition, card: Card, idx: UInt): Game {
     if(player.user.id != turn.playerTurn.first())
@@ -532,7 +565,7 @@ fun Game.resolvePending(): Game {
     )
 }
 
-fun Game.resolveBattleEnd(battle: Battle, winner: Character): Game {
+fun Game.resolveBattleEnd(battle: Battle, winner: Character?): Game {
     val fled = battle.characters.filter{ character ->
         character.activeStatModifiers.any{ mod -> mod.type == ModifierType.BATTLE_FLEE && mod.stats.hp != 0 }
     }.map{ it.name }
@@ -543,7 +576,7 @@ fun Game.resolveBattleEnd(battle: Battle, winner: Character): Game {
 
             val defaultCharacter = character.removeAllBattleMods()
             val newCharacter =
-                if(character.name != winner.name && character.name !in fled)
+                if(character.name != winner?.name && character.name !in fled)
                     defaultCharacter.addModifier(
                         newStatModifier = StatModifier(
                             stats = Stats(-1,0,0,0),
@@ -558,7 +591,7 @@ fun Game.resolveBattleEnd(battle: Battle, winner: Character): Game {
     }
 
     val updatedPlayers = players.map{ player ->
-        if(player.currentCharacter == winner.name)
+        if(player.currentCharacter == winner?.name)
             battle.itemBet.fold(player){ currentPlayer, bet ->
                 val item = bet.item
                 if(bet.player != player && item != null) currentPlayer.addToHand(ItemCard(item))
@@ -573,10 +606,6 @@ fun Game.resolveBattleEnd(battle: Battle, winner: Character): Game {
 
             player.removeFromHand(itemIdx)
         }
-    }
-
-    val endingActions = battle.characters.map{ character ->
-        BattleAction(character, null, PossibleBattleActions.HOLD, Stats(), turn.gameTurn.toInt())
     }
     
     return copy(
@@ -697,7 +726,7 @@ private fun Game.handleTimeOutSubstitutionPhase(player: Player): Game {
         .shuffled()
         .firstOrNull()
 
-    return if(!anyCharacterInHand || randomTile == null) leaveGame(player, true)
+    return if(!anyCharacterInHand || randomTile == null) leaveGame(player, player.user, true)
     else{
 
         val randomCharacterCard = player.hand

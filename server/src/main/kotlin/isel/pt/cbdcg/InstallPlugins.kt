@@ -25,12 +25,12 @@ import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.error.UserError
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
-import io.ktor.http.HttpHeaders
 import io.ktor.server.plugins.conditionalheaders.ConditionalHeaders
 import io.ktor.server.plugins.cors.routing.CORS
 import isel.pt.cbdcg.error.BattleError
 import isel.pt.cbdcg.error.CardError
 import isel.pt.cbdcg.error.CharacterError
+import isel.pt.cbdcg.error.ErrorResponse
 
 fun Application.installPlugins(httpclient: HttpClient) {
 
@@ -52,13 +52,9 @@ fun Application.installPlugins(httpclient: HttpClient) {
     }
 
     install(CORS) {
-        allowHost("localhost:8081") // Aceita qualquer endereço ou introduzir um token no URL
-
-        // Aceita tudo
-        allowHeader(HttpHeaders.ContentType)
-        allowHeader(HttpHeaders.Accept)
-        allowMethod(HttpMethod.Get)
-        allowMethod(HttpMethod.Post)
+        anyHost()
+        allowHeaders { true }
+        anyMethod()
     }
 
     val redirects = ConcurrentMap<String, String>()
@@ -101,21 +97,45 @@ fun Application.installPlugins(httpclient: HttpClient) {
 
     install(StatusPages) {
 
-        exception<IllegalArgumentException>{ call, cause ->
-            call.respond(HttpStatusCode.BadRequest, cause.message ?: "Invalid format.")
+        exception<IllegalArgumentException> { call, cause ->
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ErrorResponse(
+                    type = "IllegalArgumentException",
+                    message = cause.message ?: "Invalid format."
+                )
+            )
         }
 
-        exception<BadRequestException>{ call, cause ->
-            call.respond(HttpStatusCode.BadRequest, cause.message ?: "Invalid request body.")
+        exception<BadRequestException> { call, cause ->
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ErrorResponse(
+                    type = "BadRequest",
+                    message = cause.message ?: "Invalid request body."
+                )
+            )
         }
 
-        exception<Error>{ call, cause ->
+        exception<Error> { call, cause ->
             val (status, message) = cause.toHttpResponse()
-            call.respond(status, message)
+            call.respond(
+                status,
+                ErrorResponse(
+                    type = cause::class.qualifiedName ?: "UnknownError",
+                    message = message
+                )
+            )
         }
 
-        exception<Throwable> { call, _ ->
-            call.respond(HttpStatusCode.InternalServerError, "Internal server error.")
+        exception<Throwable> { call, cause ->
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                ErrorResponse(
+                    type = cause::class.simpleName ?: "InternalServerError",
+                    message = "Internal server error."
+                )
+            )
         }
     }
 }
@@ -134,7 +154,7 @@ fun Error.toHttpResponse(): Pair<HttpStatusCode, String>{
         is UserError.TokenMismatch -> HttpStatusCode.Unauthorized
         is UserError.TokenNotFound -> HttpStatusCode.NotFound
         is UserError.IdNotFound -> HttpStatusCode.NotFound
-        is UserError.NotLoggedIn -> HttpStatusCode.Unauthorized
+        is UserError.NotInGame -> HttpStatusCode.NotFound
 
         is TableError.DuplicateName -> HttpStatusCode.Conflict
         is TableError.UserUnavailable -> HttpStatusCode.Conflict

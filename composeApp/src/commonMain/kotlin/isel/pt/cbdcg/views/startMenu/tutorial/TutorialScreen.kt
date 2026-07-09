@@ -123,7 +123,8 @@ fun TutorialScreen(
             tileDeck = emptyMap(),
             itemDeck = emptyMap(),
             turn = Turn(0u, listOf(0u,1u), TurnPhase.CONSTRUCTION, Clock.System.now().toEpochMilliseconds()),
-            battle = null
+            battle = null,
+            version = 0u
         )
         val mockBattle = Battle(
             characters = listOf(

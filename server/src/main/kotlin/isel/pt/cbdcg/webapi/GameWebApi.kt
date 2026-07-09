@@ -4,22 +4,17 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import isel.pt.cbdcg.domain.game.board.toBoardTile
 import isel.pt.cbdcg.domain.game.board.toPosition
 import isel.pt.cbdcg.domain.game.character.toCharacter
 import isel.pt.cbdcg.domain.game.toCard
 import isel.pt.cbdcg.domain.game.toGameDTO
-import isel.pt.cbdcg.domain.game.toPossibleBattleAction
-import isel.pt.cbdcg.dto.ActInBattleDTO
-import isel.pt.cbdcg.dto.StartBattleDTO
-import isel.pt.cbdcg.dto.SimpleInGameActionDTO
-import isel.pt.cbdcg.dto.BoardTileEffectDTO
 import isel.pt.cbdcg.dto.CreateGameDTO
+import isel.pt.cbdcg.dto.GameRecoveryDTO
 import isel.pt.cbdcg.dto.GameUpdaterDTO
 import isel.pt.cbdcg.dto.SimpleGameRequestDTO
-import isel.pt.cbdcg.dto.ParticipateInBattleDTO
 import isel.pt.cbdcg.dto.PlaceOnBoardDTO
 import isel.pt.cbdcg.dto.RotatePieceDTO
 import isel.pt.cbdcg.dto.UnequipItemDTO
@@ -28,6 +23,15 @@ import isel.pt.cbdcg.service.GameService
 fun Route.gameWebApi(gameService: GameService) {
 
     route("/game") {
+
+        get{
+            val input = call.receive<GameRecoveryDTO>()
+
+            val result = gameService.getGame(input.userId.toUInt())
+                .getOrThrow()
+
+            call.respond(HttpStatusCode.OK, result.toGameDTO())
+        }
 
         post("/create") {
 

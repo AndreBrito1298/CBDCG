@@ -1,5 +1,6 @@
 package isel.pt.cbdcg.domain.game
 
+import isel.pt.cbdcg.BASE_FLEE_CHANCE
 import isel.pt.cbdcg.BASE_HOLD_DEFENCE_BOOST
 import isel.pt.cbdcg.HOLD_BONUS_FLEE_CHANCE
 import isel.pt.cbdcg.domain.game.character.Character
@@ -110,7 +111,7 @@ fun Battle.toBattleDTO(): BattleDTO =
         currentTurn = currentTurn.toInt(),
         phase = phase.name,
         pending = pending.map{ it.toBattleActionDTO() }.toTypedArray(),
-        actions = actions.flatMap{ (key, value) -> value.map{ it.toBattleActionDTO()} }.toTypedArray(),
+        actions = actions.flatMap{ (_, value) -> value.map{ it.toBattleActionDTO()} }.toTypedArray(),
         itemBet = itemBet.map{ it.toBattleBetDTO() }.toTypedArray()
     )
 fun BattleDTO.toBattle(): Battle =
@@ -218,7 +219,7 @@ fun Battle.flee(battleAction: BattleAction): Battle {
         .maxOf { it }
         .coerceAtLeast(0)
 
-    val baseFleeChance = speedDiff / 10f
+    val baseFleeChance = BASE_FLEE_CHANCE + (speedDiff / 15f)
     val increasedChance = if(heldLastTurn && !lostHPRecently) HOLD_BONUS_FLEE_CHANCE else 0.0
     val failedToFlee = Random.nextFloat() > baseFleeChance + increasedChance
 

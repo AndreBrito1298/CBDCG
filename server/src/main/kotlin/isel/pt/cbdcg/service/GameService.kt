@@ -11,7 +11,6 @@ import isel.pt.cbdcg.NUM_COPIES_CHARACTER
 import isel.pt.cbdcg.NUM_COPIES_ITEM
 import isel.pt.cbdcg.domain.Role
 import isel.pt.cbdcg.domain.addToGame
-import isel.pt.cbdcg.domain.game.BattleAction
 import isel.pt.cbdcg.domain.game.Card
 import isel.pt.cbdcg.domain.game.CharacterCard
 import isel.pt.cbdcg.domain.game.Game
@@ -21,11 +20,8 @@ import isel.pt.cbdcg.domain.game.Spectator
 import isel.pt.cbdcg.domain.game.TileCard
 import isel.pt.cbdcg.domain.game.applyRandomSpecialEffects
 import isel.pt.cbdcg.domain.game.board.BoardPosition
-import isel.pt.cbdcg.domain.game.board.BoardTile
 import isel.pt.cbdcg.domain.game.board.Direction
 import isel.pt.cbdcg.domain.game.Entity
-import isel.pt.cbdcg.domain.game.PossibleBattleActions
-import isel.pt.cbdcg.domain.game.battle
 import isel.pt.cbdcg.domain.game.board.tile.Tile
 import isel.pt.cbdcg.domain.game.gameUpdateByName
 import isel.pt.cbdcg.domain.game.board.tile.rotate
@@ -43,11 +39,13 @@ import isel.pt.cbdcg.domain.game.nextPhase
 import isel.pt.cbdcg.domain.game.placeOnBoard
 import isel.pt.cbdcg.domain.game.resolveTurnZero
 import isel.pt.cbdcg.domain.game.unequip
+import isel.pt.cbdcg.domain.removeFromGame
 import isel.pt.cbdcg.domain.verifyToken
 import isel.pt.cbdcg.error.GameError
 import isel.pt.cbdcg.error.TableError
 import isel.pt.cbdcg.error.UserError
 import isel.pt.cbdcg.repository.GameRepository
+import isel.pt.cbdcg.repository.ParticipantRepository
 import isel.pt.cbdcg.repository.TableRepository
 import isel.pt.cbdcg.repository.UserRepository
 import isel.pt.cbdcg.webapi.websocket.EventsPublisher
@@ -61,6 +59,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class GameService(
     private val gameRepo: GameRepository,
+    private val participantRepo: ParticipantRepository,
     private val tableRepo: TableRepository,
     private val userRepo: UserRepository,
     private val events: EventsPublisher,
@@ -81,6 +80,8 @@ class GameService(
             delay(delayMillis.milliseconds)
 
             val currentGame = gameRepo.findById(game.id) ?: return@launch
+            if(game.turn.deadline != currentGame.turn.deadline) return@launch
+
             val previousBattle = game.battle
 
             if (previousBattle == null) {
@@ -92,7 +93,7 @@ class GameService(
                     if (currentGame.turn.gameTurn == 0u) currentGame.handleTimeOutTurnZero()
                     else currentGame.handleTimeOutOutsideOfBattle()
 
-                savePublishAndSchedule(newGame)
+                newGame.savePublishAndSchedule()
 
             } else {
 
@@ -103,23 +104,38 @@ class GameService(
                     if (battle.currentTurn == 0u) currentGame.handleTimeOutStartingBattle()
                     else currentGame.handleTimeOutDuringOrAfterBattle()
 
-                savePublishAndSchedule(newGame)
+                newGame.savePublishAndSchedule()
 
             }
         }
     }
 
-    private suspend fun saveAndPublish(game: Game): Game {
-        gameRepo.save(game)
-        events.publishGameUpdated(game)
-        return game
+    private suspend fun Game.saveAndPublish(): Game {
+        val nextVersion = copy(version = version + 1u)
+        gameRepo.save(nextVersion)
+        events.publishGameUpdated(nextVersion)
+        return nextVersion
     }
 
-    private suspend fun savePublishAndSchedule(game: Game): Game {
-        gameRepo.save(game)
-        events.publishGameUpdated(game)
-        scheduleTurnTimer(game)
-        return game
+    private suspend fun Game.savePublishAndSchedule(): Game {
+        val nextVersion = copy(version = version + 1u)
+        gameRepo.save(nextVersion)
+        events.publishGameUpdated(nextVersion)
+        scheduleTurnTimer(nextVersion)
+        return nextVersion
+    }
+
+    suspend fun getGame(userId: UInt): Result<Game> = runCatching {
+        val user = userRepo.findById(userId)
+            ?: throw UserError.IdNotFound()
+
+        val gameId = user.auth?.gameId
+            ?: throw UserError.NotInGame()
+
+        val game = gameRepo.findById(gameId)
+            ?: throw GameError.GameNotFound(gameId.toInt())
+
+        game
     }
 
     suspend fun createGame(tableId: UInt, userId: UInt): Result<Game> = runCatching {
@@ -208,7 +224,7 @@ class GameService(
         val tables = tableRepo.getAllTables()
         events.publishLobbyTables(tables)
 
-        savePublishAndSchedule(game)
+        game.savePublishAndSchedule()
     }
 
     suspend fun rotateTile(userId: UInt, gameId: UInt, token: String, idx: UInt, right: Boolean): Result<Game> =
@@ -256,7 +272,7 @@ class GameService(
 
         val newGame = game.nextPhase()
 
-        savePublishAndSchedule(newGame)
+        newGame.savePublishAndSchedule()
     }
 
     suspend fun leaveGame(userId: UInt, gameId: UInt, token: String): Result<Unit> = runCatching {
@@ -269,14 +285,18 @@ class GameService(
             ?: throw GameError.GameNotFound(gameId.toInt())
 
         val player = game.players.find { it.user.id == user.id }
-            ?: throw GameError.PlayerNotFound(user.id.toInt(), user.email.string, game.id.toInt())
+        val spectator = game.spectators.find{ it.user.id == user.id }
 
-        val newGame = game.leaveGame(player)
+        if(player == null && spectator == null)
+            throw GameError.PlayerNotFound(userId.toInt(), null, gameId.toInt())
 
-        savePublishAndSchedule(newGame)
+        val newGame = game.leaveGame(player, user)
+
+        user.removeFromGame(userRepo)
+        participantRepo.deleteParticipant(user)
+
+        newGame.savePublishAndSchedule()
     }
-
-    // Effects to be implemented
 
     suspend fun placeOnBoard(
         userId: UInt,
@@ -296,13 +316,14 @@ class GameService(
         val player = game.players.find { it.user.id == user.id }
             ?: throw GameError.PlayerNotFound(user.id.toInt(), user.email.string, game.id.toInt())
 
-        val newGame = if (game.turn.gameTurn == 0u) {
-            game.placeOnBoard(player, pos, card, idx).resolveTurnZero()
+        if (game.turn.gameTurn == 0u) {
+            game.placeOnBoard(player, pos, card, idx)
+                .resolveTurnZero()
+                .savePublishAndSchedule()
         } else {
             game.placeOnBoard(player, pos, card, idx)
+                .saveAndPublish()
         }
-
-        saveAndPublish(newGame)
 
     }
 
@@ -321,7 +342,7 @@ class GameService(
 
             val newGame = game.unequip(player, character, index)
 
-            saveAndPublish(newGame)
+            newGame.saveAndPublish()
         }
 
     suspend fun applyGameUpdater(
@@ -342,9 +363,8 @@ class GameService(
 
         val newGame = game.gameUpdateByName(updaterName, origin, targets)
 
-        savePublishAndSchedule(newGame)
+        newGame.savePublishAndSchedule()
     }
-
 
 }
 
