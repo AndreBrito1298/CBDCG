@@ -67,6 +67,10 @@ kotlin {
             implementation(libs.ktor.clientCio)
             implementation(libs.logback)
         }
+        jvmTest.dependencies {
+            implementation(compose.desktop.uiTestJUnit4)
+            implementation(libs.kotlin.testJunit)
+        }
     }
 }
 

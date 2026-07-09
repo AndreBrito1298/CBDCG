@@ -15,6 +15,8 @@ import isel.pt.cbdcg.domain.game.board.tile.TileEffect
 import isel.pt.cbdcg.domain.game.board.tile.TileEffectTypes
 import isel.pt.cbdcg.domain.game.character.Grade
 import isel.pt.cbdcg.domain.game.character.ModifierType
+import isel.pt.cbdcg.domain.game.character.PassiveProps
+import isel.pt.cbdcg.domain.game.character.PassiveType
 import isel.pt.cbdcg.domain.game.character.PlayableCharacter
 import isel.pt.cbdcg.domain.game.character.StatModifier
 import isel.pt.cbdcg.domain.game.character.Stats
@@ -129,7 +131,8 @@ class TileEffectUsageTest {
         Player(user(id), emptyMap(), currentCharacter)
 
     private fun character(name: String): PlayableCharacter =
-        PlayableCharacter(name, Stats(3, 2, 1, 2), grade = Grade.BASIC, evolution = null)
+        PlayableCharacter(name, Stats(3, 2, 1, 2), grade = Grade.BASIC, evolution = null, passiveProps = PassiveProps(
+            PassiveType.NEUTRAL_PASSIVE, false))
 
     private fun tile(
         connections: List<Direction> = Direction.entries,

@@ -255,6 +255,7 @@ fun GameScreen(
                         PossibleBattleActions.FLEE -> battleAction(PossibleBattleActions.FLEE)
                         PossibleBattleActions.ATTACK -> return@BattleDialog
                         null -> battleAction(null)
+                        PossibleBattleActions.PASSIVE -> battleAction(null)
                     }
                 },
                 onDismiss = {  }

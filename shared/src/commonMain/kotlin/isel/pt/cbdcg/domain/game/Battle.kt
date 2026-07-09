@@ -33,14 +33,16 @@ fun String.toBattlePhase(): BattlePhase =
     }
 
 enum class PossibleBattleActions {
-    HOLD, FLEE, ATTACK
+    HOLD, FLEE, ATTACK, PASSIVE
 }
+
 
 fun String.toPossibleBattleAction(): PossibleBattleActions =
     when(this){
         "HOLD" -> PossibleBattleActions.HOLD
         "FLEE" -> PossibleBattleActions.FLEE
         "ATTACK" -> PossibleBattleActions.ATTACK
+        "PASSIVE" -> PossibleBattleActions.PASSIVE
         else -> throw BattleError.InvalidAction(this)
     }
 
@@ -167,6 +169,7 @@ fun Battle.attack(battleAction: BattleAction): Battle {
         actions = actions + (currentTurn to ((actions[currentTurn] ?: emptyList()) + battleAction.copy(stats = stats)))
     )
 }
+
 fun Battle.hold(battleAction: BattleAction): Battle {
     val origin = characters.find { it.name == battleAction.origin.name }
         ?: throw BattleError.CharacterNotFound(battleAction.origin.name)

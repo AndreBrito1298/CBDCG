@@ -71,7 +71,14 @@ private fun interface UpdaterE<T : Entity, R : Entity> {
 
 fun Game.gameUpdateByName(name: String, origin: Entity, targets: List<Entity>): Game {
     val updater = funToNameMap[name] ?: throw IllegalArgumentException("Updater not found")
-    return updater.run { this@gameUpdateByName.applyWithEntity(origin, targets) }
+    println("RUNNING UPDATER: $name")
+    try {
+        return updater.run { this@gameUpdateByName.applyWithEntity(origin, targets) }
+    }
+    catch (e: Exception) {
+        println(e)
+        throw e
+    }
 }
 
 @field:RegisterUpdater("CharacterMovement")
@@ -103,9 +110,12 @@ private val DrawItem = UpdaterE<Player, BoardTile> { player, targets ->
         else it
     }
 
-    val items = when (boardTile.tile.specialEffect.type) {
-        TileEffectTypes.Chest -> listOf(itemDeck.filter { (item, _) -> !item.grade.special() }.draw())
-        TileEffectTypes.BigChest -> {
+    val items =
+        when (boardTile.tile.specialEffect.type) {
+
+            TileEffectTypes.Chest -> listOf(itemDeck.filter { (item, _) -> !item.grade.special() }.draw())
+
+            TileEffectTypes.BigChest -> {
             val commonItem = itemDeck
                 .filter { (item, _) -> !item.grade.special() }
                 .draw()
@@ -121,7 +131,6 @@ private val DrawItem = UpdaterE<Player, BoardTile> { player, targets ->
 
             listOf(commonItem, specialItem)
         }
-
         else -> throw GameError.InvalidFormat("Draw Item", boardTile.tile.specialEffect.type.name)
     }
 
@@ -232,7 +241,8 @@ private val JoinBattle = UpdaterE<Character, Character> { character, none ->
     val player = players.find { it.currentCharacter == character.name }
         ?: throw BattleError.CharacterNotFound(character.name)
 
-    val ready = BattleAction(origin = character, target = null, action = PossibleBattleActions.FLEE, stats = Stats(), turn = turn.gameTurn.toInt())
+    val ready = BattleAction(origin = character, target = null,
+        action = PossibleBattleActions.PASSIVE, stats = Stats(), turn = turn.gameTurn.toInt())
 
     val itemCards = player.hand.mapNotNull { card -> (card.value as? ItemCard) }
     val keyItems = itemCards.filter { itemCard -> itemCard.item.grade == Grade.KEY }

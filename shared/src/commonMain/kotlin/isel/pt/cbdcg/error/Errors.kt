@@ -108,6 +108,7 @@ sealed class CardError(
 sealed class BattleError(
     msg: String,
 ): Error(msg, "Error found during a Battle."){
+    class PassiveCantActivateOutsideBattle: BattleError("PassiveCantActivateOutsideBattle")
     class CharacterNotFound(name: String) : BattleError("Character '$name' is not participating in the battle.")
     class InvalidAction(name: String) : BattleError("Invalid action '$name'.")
     class InvalidPhase(name: String) : BattleError("Invalid phase '$name'.")

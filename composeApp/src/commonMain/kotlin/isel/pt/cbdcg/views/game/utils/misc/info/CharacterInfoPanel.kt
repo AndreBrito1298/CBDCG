@@ -16,6 +16,7 @@ import isel.pt.cbdcg.domain.game.character.Character
 import isel.pt.cbdcg.domain.game.character.adjustStats
 import isel.pt.cbdcg.views.game.utils.misc.extra.CharacterEquippedItemsColumn
 import isel.pt.cbdcg.views.game.utils.misc.extra.CharacterEvolutionColumn
+import isel.pt.cbdcg.views.game.utils.misc.extra.CharacterPassiveColumn
 import isel.pt.cbdcg.views.game.utils.misc.stats.CardStatsColumn
 
 @Composable
@@ -58,6 +59,10 @@ fun CharacterInfoPanel(
                 modifier = Modifier.width(160.dp),
                 unequip = { idx -> unequip(idx) },
                 character = character,
+            )
+            CharacterPassiveColumn(
+                character = character,
+                Modifier.width(160.dp)
             )
         }
     }

@@ -37,7 +37,9 @@ fun Deck<Tile>.applyRandomSpecialEffects(): Deck<Tile> {
 fun <T> Deck<T>.draw(): T {
     val cards = this.flatMap{ (card, copies) -> List(copies.toInt()){ card } }
     if(cards.isEmpty()) throw GameError.EmptyDeck()
-    return cards.random()
+    val card = cards.random()
+    println(card)
+    return card
 }
 fun <T> Deck<T>.remove(removedCard: T): Deck<T> =
     this.map{ (card, copies) -> if(card == removedCard) card to copies - 1u else card to copies }

@@ -50,6 +50,7 @@ import org.jetbrains.exposed.v1.json.json
 
 object Games : IntIdTable("games") {
    // val gameTurn = integer("game_turn")
+    val version = uinteger("version")
     val turn = json<TurnDTO>("turn", Json.Default)
  //   val currentTurnPhase = enumeration("turn_phase", TurnPhase::class)
     val itemDeck = json<Array<ItemJson>>("item_deck", Json.Default)
@@ -83,7 +84,7 @@ data class TileJson(
 class GamesDao(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<GamesDao>(Games)
    // var gameTurn by Games.gameTurn
-
+    var version by Games.version
     var turn by Games.turn
    // var currentTurnPhase by Games.currentTurnPhase
     var itemsDeck by Games.itemDeck
@@ -143,6 +144,7 @@ object BoardCharacterModifiers : IntIdTable("board_character_modifiers") {
     val character_name = integer("character_name").references(BoardTiles.id, onDelete = ReferenceOption.CASCADE)
     val stats = varchar("stats", 50)
     val duration = integer("duration")
+    val canUsePassive = bool("has_used_passive")
 }
 
 class BoardCharacterModifiersDao(id: EntityID<Int>) : IntEntity(id) {
@@ -150,6 +152,7 @@ class BoardCharacterModifiersDao(id: EntityID<Int>) : IntEntity(id) {
     var characterName by BoardCharacterModifiers.character_name
     var stats by BoardCharacterModifiers.stats
     var duration by BoardCharacterModifiers.duration
+    var canUsePassive by BoardCharacterModifiers.canUsePassive
 }
 
 
@@ -224,6 +227,7 @@ private fun saveBoardTile(gameId: Int, boardTile: BoardTile) {
             characterName = saved.id.value
             stats = modifier.stats.toString()
             duration = modifier.duration.toInt()
+            canUsePassive = character.canUsePassive
         }
     }
 }
@@ -251,8 +255,8 @@ fun GamesDao.toGame(): Game {
         tileDeck = tileDeck.tileDeckFromDb(),
         itemDeck = itemsDeck.itemDeckFromDb(),
         turn = turn,
-        battle = this.battle?.toBattle(),
-        version = 0u
+        battle = this.battle?.toBattle()
+        //version = this.version
     )
 }
 fun GamesDao.toBoard(): Board {

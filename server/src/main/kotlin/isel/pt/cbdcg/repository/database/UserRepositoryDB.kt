@@ -5,15 +5,19 @@ import isel.pt.cbdcg.domain.Email
 import isel.pt.cbdcg.domain.Name
 import isel.pt.cbdcg.domain.Password
 import isel.pt.cbdcg.domain.User
+import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.repository.UserRepository
 import isel.pt.cbdcg.repository.database.Tables.AuthUsers
 import isel.pt.cbdcg.repository.database.Tables.AuthUsersDao
+import isel.pt.cbdcg.repository.database.Tables.Game.Games
+import isel.pt.cbdcg.repository.database.Tables.Game.GamesDao
 import isel.pt.cbdcg.repository.database.Tables.Participants
 import isel.pt.cbdcg.repository.database.Tables.ParticipantsDao
 import isel.pt.cbdcg.repository.database.Tables.Tables
 import isel.pt.cbdcg.repository.database.Tables.TablesDao
 import isel.pt.cbdcg.repository.database.Tables.Users
 import isel.pt.cbdcg.repository.database.Tables.UsersDao
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
@@ -69,6 +73,8 @@ object UserRepositoryDB: UserRepository {
                     userId = element.id.toInt()
                     gameId = auth.gameId?.toInt()
                     tokenExpiration = auth.tokenExpiration.toEpochMilliseconds()
+                    tokenRefresh = auth.tokenRefresh.toEpochMilliseconds()
+
                 }
             }
         }
@@ -84,7 +90,7 @@ object UserRepositoryDB: UserRepository {
 
     override suspend fun deleteInactiveUsers() {
         return suspendTransaction {
-            AuthUsersDao.find { AuthUsers.tokenExpiration lessEq Clock.System.now().toEpochMilliseconds() }
+            AuthUsersDao.find { (AuthUsers.tokenExpiration lessEq Clock.System.now().toEpochMilliseconds()) and (AuthUsers.gameId eq null) }
                 .forEach { it.delete() }
         }
     }

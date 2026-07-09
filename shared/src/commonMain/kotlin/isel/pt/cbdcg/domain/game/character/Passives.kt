@@ -1,21 +1,42 @@
 package isel.pt.cbdcg.domain.game.character
 
+import isel.pt.cbdcg.ITEM_CAPACITY
 import isel.pt.cbdcg.domain.game.Battle
 import isel.pt.cbdcg.domain.game.BattleAction
+import isel.pt.cbdcg.domain.game.Entity
 import isel.pt.cbdcg.domain.game.PossibleBattleActions
+import isel.pt.cbdcg.domain.game.addToAction
+import isel.pt.cbdcg.domain.game.replaceChar
 import isel.pt.cbdcg.error.BattleError
 import isel.pt.cbdcg.error.GameError
+import kotlin.random.Random
 
-fun interface Passive{
-    fun PlayableCharacter.tryActivate(battle: Battle): PlayableCharacter
 
-    fun PlayableCharacter.usePassive(battle: Battle): PlayableCharacter =
-        this.tryActivate(battle)
+enum class PassiveType{
+    BATTLE_PASSIVE,
+    NEUTRAL_PASSIVE
+}
+
+data class PassiveProps(
+    val type: PassiveType,
+    val isAfterActions: Boolean,
+    val description: String,
+    val passive: Passive<*>
+)
+
+class passivesB(
+    val type: PassiveType,
+    val passive: Passive<*>
+){
 
 }
 
-fun Passive.usePassive(character: PlayableCharacter, battle: Battle): PlayableCharacter {
-    return this@usePassive.run { character.usePassive(battle) }
+fun interface Passive<T: Entity>{
+    fun Character.tryActivate(battle: Battle?): T
+    fun Character.usePassive(battle: Battle?):T{
+        println("Trying to use ${this.name} passive")
+        return this.tryActivate(battle)
+    }
 }
 
 enum class StatName{
@@ -26,22 +47,23 @@ enum class StatName{
 }
 
 private fun Character.hasAttacked(action: BattleAction) =
-    this == action.origin && action.action == PossibleBattleActions.ATTACK
+    this.name == action.origin.name && action.action == PossibleBattleActions.ATTACK
 
-private fun Character.hasBeenAttacked():Boolean{
+private fun Character.hasLostHP():Boolean{
     this.activeStatModifiers.forEach { modifier ->
         if(modifier.type == ModifierType.BATTLE_ATTACK && modifier.stats.hp < 0) return true
     }
     return false
 }
 
-
-private fun Character.isCorrectItemType(stat: StatName): Boolean {
-
+private fun Character.hasBeenDamaged():Boolean{
+    this.activeStatModifiers.forEach { modifier ->
+        if(modifier.type == ModifierType.BATTLE_ATTACK && (modifier.stats.def < 0 || modifier.stats.hp < 0)) return true
+    }
     return false
 }
 
-private fun Battle.hasHighestStat(self: PlayableCharacter, stat: StatName): Boolean{
+private fun Battle.hasHighestStat(self: Character, stat: StatName): Boolean{
    return when(stat){
         StatName.SPD -> (this.characters.maxBy { it.adjustStats().spe } == self)
         StatName.HP -> (this.characters.maxBy { it.adjustStats().hp } == self)
@@ -50,341 +72,526 @@ private fun Battle.hasHighestStat(self: PlayableCharacter, stat: StatName): Bool
     }
 }
 
-@Target(AnnotationTarget.FIELD)
-annotation class RegisterPassive(val name: String)
 
 
-@field:RegisterPassive("KnightBasic")
-val KnightBasic: Passive = { battle ->
-    var self = battle.findSelf(this.name)
-    if(!this.canUsePassive) self as PlayableCharacter
-    val passiveModifier = StatModifier(Stats(def = 1), 2u, ModifierType.TMP_PASSIVE_MODIFIER)
-    self = hasUsedPassive()
-    if(self.hasBeenAttacked()) self.addModifier(passiveModifier)
-    self as PlayableCharacter
+val KnightBasic: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if(this.canUsePassive){
+        val statMod = Stats(def = 1)
+        val passiveModifier = StatModifier(statMod, 2u, ModifierType.TMP_PASSIVE_MODIFIER)
+        self = hasUsedPassive()
+        if(self.hasBeenDamaged()){
+            self = self.addModifier(passiveModifier)
+            resBattle = battle.replaceChar(self).
+            addToAction(
+                BattleAction(self, null, PossibleBattleActions.PASSIVE,statMod, battle.currentTurn.toInt()))
+        }
+    }
+    resBattle
 }
 
-@field:RegisterPassive("KnightRare")
-val KnightRare: Passive = { battle ->
-    var self = battle.findSelf(this.name)
-    if(!this.canUsePassive) self as PlayableCharacter
-    val passiveModifier = StatModifier(Stats(def = 2), 2u, ModifierType.TMP_PASSIVE_MODIFIER)
-    self = hasUsedPassive()
-    if(self.hasBeenAttacked()) self.addModifier(passiveModifier)
-    self as PlayableCharacter
+val KnightRare: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if(this.canUsePassive){
+        val statMod = Stats(def = 2)
+        val passiveModifier = StatModifier(statMod, 2u, ModifierType.TMP_PASSIVE_MODIFIER)
+        self = hasUsedPassive()
+        if(self.hasLostHP()){
+            self = self.addModifier(passiveModifier)
+            resBattle = battle.replaceChar(self).
+            addToAction(
+                BattleAction(self, null, PossibleBattleActions.PASSIVE,statMod, battle.currentTurn.toInt()))
+
+        }
+         }
+    resBattle
 }
 
-@field:RegisterPassive("Knight")
-val KnightEpic: Passive = { battle ->
-    var self = battle.findSelf(this.name)
-    if (self.hasBeenAttacked()) {
+val KnightEpic: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if (self.hasLostHP()) {
         val recovery = self.activeStatModifiers.find { it.type == ModifierType.BATTLE_ATTACK }!!.stats.hp
         val overflowRecovery = -2 - recovery
-
+        val statMod = Stats(hp = overflowRecovery)
         val passiveModifier = StatModifier(
-            Stats(hp = overflowRecovery), 5u, ModifierType.PERMANENT_PASSIVE_MODIFIER)
-        self.addModifier(passiveModifier)
+            statMod, 5u, ModifierType.PERMANENT_PASSIVE_MODIFIER)
+        self = self.addModifier(passiveModifier)
+        resBattle = battle.replaceChar(self).
+        addToAction(
+            BattleAction(self, null, PossibleBattleActions.PASSIVE,statMod, battle.currentTurn.toInt()))
     }
-    self as PlayableCharacter
+    resBattle
 }
 
-@field:RegisterPassive("MageBasic")
-val MageBasic: Passive =  { battle ->
-    var self = battle.findSelf(this.name)
-    if(!this.canUsePassive) self as PlayableCharacter
-    val passiveModifier = StatModifier(Stats(dmg = 1), 0u, ModifierType.TMP_PASSIVE_MODIFIER)
-    battle.pending.forEach { action->
-        if(this.hasAttacked(action)) {
-            self  = self.addModifier(passiveModifier)
-            hasUsedPassive()
+val MageBasic: Passive<Battle> =  { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if(this.canUsePassive){
+        val statMod = Stats(dmg = 1)
+        val passiveModifier = StatModifier(statMod, 1u, ModifierType.TMP_PASSIVE_MODIFIER)
+        battle.pending.forEach { action->
+            if(this.hasAttacked(action)) {
+                self = hasUsedPassive().addModifier(passiveModifier)
+                resBattle = battle.replaceChar(self).
+                addToAction(
+                    BattleAction(self, null, PossibleBattleActions.PASSIVE,statMod, battle.currentTurn.toInt()))
+            }
         }
     }
-    self as PlayableCharacter
+    resBattle?: battle
 }
 
-@field:RegisterPassive("MageBasic")
-val MageRare: Passive =  { battle ->
-    var self = battle.findSelf(this.name)
-    if(!this.canUsePassive) self as PlayableCharacter
-    val passiveModifier = StatModifier(Stats(dmg = 1), 2u, ModifierType.TMP_PASSIVE_MODIFIER)
-    battle.pending.forEach { action->
-        if(this.hasAttacked(action)) {
-            self  = self.addModifier(passiveModifier)
-            hasUsedPassive()
+val MageRare: Passive<Battle> =  { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if(this.canUsePassive){
+        val statMod = Stats(dmg = 1)
+        val passiveModifier = StatModifier(statMod, 2u, ModifierType.TMP_PASSIVE_MODIFIER)
+        battle.pending.forEach { action->
+            if(this.hasAttacked(action)) {
+                self = hasUsedPassive().addModifier(passiveModifier)
+                resBattle = battle.replaceChar(self).
+                addToAction(
+                    BattleAction(self, null, PossibleBattleActions.PASSIVE,statMod, battle.currentTurn.toInt()))
+            }
+        }
+
+    }
+    resBattle?: battle
+
+}
+val MageEpic: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if (this.canUsePassive) {
+        val statMod = Stats(dmg = 2)
+        val passiveModifier = StatModifier(statMod, 0u, ModifierType.TMP_PASSIVE_MODIFIER)
+        battle.pending.forEach { action ->
+            if (self.hasAttacked(action)) {
+                self = self.addModifier(passiveModifier)
+                resBattle = battle.replaceChar(self).
+                addToAction(
+                    BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+            }
         }
     }
-    self as PlayableCharacter
+    resBattle?: battle
 }
 
-@field:RegisterPassive("MageEpic")
-val MageEpic: Passive = { battle->
-    var self = battle.findSelf(this.name)
-    if(!this.canUsePassive) self as PlayableCharacter
-    val passiveModifier = StatModifier(Stats(dmg = 2), 0u, ModifierType.TMP_PASSIVE_MODIFIER)
-    battle.pending.forEach { actions->
-        if(self.hasAttacked(actions)) {
-            self  = self.addModifier(passiveModifier)
+val AssassinBasic: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if (this.canUsePassive && battle.currentTurn == 1u) {
+        val statMod = if (battle.hasHighestStat(self, StatName.SPD))
+            Stats(spe = 1) else Stats(def = 1)
+        val passiveModifier = StatModifier(statMod, 1u, ModifierType.TMP_PASSIVE_MODIFIER)
+        self = hasUsedPassive().addModifier(passiveModifier)
+        resBattle = battle.replaceChar(self).
+        addToAction(
+            BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+    }
+    resBattle
+}
+
+val AssassinRare: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if (this.canUsePassive && battle.currentTurn == 1u) {
+        val statMod = if (battle.hasHighestStat(self, StatName.HP))
+            Stats(dmg = 1) else Stats(def = 1)
+        val passiveModifier = StatModifier(statMod, 1u, ModifierType.TMP_PASSIVE_MODIFIER)
+        self = hasUsedPassive().addModifier(passiveModifier)
+        resBattle = battle.replaceChar(self).
+        addToAction(
+            BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+    }
+    resBattle
+}
+
+val AssassinEpic: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    val statMod = if (self.adjustStats().hp < self.baseStats.hp)
+        Stats(dmg = 1, def = 1, spe = 1) else Stats()
+    val passiveModifier = StatModifier(statMod, 0u, ModifierType.TMP_PASSIVE_MODIFIER)
+    self = self.addModifier(passiveModifier)
+    resBattle = battle.replaceChar(self).
+    addToAction(
+        BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+    resBattle
+}
+
+val AlchemistBasic: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if(canUsePassive && battle.currentTurn == 1u){
+        val statMod = if (battle.hasHighestStat(self, StatName.HP))
+            Stats(dmg = 1) else Stats(def = 1)
+        val passiveModifier = StatModifier(statMod, 0u, ModifierType.TMP_PASSIVE_MODIFIER)
+        self = hasUsedPassive().addModifier(passiveModifier)
+        resBattle = battle.replaceChar(self).
+        addToAction(
+            BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+
+    }
+    resBattle
+}
+
+val AlchemistRare: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if (this.canUsePassive) {
+        if (self.hasBeenDamaged()) {
+            val statMod = if (self.adjustStats().hp + 2 > self.baseStats.hp)
+                Stats(hp = 1) else Stats(hp = 2)
+            val passiveModifier = StatModifier(
+                statMod, 0u,
+                ModifierType.PERMANENT_PASSIVE_MODIFIER
+            )
+            self = hasUsedPassive().addModifier(passiveModifier)
+            resBattle = battle.replaceChar(self).
+            addToAction(
+                BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
         }
     }
-    self as PlayableCharacter
+    resBattle
 }
 
-@field:RegisterPassive("AssassinBasic")
-val AssassinBasic: Passive = { battle->
-    var self =battle.findSelf(this.name)
-    if(!this.canUsePassive) self as PlayableCharacter
-    val passiveModifier = if(battle.hasHighestStat(self as PlayableCharacter, StatName.SPD))
-        StatModifier(Stats(spe = 1), 1u, ModifierType.TMP_PASSIVE_MODIFIER)
-    else StatModifier(Stats(def = 1), 1u, ModifierType.TMP_PASSIVE_MODIFIER)
-    self = hasUsedPassive()
-    self.addModifier(passiveModifier) as PlayableCharacter
-}
-
-@field:RegisterPassive("AssassinRare")
-val AssassinRare: Passive = { battle->
-    var self = battle.findSelf(this.name)
-    if(!this.canUsePassive) self as PlayableCharacter
-    val passiveModifier = if(battle.hasHighestStat(self as PlayableCharacter, StatName.HP))
-        StatModifier(Stats(dmg = 1), 1u, ModifierType.TMP_PASSIVE_MODIFIER)
-    else StatModifier(Stats(def = 1), 1u, ModifierType.TMP_PASSIVE_MODIFIER)
-    self = hasUsedPassive()
-    self.addModifier(passiveModifier) as PlayableCharacter
-}
-
-@field:RegisterPassive("AssassinRare")
-val AssassinEpic: Passive = { battle->
-    var self = battle.findSelf(this.name)
-    val passiveModifier = if(self.adjustStats().hp < self.baseStats.hp)
-        StatModifier(Stats(dmg = 1, def = 1, spe = 1), 0u, ModifierType.TMP_PASSIVE_MODIFIER)
-    else StatModifier(Stats(), 0u, ModifierType.TMP_PASSIVE_MODIFIER)
-    self.addModifier(passiveModifier) as PlayableCharacter
-}
-
-@field:RegisterPassive("AlchemistBasic")
-val AlchemistBasic: Passive = {battle->
-    var self = battle.findSelf(this.name)
-    resetPassive()
-    val passiveModifier = if(battle.hasHighestStat(self as PlayableCharacter, StatName.HP))
-        StatModifier(Stats(dmg = 1), 1u, ModifierType.TMP_PASSIVE_MODIFIER)
-    else StatModifier(Stats(def = 1), 1u, ModifierType.TMP_PASSIVE_MODIFIER)
-    self = hasUsedPassive()
-    self.addModifier(passiveModifier) as PlayableCharacter
-}
-
-
-@field:RegisterPassive("AlchemistRare")
-val AlchemistRare: Passive = {battle->
-    var self = battle.findSelf(this.name)
-    if(!this.canUsePassive) self as PlayableCharacter
-
-    val passiveModifier = if(self.adjustStats().hp+2 > self.baseStats.hp) StatModifier(Stats(hp = 1), 0u, ModifierType.PERMANENT)
-    else StatModifier(Stats(hp = 2), 1u, ModifierType.PERMANENT_PASSIVE_MODIFIER)
-    if(self.hasBeenAttacked()){
-        self = hasUsedPassive()
-        self.addModifier(passiveModifier)
+val AlchemistEpic: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if (this.canUsePassive) {
+        val statMod = Stats(def = 1, spe = 1, dmg = 1, hp = 1)
+        val passiveModifier = StatModifier(statMod, 0u, ModifierType.PERMANENT_PASSIVE_MODIFIER)
+        if (self.hasBeenDamaged()) {
+            self = hasUsedPassive().addModifier(passiveModifier)
+            resBattle = battle.replaceChar(self).
+            addToAction(
+                BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+        }
     }
-    self as PlayableCharacter
+    resBattle
 }
-
-@field:RegisterPassive("AlchemistEpic")
-val AlchemistEpic: Passive = {battle->
-    var self = battle.findSelf(this.name)
-    if(!this.canUsePassive) self as PlayableCharacter
-
-    val passiveModifier = StatModifier(Stats(def = 1, spe = 1, dmg = 1, hp = 1), 1u, ModifierType.TMP_PASSIVE_MODIFIER)
-    if(self.hasBeenAttacked()){
-        self = hasUsedPassive()
-        self.addModifier(passiveModifier)
-    }
-    self as PlayableCharacter
-}
-
-@field:RegisterPassive("PaladinBasic")
-val PaladinBasic: Passive = {battle ->
-    var self = battle.findSelf(this.name)
+val PaladinBasic: Passive<Character> = { battle ->
+    var self = this as PlayableCharacter
     var modVal = 0
-    (self as PlayableCharacter).items.forEach { item ->
+    (self).items.forEach { item ->
         modVal += item.stats.def
     }
-    val passiveModifier = StatModifier(Stats(dmg = modVal, def = -modVal), 0u, ModifierType.TMP_PASSIVE_MODIFIER)
-    self.addModifier(passiveModifier) as PlayableCharacter
+    val passiveModifier = StatModifier(Stats(dmg = modVal, def = -modVal), 0u, ModifierType.SELF_PASSIVE_MODIFIER)
+    val previousBuff = self.activeStatModifiers.find { it.type == ModifierType.SELF_PASSIVE_MODIFIER }
+    if(previousBuff != null) self.removeModifier(previousBuff)
+    self.addModifier(passiveModifier)
 }
 
-@field:RegisterPassive("PaladinEpic")
-val PaladinEpic: Passive = {battle ->
-    var self = battle.findSelf(this.name)
+val PaladinRare: Passive<Character> = { battle->
+    var self = this
     var modVal = 0
     (self as PlayableCharacter).items.forEach { _ ->
         modVal++
     }
-    val passiveModifier = StatModifier(Stats(hp = modVal), 0u, ModifierType.TMP_PASSIVE_MODIFIER)
-    self.addModifier(passiveModifier) as PlayableCharacter
+    val passiveModifier = StatModifier(Stats(hp = modVal), 1u, ModifierType.SELF_PASSIVE_MODIFIER)
+    val previousBuff = self.activeStatModifiers.find { it.type == ModifierType.SELF_PASSIVE_MODIFIER }
+    if(previousBuff != null) self.removeModifier(previousBuff)
+    self.addModifier(passiveModifier)
 }
 
-@field:RegisterPassive("ElfBasic")
-val ElfBasic: Passive = {battle ->
-    var self = battle.findSelf(this.name)
-    if(!this.canUsePassive) self as PlayableCharacter
+val PaladinEpic: Passive<Character> = { battle ->
+    var self = this as PlayableCharacter
+    var modVal = 0
+    (self).items.forEach { _ ->
+        modVal++
+    }
+    val passiveModifier = StatModifier(Stats(hp = modVal), 1u, ModifierType.SELF_PASSIVE_MODIFIER)
+    val previousBuff = self.activeStatModifiers.find { it.type == ModifierType.SELF_PASSIVE_MODIFIER }
+    if(previousBuff != null) self.removeModifier(previousBuff)
+    self.addModifier(passiveModifier)
+}
 
-    self = hasUsedPassive()
-    val passiveModifier = if(battle.hasHighestStat(self as PlayableCharacter, StatName.DMG))
-        StatModifier(Stats(def = 1), 1u, ModifierType.TMP_PASSIVE_MODIFIER)
-    else StatModifier(Stats(spe = 1), 1u, ModifierType.TMP_PASSIVE_MODIFIER)
-    self = hasUsedPassive()
-    self = self.addModifier(passiveModifier) as PlayableCharacter
+val ElfBasic: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if (this.canUsePassive && battle.currentTurn == 1u) {
+        val statMod = if (battle.hasHighestStat(self as PlayableCharacter, StatName.DMG))
+            Stats(def = 1) else Stats(spe = 1)
+        val passiveModifier = StatModifier(statMod, 1u, ModifierType.TMP_PASSIVE_MODIFIER)
+        self = hasUsedPassive().addModifier(passiveModifier)
+        resBattle = battle.replaceChar(self).
+        addToAction(
+            BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+    }
+    resBattle
+}
+
+val ElfRare: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if (this.canUsePassive && battle.currentTurn == 1u) {
+        val statMod = Stats(spe = 1)
+        val passiveModifier = StatModifier(statMod, 2u, ModifierType.TMP_PASSIVE_MODIFIER)
+        battle.pending.forEach { actions ->
+            if (self.hasAttacked(actions)) {
+                self = hasUsedPassive().addModifier(passiveModifier)
+                resBattle = battle.replaceChar(self).
+                addToAction(
+                    BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+            }
+        }
+    }
+    resBattle?: battle
+}
+
+val ElfEpic: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if (this.canUsePassive && battle.currentTurn == 1u) {
+        val statMod = Stats(def = 2)
+        val passiveModifier = StatModifier(statMod, 2u, ModifierType.TMP_PASSIVE_MODIFIER)
+        if (self.hasLostHP()) {
+            self = self.addModifier(passiveModifier)
+            resBattle = battle.replaceChar(self).
+            addToAction(
+                BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+        }
+    }
+    resBattle
+}
+
+
+val TaoistBasic:Passive<Character> = { battle->
+    var self = this as PlayableCharacter
+    var mod = 0
+    self.items.forEach { item ->
+        mod+=item.stats.spe
+    }
+    val passiveModifier = StatModifier(Stats(spe=-mod, dmg=mod), 1u, ModifierType.SELF_PASSIVE_MODIFIER)
+    val previousBuff = self.activeStatModifiers.find { it.type == ModifierType.SELF_PASSIVE_MODIFIER }
+    if(previousBuff != null) self = self.removeModifier(previousBuff) as PlayableCharacter
+    self.addModifier(passiveModifier)
+}
+
+val TaoistRare:Passive<Character> = { battle->
+    var self = this as PlayableCharacter
+    if(self.items.isEmpty()){
+        val passiveModifier = StatModifier(Stats(dmg=1, spe=1), 1u, ModifierType.SELF_PASSIVE_MODIFIER)
+        val previousBuff = self.activeStatModifiers.find { it.type == ModifierType.SELF_PASSIVE_MODIFIER }
+        if(previousBuff != null) self = self.removeModifier(previousBuff) as PlayableCharacter
+        self.addModifier(passiveModifier)
+    }
     self
 }
 
-@field:RegisterPassive("ElfRare")
-val ElfRare: Passive = {battle->
-    var self = battle.findSelf(this.name)
-    if(!this.canUsePassive) self as PlayableCharacter
+val TaoistEpic: Passive<Character> = { battle->
+    var self = this as PlayableCharacter
+    if(self.items.isEmpty()){
+        val passiveModifier = StatModifier(Stats(def=1,dmg=1, spe=1), 1u, ModifierType.SELF_PASSIVE_MODIFIER)
+        val previousBuff = self.activeStatModifiers.find { it.type == ModifierType.SELF_PASSIVE_MODIFIER }
+        if(previousBuff != null) self = self.removeModifier(previousBuff) as PlayableCharacter
+        self.addModifier(passiveModifier)
+    }
+    self
+}
 
-    val passiveModifier = StatModifier(Stats(spe = 1), 2u, ModifierType.TMP_PASSIVE_MODIFIER)
-    battle.pending.forEach { actions->
-        if(self.hasAttacked(actions)) {
-            self  = self.addModifier(passiveModifier)
-            self = hasUsedPassive()
+val ThiefBasic: Passive<Battle> = { battle->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if(!hasBeenDamaged() && canUsePassive){
+        val statMod = Stats(spe = 1)
+        self = addModifier(StatModifier(statMod, 1u, ModifierType.TMP_PASSIVE_MODIFIER))
+        resBattle = battle.replaceChar(self).
+        addToAction(
+            BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+    }
+    else{
+        self = hasUsedPassive()
+    }
+    resBattle
+}
+
+val ThiefRare: Passive<Battle> = { battle->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if(!hasBeenDamaged() && canUsePassive){
+        val statMod = Stats(spe = 1)
+        self = addModifier(StatModifier(statMod, 1u, ModifierType.TMP_PASSIVE_MODIFIER))
+        resBattle = battle.replaceChar(self).
+        addToAction(
+            BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+    }
+    else{
+        self = hasUsedPassive()
+        val statMod = Stats(def = 2)
+        self = addModifier(StatModifier(statMod, 2u, ModifierType.TMP_PASSIVE_MODIFIER))
+        resBattle = battle.replaceChar(self).
+        addToAction(
+            BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+    }
+    resBattle
+}
+
+
+val ThiefEpic: Passive<Battle> = { battle->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if(!hasBeenDamaged() && canUsePassive){
+        val statMod = Stats(spe = 1)
+        self = addModifier(StatModifier(statMod, 1u, ModifierType.TMP_PASSIVE_MODIFIER))
+        resBattle = battle.replaceChar(self).
+        addToAction(
+            BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+    }
+    else{
+        self = hasUsedPassive()
+        val statMod = Stats(def = 2)
+        self = addModifier(StatModifier(statMod, 2u, ModifierType.TMP_PASSIVE_MODIFIER))
+        resBattle = battle.replaceChar(self).
+        addToAction(
+            BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+    }
+    resBattle.pending.forEach { action ->
+        if (hasAttacked(action)) {
+            val rngbs = Random.nextInt(1, 21)
+
+            if (rngbs == 20 && (self as PlayableCharacter).items.size < ITEM_CAPACITY) {
+                val target = action.target as PlayableCharacter
+                val equipedItem = target.items.first()
+                target.items.toMutableList()-equipedItem
+                (self).equipItem(equipedItem)
+                resBattle.replaceChar(self)
+                resBattle.replaceChar(target)
+            }
+            if (rngbs >= 15) {
+                val target = action.target as PlayableCharacter
+                val equipedItem = target.items.first()
+                target.unequip(item = equipedItem)
+                resBattle.replaceChar(target)
+            }
         }
     }
-    self as PlayableCharacter
+    resBattle
 }
 
-@field:RegisterPassive("ElfEpic")
-val ElfEpic: Passive = {battle->
-    var self = battle.findSelf(this.name)
-    if(!this.canUsePassive) self as PlayableCharacter
-
-    val passiveModifier = StatModifier(Stats(def = 1), 2u, ModifierType.TMP_PASSIVE_MODIFIER)
-    if(self.hasBeenAttacked()){
-        self = self.addModifier(passiveModifier)
-    }
-    self as PlayableCharacter
-}
-
-@field:RegisterPassive("WerewolBasic")
-val WerewolBasic: Passive = {battle->
-    var self = battle.findSelf(this.name)
-    if(self.hasBeenAttacked()){
-        self.activeStatModifiers.find { it.type == ModifierType.BATTLE_ATTACK }
-    }
-    TODO()
-}
-
-@field:RegisterPassive("TaoistBasic")
-val TaoistBasic:Passive = {battle->
-    var self = battle.findSelf(this.name)
+val WerewolfBasic: Passive<Character> = { battle->
+    var self = this
     var mod = 0
-    this.items.forEach { item ->
-        mod+=item.stats.spe
+    (self as PlayableCharacter).items.forEach { item ->
+        mod+=item.stats.dmg
     }
-    val passiveModifier = StatModifier(Stats(spe=-mod, dmg=mod), 0u, ModifierType.TMP_PASSIVE_MODIFIER)
-    self.addModifier(passiveModifier) as PlayableCharacter
+    val passiveModifier = StatModifier(Stats(dmg = mod), 1u, ModifierType.TMP_PASSIVE_MODIFIER)
+    val previousBuff = self.activeStatModifiers.find { it.type == ModifierType.SELF_PASSIVE_MODIFIER }
+    if(previousBuff != null) self = self.removeModifier(previousBuff) as PlayableCharacter
+    self.addModifier(passiveModifier)
 }
 
-@field:RegisterPassive("TaoistRare")
-val TaoistRare:Passive = {battle->
-    var self = battle.findSelf(this.name)
-    if(this.items.isEmpty()){
-        val passiveModifier = StatModifier(Stats(dmg=1, spe=1), 0u, ModifierType.TMP_PASSIVE_MODIFIER)
-        self.addModifier(passiveModifier) as PlayableCharacter
-    }
-    self as PlayableCharacter
-}
-
-@field:RegisterPassive("TaoistEpic")
-val TaoistEpic: Passive = {battle->
-    var self = battle.findSelf(this.name)
-    if(this.items.isEmpty()){
-        val passiveModifier = StatModifier(Stats(def=1,dmg=1, spe=1), 0u, ModifierType.TMP_PASSIVE_MODIFIER)
-        self.addModifier(passiveModifier) as PlayableCharacter
-    }
-    self as PlayableCharacter
-}
-
-@field:RegisterPassive("WerewolfRare")
-val WerewolfRare: Passive = {battle->
-    var self = battle.findSelf(this.name)
+val WerewolfRare: Passive<Character> = { battle->
+    var self = this
     var modVal = 0
     (self as PlayableCharacter).items.forEach { _ ->
         modVal++
     }
-    val passiveModifier = StatModifier(Stats(dmg = modVal), 0u, ModifierType.TMP_PASSIVE_MODIFIER)
-    self = self.addModifier(passiveModifier) as PlayableCharacter
-    self as PlayableCharacter
+    val passiveModifier = StatModifier(Stats(dmg = modVal), 1u, ModifierType.TMP_PASSIVE_MODIFIER)
+    val previousBuff = self.activeStatModifiers.find { it.type == ModifierType.SELF_PASSIVE_MODIFIER }
+    if(previousBuff != null) self = self.removeModifier(previousBuff) as PlayableCharacter
+    self.addModifier(passiveModifier)
 }
 
-@field:RegisterPassive("WerewolfRare")
-val WerewolfEpic: Passive = {battle->
-    var self = battle.findSelf(this.name)
+
+val WerewolfEpic: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
     val target = battle.pending.filter { it.action == PossibleBattleActions.ATTACK && it.origin == self }
-    if(target.isNotEmpty()){
-        val mod = target.first().target?.baseStats?.def?:throw BattleError.InvalidAction("Attack has no target")
-        val passiveModifier = StatModifier(Stats(def = -mod), 0u, ModifierType.TMP_PASSIVE_MODIFIER)
-        target.first().target!!.addModifier(passiveModifier) as PlayableCharacter
+    if (target.isNotEmpty()) {
+        val mod = target.first().target?.baseStats?.def
+            ?: throw BattleError.InvalidAction("Attack has no target")
+        val statMod = Stats(def = -mod)
+        val passiveModifier = StatModifier(statMod, 0u, ModifierType.TMP_PASSIVE_MODIFIER)
+        val updatedTarget = target.first().target!!.addModifier(passiveModifier)
+        resBattle = battle.replaceChar(updatedTarget).
+        addToAction(
+            BattleAction(self, updatedTarget, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
     }
-    self as PlayableCharacter
+    resBattle
 }
 
-@field:RegisterPassive("BerserkerBasic")
-val BerserkerBasic: Passive = {battle ->
-    var self = battle.findSelf(this.name)
+val BerserkerBasic: Passive<Character> = { battle ->
+    var self = this
     var modVal = 0
     (self as PlayableCharacter).items.forEach { item ->
         modVal += item.stats.dmg
     }
-    val passiveModifier = StatModifier(Stats(dmg = -modVal, def = modVal), 0u, ModifierType.TMP_PASSIVE_MODIFIER)
-    self.addModifier(passiveModifier) as PlayableCharacter
-}
+    val passiveModifier = StatModifier(Stats(dmg = -modVal, def = modVal), 1u, ModifierType.SELF_PASSIVE_MODIFIER)
+    val previousBuff = self.activeStatModifiers.find { it.type == ModifierType.SELF_PASSIVE_MODIFIER }
+    if(previousBuff != null) self = self.removeModifier(previousBuff) as PlayableCharacter
+    self.addModifier(passiveModifier)}
 
-@field:RegisterPassive("BerserkerRare")
-val BerserkerRare: Passive = {battle ->
-    var self = battle.findSelf(this.name)
+val BerserkerRare: Passive<Character> = { battle ->
+    var self = this
     var modVal = 0
     (self as PlayableCharacter).items.forEach { _ ->
         modVal++
     }
-    val passiveModifier = StatModifier(Stats(def = modVal), 0u, ModifierType.TMP_PASSIVE_MODIFIER)
-    self.addModifier(passiveModifier) as PlayableCharacter
+    val passiveModifier = StatModifier(Stats(def = modVal), 1u, ModifierType.SELF_PASSIVE_MODIFIER)
+    val previousBuff = self.activeStatModifiers.find { it.type == ModifierType.SELF_PASSIVE_MODIFIER }
+    if(previousBuff != null) self = self.removeModifier(previousBuff) as PlayableCharacter
+    self.addModifier(passiveModifier)
 }
-
-@field:RegisterPassive("BerserkerEpic")
-val BerserkerEpic: Passive = {battle->
-    var self = battle.findSelf(this.name)
-    battle.pending.forEach { action->
-        if(this.hasAttacked(action)) {
-            val passiveModifier = StatModifier(Stats(dmg = -action.stats.hp%2), 1u, ModifierType.TMP_PASSIVE_MODIFIER)
-            self  = action.target?.addModifier(passiveModifier)?:throw BattleError.InvalidAction("No target in attack")
+val BerserkerEpic: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    battle.pending.forEach { action ->
+        if (this.hasAttacked(action)) {
+            val statMod = Stats(dmg = -action.stats.hp % 2)
+            val passiveModifier = StatModifier(statMod, 1u, ModifierType.TMP_PASSIVE_MODIFIER)
+            val updatedTarget = action.target?.addModifier(passiveModifier)
+                ?: throw BattleError.InvalidAction("No target in attack")
+            resBattle = resBattle!!.replaceChar(updatedTarget).
+            addToAction(
+                BattleAction(self, updatedTarget, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
         }
     }
-    self as PlayableCharacter
+    resBattle?: battle
 }
 
-@field:RegisterPassive("PriestRare")
-val PriestRare: Passive = {battle->
-    var self = battle.findSelf(this.name)
-    if(!this.canUsePassive) self as PlayableCharacter
-
-    self = hasUsedPassive()
-    val passiveModifier = StatModifier(Stats(1,1,1,1), 1u, ModifierType.TMP_PASSIVE_MODIFIER)
-    self.addModifier(passiveModifier) as PlayableCharacter
+val PriestRare: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
+    if (this.canUsePassive) {
+        self = hasUsedPassive()
+        val statMod = Stats(1, 1, 1, 1)
+        val passiveModifier = StatModifier(statMod, 1u, ModifierType.TMP_PASSIVE_MODIFIER)
+        self = self.addModifier(passiveModifier)
+        resBattle = battle.replaceChar(self).
+        addToAction(
+            BattleAction(self, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+    }
+    resBattle
 }
 
-val PriestEpic: Passive = {battle->
-    var self = battle.findSelf(this.name)
-
+val PriestEpic: Passive<Battle> = { battle ->
+    var self = battle?.findSelf(this.name)?:throw BattleError.PassiveCantActivateOutsideBattle()
+    var resBattle = battle
     val target = battle.pending.filter { it.action == PossibleBattleActions.ATTACK && it.target == self }.random().origin
     val mod = 1 - target.adjustStats().dmg
-    val passiveModifier = StatModifier(Stats(dmg = -mod), 1u, ModifierType.TMP_PASSIVE_MODIFIER)
-    target.addModifier(passiveModifier) as PlayableCharacter
+    val statMod = Stats(dmg = -mod)
+    val passiveModifier = StatModifier(statMod, 1u, ModifierType.TMP_PASSIVE_MODIFIER)
+    val newTarget = target.addModifier(passiveModifier)
+    resBattle = battle.replaceChar(newTarget).
+    addToAction(
+        BattleAction(newTarget, null, PossibleBattleActions.PASSIVE, statMod, battle.currentTurn.toInt()))
+    resBattle
 }
 
-@field:RegisterPassive("NoPassive")
-val NoPassive: Passive = { battle->
-    battle.findSelf(this.name) as PlayableCharacter
+val NoPassive: Passive<Character> = { battle->
+    this
 }
 
 
 
 private fun Battle.findSelf(name: String) =
     this.characters.find { it.name == name }?: throw GameError.NoActiveCharacters()
+
+
+

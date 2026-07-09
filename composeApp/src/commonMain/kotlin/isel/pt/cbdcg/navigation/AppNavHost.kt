@@ -221,6 +221,7 @@ fun AppNavHost(vm: AppViewModel) {
                             PossibleBattleActions.FLEE -> vm.actInBattle(PossibleBattleActions.FLEE)
                             PossibleBattleActions.ATTACK -> vm.attack()
                             null -> vm.undoBattleAction()
+                            PossibleBattleActions.PASSIVE -> vm
                         }
                     },
                     participateInBattle = { accept -> vm.participateInBattle(accept) },
