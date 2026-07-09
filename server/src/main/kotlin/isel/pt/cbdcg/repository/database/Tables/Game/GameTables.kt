@@ -255,8 +255,8 @@ fun GamesDao.toGame(): Game {
         tileDeck = tileDeck.tileDeckFromDb(),
         itemDeck = itemsDeck.itemDeckFromDb(),
         turn = turn,
-        battle = this.battle?.toBattle()
-        //version = this.version
+        battle = this.battle?.toBattle(),
+        version = this.version
     )
 }
 fun GamesDao.toBoard(): Board {

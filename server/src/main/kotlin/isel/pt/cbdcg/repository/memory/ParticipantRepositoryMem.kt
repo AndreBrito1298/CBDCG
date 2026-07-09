@@ -30,16 +30,17 @@ object ParticipantRepositoryMem: ParticipantRepository {
         participants.removeIf{ it.user.id == user.id }
     }
 
-    override suspend fun findById(id: UInt): Participant? {
-        TODO("Not yet implemented")
-    }
+    override suspend fun findById(id: UInt): Participant? =
+        participants.find{ it.user.id == id }
+
 
     override suspend fun save(element: Participant) {
-        TODO("Not yet implemented")
+        participants.removeIf{ it.user.id == element.user.id }
+        participants.add(element)
     }
 
     override suspend fun deleteById(id: UInt) {
-        TODO("Not yet implemented")
+        participants.removeIf{ it.user.id == id }
     }
 
     override suspend fun clear() {

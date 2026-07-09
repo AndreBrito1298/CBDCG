@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 fun main() {
-    dbInit(true)
+    // dbInit(true)
     embeddedServer(Netty, port = SERVER_PORT, host = "0.0.0.0", module = Application::module)
         .start(wait = true)
 }
@@ -46,14 +46,14 @@ fun Application.module() {
 
     val webSocketHub = WebSocketHub()
 
-    val userService = UserService(UserRepositoryDB)
-    val tableService = TableService(UserRepositoryDB, TableRepositoryDB, ParticipantRepositoryDB, webSocketHub)
+    val userService = UserService(UserRepositoryMem)
+    val tableService = TableService(UserRepositoryMem, TableRepositoryMem, ParticipantRepositoryMem, webSocketHub)
     val gameService =
         GameService(
-            GameRepositoryDB,
-            ParticipantRepositoryDB,
-            TableRepositoryDB,
-            UserRepositoryDB,
+            GameRepositoryMem,
+            ParticipantRepositoryMem,
+            TableRepositoryMem,
+            UserRepositoryMem,
             webSocketHub,
             CoroutineScope(SupervisorJob() + Dispatchers.Default)
         )

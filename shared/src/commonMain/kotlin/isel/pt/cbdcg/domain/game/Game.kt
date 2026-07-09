@@ -36,7 +36,6 @@ import isel.pt.cbdcg.domain.game.character.adjustStats
 import isel.pt.cbdcg.domain.game.character.points
 import isel.pt.cbdcg.domain.game.character.toItem
 import isel.pt.cbdcg.domain.game.character.toItemDTO
-import isel.pt.cbdcg.domain.game.character.usePassive
 import isel.pt.cbdcg.dto.EntityDTO
 import isel.pt.cbdcg.dto.GameDTO
 import isel.pt.cbdcg.dto.ItemDeckDTO
@@ -205,7 +204,7 @@ private fun Game.checkWinner(): Game {
         }
 
         val winner = points.entries.maxBy { it.value }.key
-        val losers = points.keys.filter{ it.user.id == winner.user.id }
+        val losers = points.keys.filter{ it.user.id != winner.user.id }
 
         return copy(
             players = listOf(winner),

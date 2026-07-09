@@ -101,13 +101,18 @@ class AppViewModel(
             when (val session = ui.session) {
                 is SessionState.InTable ->
                     ui.copy(session = SessionState.InGame(session.user, game))
-                is SessionState.InGame ->
-                    if(game.version != session.game.version)
+                is SessionState.InGame -> {
+                    if (game.version != session.game.version) {
+
+                        val nextState = updateInGameState(session.user, game, ui.session.game, ui.gameUI)
+                        val nextSession = session.copy(game = game)
                         ui.copy(
-                            gameUI = updateInGameState(session.user, game, ui.session.game, ui.gameUI),
-                            session = session.copy(game = game)
+                            gameUI = nextState,
+                            session = nextSession
                         )
+                    }
                     else ui
+                }
                 else -> ui
             }
         }
