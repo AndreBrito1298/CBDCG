@@ -55,6 +55,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -63,17 +64,13 @@ class ClientApi(private val client: HttpClient) {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    // Variables with the updated values for the list of tables in the lobby
-    private val _tables = MutableStateFlow<List<Table>>(emptyList())
-    val tables = _tables.asStateFlow()
+    val tables : StateFlow<List<Table>>
+        field = MutableStateFlow(emptyList())
+    val currentTable : StateFlow<Table?>
+        field = MutableStateFlow(null)
 
-    // Variable with the updated info of a specific table
-    private val _currentTable = MutableStateFlow<Table?>(null)
-    val currentTable = _currentTable.asStateFlow()
-
-    private val _game = MutableStateFlow<Game?>(null)
-
-    val game = _game.asStateFlow()
+    val game : StateFlow<Game?>
+        field = MutableStateFlow(null)
 
     // Session opened with the Server
     private var socketSession: ClientWebSocketSession? = null
@@ -89,22 +86,22 @@ class ClientApi(private val client: HttpClient) {
         when (message) {
 
             is WsServerMessage.LobbyTables -> {
-                _tables.value = message.tables.map { it.toTable() }
+                tables.value = message.tables.map { it.toTable() }
             }
 
             is WsServerMessage.TableInfo -> {
-                _currentTable.value = message.table.toTable()
+                currentTable.value = message.table.toTable()
             }
 
             is WsServerMessage.TableDeleted -> {
-                val current = _currentTable.value
+                val current = currentTable.value
                 if (current?.id?.toInt() == message.tableId) {
-                    _currentTable.value = null
+                    currentTable.value = null
                 }
             }
 
             is WsServerMessage.GameInfo -> {
-                _game.value = message.game.toGame()
+                game.value = message.game.toGame()
             }
         }
     }
@@ -129,8 +126,6 @@ class ClientApi(private val client: HttpClient) {
             }
         }
     }
-
-    // Functions to start listening to updates in either the 'Lobby' or a specific 'Table'
 
     suspend fun subscribeLobby() {
 
@@ -252,7 +247,6 @@ class ClientApi(private val client: HttpClient) {
             method = HttpMethod.Post,
             body = UnequipItemDTO(userId.toInt(), gameId.toInt(), token, character.toCharacterDTO(), idx)
         ).map{ it.toGame() }
-
     suspend fun leaveGame(userId: UInt, gameId: UInt, token: String): Result<Unit> =
         fetch<Unit>(
             path = "game/leave",
@@ -313,7 +307,6 @@ class ClientApi(private val client: HttpClient) {
                 target = arrayOf(),
             )
         ).map{ it.toGame() }
-
     suspend fun undoBattleAction(userId: UInt, gameId: UInt, token: String, origin: Character): Result<Game> =
         fetch<GameDTO>(
             path = "game/applyGameUpdater",

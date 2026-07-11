@@ -1,34 +1,126 @@
-@startuml
-title Fluxo de Estados do AppUIState
+@startuml AppUIStatesSession
+title AppUIState — Sessão e navegação
 
 skinparam shadowing false
-skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam StatePadding 28
+skinparam nodesep 85
+skinparam ranksep 85
 
-state "SessionState" as SS {
-    [*] --> SignedOut
-    SignedOut --> InLobby : login / createUser
-    InLobby --> InTable : joinTable / createTable
-    InTable --> InGame : start Game
+[*] --> SignedOut
+SignedOut --> InLobby : login() / createUser()
+SignedOut --> InGame : login() [jogo ativo]
+SignedOut --> InTutorial
 
-    InGame --> InLobby : leaveGame
-    InTable --> InLobby : leaveTable
-    InLobby --> SignedOut : logout
-}
+InLobby --> InTable : joinTable() / createTable()
+InLobby --> SignedOut : logout()
 
-state "GameUIState (Dento de InGame)" as GS {
-    [*] --> Idle
-    Idle --> SelectCard : selectCard()
-    SelectCard --> PlacingCard : placeSignal()
-    PlacingCard --> Idle : placeOnBoard() / cancel
+InTable --> InLobby : leaveTable() / tabela removida
+InTable --> InGame : createGame() / jogo criado
 
-    Idle --> MovingCharacter : moveSignal()
-    MovingCharacter --> Idle : moveCharacter() / cancel
+InGame --> InLobby : leaveGame() / jogo removido
 
-    Idle --> InspectCard : inspectCard()
-    InspectCard --> Idle : dismiss
+@enduml
 
-    Idle --> GameOver : winner != null (via Server)
-}
+@startuml AppUIStatesCards
+title GameUIState — Cartas e inspeção
 
+skinparam shadowing false
+skinparam linetype ortho
+skinparam StatePadding 28
+skinparam nodesep 85
+skinparam ranksep 85
 
+state Idle
+state SelectCard
+state PlacingCard
+state InspectCard
+state InspectPlayer
+state InspectTileEffect
+
+Idle --> SelectCard : selectCard()
+SelectCard --> PlacingCard : placeSignal()
+PlacingCard --> Idle : placeOnBoard()
+
+Idle --> InspectCard : inspectCard(carta)
+InspectCard --> InspectTileEffect : inspecionar TileCard
+
+Idle --> InspectPlayer : inspectPlayerHand()
+InspectPlayer --> InspectCard : inspecionar carta
+InspectPlayer --> InspectTileEffect : inspecionar TileCard
+
+Idle --> InspectTileEffect : inspecionar tile do tabuleiro
+
+@enduml
+
+@startuml AppUIStatesMovement
+title GameUIState — Movimento, colisão e infiltração
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam StatePadding 28
+skinparam nodesep 85
+skinparam ranksep 85
+
+state Idle
+state MovingCharacter
+state InspectTileEffect
+state CharacterCollision
+state SneakDestination
+
+Idle --> MovingCharacter : moveSignal(tile)
+MovingCharacter --> Idle : mover para destino livre
+MovingCharacter --> InspectTileEffect : movimento concluído [efeito ativo]
+MovingCharacter --> CharacterCollision : destino ocupado
+
+CharacterCollision --> SneakDestination : sneaking() [sucesso]
+SneakDestination --> Idle : moveCharacter(destino)
+
+@enduml
+
+@startuml AppUIStatesBattle
+title GameUIState — Batalha
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam StatePadding 28
+skinparam nodesep 85
+skinparam ranksep 85
+left to right direction
+
+state CharacterCollision
+state StartBattle
+state InBattle
+state Attacking
+state EndBattle
+state CharacterEvolved
+state Idle
+
+CharacterCollision --> StartBattle : challenge() / sneak falhou / servidor
+StartBattle --> InBattle : participateInBattle(true) / turno iniciado
+
+InBattle --> Attacking : attackMode()
+Attacking --> InBattle : attack() [batalha continua]
+InBattle --> EndBattle : servidor [resta 1 personagem]
+Attacking --> EndBattle : attack() [resta 1 personagem]
+
+EndBattle --> CharacterEvolved : leaveBattle() [personagem evoluiu]
+EndBattle --> Idle : leaveBattle()
+CharacterEvolved --> Idle : fechar diálogo
+@enduml
+
+@startuml AppUIStatesOverlays
+title AppUIState — Fim de jogo e indicadores transversais
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam StatePadding 28
+skinparam nodesep 85
+skinparam ranksep 85
+left to right direction
+
+state "qualquer GameUIState" as AnyGameState
+state GameOver
+
+AnyGameState --> GameOver : atualização do servidor [resta 1 jogador]
 @enduml
