@@ -15,16 +15,19 @@ rectangle "LoginScreen" as Login
 
 rectangle "CreateUserScreen" as CreateUser
 
+rectangle "TutorialScreen" as Tutorial
+
 rectangle "SearchTablesScreen" as SearchTables
 
-rectangle "WaitingTableScreen\n> Join Players\n> Join Spectators\n> Ready / Not Ready\n> Start Game" as WaitingTable
+rectangle "WaitingTableScreen" as WaitingTable
 
-rectangle "GameScreen\n> Board\n> Player Hand\n> Place Card\n> Move Character\n> Rotate Tile\n> Zoom In / Zoom Out\n> Game Over Dialog" as Game
+rectangle "GameScreen" as Game
 
-rectangle "SpectatorScreen\n> Board\n> Player Selector\n> Spectator Hand View\n> Zoom In / Zoom Out" as Spectator
+rectangle "SpectatorScreen" as Spectator
 
 Menu --> Login : Log In
 Menu --> CreateUser : Create User
+Menu --> Tutorial : Play Tutorial
 
 Login --> SearchTables : Successful login
 CreateUser --> SearchTables : Successful user creation

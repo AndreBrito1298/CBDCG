@@ -1,0 +1,75 @@
+@startuml DominioCharacter
+hide empty members
+skinparam classAttributeIconSize 0
+
+enum CharacterRole{
+    PLAYABLE
+    ENEMY
+}
+
+interface Character{
+    +name: String
+    +canUsePassive: Boolean
+}
+
+class StatModifier{
+    +duration: UInt
+}
+
+enum ModifierType{
+    TILE_EFFECT
+    BATTLE_ATTACK
+    BATTLE_HOLD
+    BATTLE_FLEE
+    PERMANENT
+    TMP_PASSIVE_MODIFIER
+    PERMANENT_PASSIVE_MODIFIER
+    SELF_PASSIVE_MODIFIER
+}
+
+enum Grade{
+    EVOLVE
+    BASIC
+    RARE
+    EPIC
+    KEY
+}
+
+interface Evolution{
+    +character: String
+}
+
+enum EvolutionType{
+    IN_BATTLE
+    ITEM
+    NR_BATTLES
+}
+
+class PassiveProps{
+    isAfterActions: Boolean
+    description: String
+}
+
+enum PassiveType{
+    BATTLE_PASSIVE
+    NEUTRAL_PASSIVE
+}
+
+class Stats{
+    +hp: Int
+    +dmg: Int
+    +def: Int
+    +spe: Int
+}
+
+Character *-- CharacterRole : role
+Character *-- Stats : stats
+StatModifier *-- Stats : stats
+StatModifier *-- ModifierType : type
+Character *-- "0..*" StatModifier : activeStatModifiers
+Character *-- Grade : grade
+Evolution *-- EvolutionType : type
+Character *-- "0..1    " Evolution : evolution
+PassiveProps *-- PassiveType : type
+Character *-- PassiveProps : passiveProps
+@enduml

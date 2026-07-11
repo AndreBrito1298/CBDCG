@@ -1,46 +1,20 @@
 @startuml DominioBoard
 hide empty members
 skinparam classAttributeIconSize 0
+left to right direction
 
-class Board {
-  +tiles: BoardTiles
-  --
-  +checkBlocked(position: BoardPosition, tile: Tile)
-  +placeTile(position: BoardPosition, tile: Tile): Board
-  +placeCharacter(position: BoardPosition, character: Character): Board
-  +equipItem(position: BoardPosition, player: Player, item: Item): Board
-  +unequip(character: PlayableCharacter, item: Item): Board
-  +reduceCooldown(): Board
-  +replaceBoardTile(updatedTile: BoardTile): Board
-}
+class Board
 
 class BoardTile {
-  +pos: BoardPosition
-  +tile: Tile
   +cooldown: UInt?
-  +character: Character?
-  --
-  +directionTo(other: BoardTile): Direction?
 }
 
 class BoardPosition {
   +x: Int
   +y: Int
-  --
-  +neighbour(direction: Direction): BoardPosition
-  +toString(): String
 }
 
-class Tile {
-  +connections: List<Direction>
-  +specialEffect: TileEffect
-  --
-  +canConnectTo(dir: Direction, tile: Tile): Boolean
-  +rotate(right: Boolean): Tile
-  +getBlocked(adjTiles: List<Pair<Direction, BoardTile>>): List<Direction>
-  +getAdjacent(tiles: BoardTiles, targetPos: BoardPosition): List<Pair<Direction, BoardTile>>
-  +toString(): String
-}
+class Tile
 
 enum Direction {
   EAST
@@ -50,9 +24,9 @@ enum Direction {
 }
 
 class TileEffect {
-  +type: TileEffectTypes
   +maxCooldown: UInt
   +info: String
+  +range: UInt
 }
 
 enum TileEffectTypes {
@@ -77,7 +51,7 @@ BoardTile *-- BoardPosition : pos
 BoardTile *-- Tile : tile
 BoardTile o-- "0..1" Character : character
 
-Tile *-- "1..*" Direction : connections
+Tile *-- "2..4" Direction : connections
 Tile *-- TileEffect : specialEffect
 
 TileEffect *-- TileEffectTypes : type

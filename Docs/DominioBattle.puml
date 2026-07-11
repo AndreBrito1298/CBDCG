@@ -1,0 +1,51 @@
+@startuml DominioBattle
+hide empty members
+skinparam classAttributeIconSize 0
+
+class Battle{
+ +currentTurn: UInt
+
+}
+
+enum BattlePhase{
+    WAITING
+    BATTLING
+    ENDING
+}
+
+class BattleAction{
+    +turn: Int
+}
+
+enum PossibleBattleActions{
+    ATTACK
+    HOLD
+    FLEE
+    PASSIVE
+}
+
+class Stats
+
+class Map{
+    +key: UInt
+}
+
+class BattleBet
+class Player
+class Item
+
+class Character
+
+Battle *-- BattlePhase : phase
+Battle o-- "      2..*" Character : characters
+BattleAction o-- Character : origin
+BattleAction o-- "                                0..1" Character : target
+BattleAction *-- PossibleBattleActions : action
+BattleAction *-- Stats : stats
+Battle *-- "0..*  "BattleAction : pending
+Map *-- "0..*" BattleAction : value
+Battle *-- "0..*  " Map : actions
+BattleBet o-- Player : player
+BattleBet o-- "0..1 " Item : item
+Battle *-- "           2..*" BattleBet : itemBet
+@enduml

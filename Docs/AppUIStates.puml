@@ -86,7 +86,6 @@ skinparam linetype ortho
 skinparam StatePadding 28
 skinparam nodesep 85
 skinparam ranksep 85
-left to right direction
 
 state CharacterCollision
 state StartBattle
@@ -117,10 +116,9 @@ skinparam linetype ortho
 skinparam StatePadding 28
 skinparam nodesep 85
 skinparam ranksep 85
-left to right direction
 
 state "qualquer GameUIState" as AnyGameState
 state GameOver
 
-AnyGameState --> GameOver : atualização do servidor [resta 1 jogador]
+AnyGameState --> GameOver : atualização do servidor
 @enduml

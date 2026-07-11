@@ -8,12 +8,13 @@ class User {
 
 class AuthUser {
   +token: String
+  +gameId: UInt?
+  +tokenRefresh: Instant
+  +tokenExpiration: Instant
 }
 
 class Table {
   +id: UInt
-  --
-  +checkAvailability(): Boolean
 }
 
 class Participant { }
@@ -42,10 +43,10 @@ User *-- Email : email
 User *-- Password : password
 
 Table *-- Name : name
-Table o-- "1" User : owner
+Table --> "1" User : owner
 Table *-- "0..*" Participant : participants
 
-Participant o-- User : user
-Participant *-- Role : role
+Participant --> "1" User : user
+Participant --> "1" Role : role
 
 @enduml

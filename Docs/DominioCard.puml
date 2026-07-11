@@ -1,0 +1,38 @@
+@startuml DominioCard
+hide empty members
+skinparam classAttributeIconSize 0
+
+interface Card <<sealed>>
+
+enum CardType {
+  TILE
+  CHARACTER
+  ITEM
+}
+
+class Item{
+    +name: String
+}
+
+enum Grade{
+    EVOLVE
+    BASIC
+    RARE
+    EPIC
+    KEY
+}
+
+class Stats
+
+Card <|-- TileCard
+Card <|-- CharacterCard
+Card <|-- ItemCard
+Card *-- CardType : type
+
+TileCard o-- Tile : tile
+ItemCard o-- Item : item
+CharacterCard o-- Character : character
+Item *-- Grade : grade
+Item *-- Stats : stats
+
+@enduml
